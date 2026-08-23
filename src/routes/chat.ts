@@ -1,14 +1,15 @@
 import { Router } from "express";
 import { askQuestion } from "../services/chat";
+import { BadGatewayError, BadRequestError } from "../utils/errors";
 
 export const chatRouter = Router();
 
 // POST /api/chat/ask  { question: string }
-chatRouter.post("/chat/ask", async (req, res) => {
+chatRouter.post("/chat/ask", async (req, res, next) => {
   const { question } = req.body ?? {};
 
   if (typeof question !== "string" || !question.trim()) {
-    res.status(400).json({ error: "Body must include a non-empty 'question' string" });
+    next(new BadRequestError("Body must include a non-empty 'question' string"));
     return;
   }
 
@@ -17,6 +18,6 @@ chatRouter.post("/chat/ask", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("[chat] askQuestion failed:", err);
-    res.status(502).json({ error: "Failed to answer question", detail: (err as Error).message });
+    next(new BadGatewayError((err as Error).message || "Failed to answer question"));
   }
 });

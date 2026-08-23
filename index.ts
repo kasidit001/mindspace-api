@@ -6,6 +6,9 @@ import { coursesRouter } from "./src/routes/courses";
 import { chatRouter } from "./src/routes/chat";
 import { progressRouter } from "./src/routes/progress";
 import { notesRouter } from "./src/routes/notes";
+import { statsRouter } from "./src/routes/stats";
+import { searchRouter } from "./src/routes/search";
+import { AppError } from "./src/utils/errors";
 
 // Catch anything that slips past Express's own error handling (e.g. errors thrown
 // outside a request, or in a callback that isn't awaited) so the process logs the
@@ -35,13 +38,22 @@ app.use("/api", coursesRouter);
 app.use("/api", chatRouter);
 app.use("/api", progressRouter);
 app.use("/api", notesRouter);
+app.use("/api", statsRouter);
+app.use("/api", searchRouter);
 
 // Error-handling middleware must be registered last, after all routes, and take
 // exactly 4 args — that arity is how Express recognizes it as an error handler.
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error("[error]", err);
   if (res.headersSent) return;
-  res.status(500).json({ error: "Internal server error" });
+
+  if (err instanceof AppError) {
+    res.status(err.statusCode).json({ error: err.name, message: err.message });
+    return;
+  }
+
+  // Unrecognized error: don't leak internals (stack traces, DB errors, etc.) to the client.
+  res.status(500).json({ error: "InternalServerError", message: "Internal server error" });
 };
 app.use(errorHandler);
 
