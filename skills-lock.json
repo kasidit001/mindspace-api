@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "definition-of-done": {
+      "source": "validkeys/sherpy",
+      "sourceType": "github",
+      "skillPath": "skills/definition-of-done/SKILL.md",
+      "computedHash": "c3d3ddfccf1552a49d1088b7134395b5af7168b9ffdd69d72e63f99c3b56e222"
+    },
+    "deliver-acceptance-criteria": {
+      "source": "product-on-purpose/pm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/deliver-acceptance-criteria/SKILL.md",
+      "computedHash": "8cd9a4231f9faba7cbc1aa7147e96228d8fe7cfbebd36e3b8a1d4bece7a314ee"
+    },
+    "grill-me": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/grill-me/SKILL.md",
+      "computedHash": "9cdbb4b8f7a3aeaef82e6230c9e823500d4a8a1214c726cf342cf9829d34fc7d"
+    },
+    "grilling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/grilling/SKILL.md",
+      "computedHash": "4dd886b0196bf43729d954ae326016f2bd9f5f79d892500b407c33a753362f14"
+    }
+  }
+}
