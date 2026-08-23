@@ -4,6 +4,8 @@ import { connectDB } from "./src/config/database";
 import { syncModels } from "./src/models";
 import { coursesRouter } from "./src/routes/courses";
 import { chatRouter } from "./src/routes/chat";
+import { statsRouter } from "./src/routes/stats";
+import { searchRouter } from "./src/routes/search";
 
 // Catch anything that slips past Express's own error handling (e.g. errors thrown
 // outside a request, or in a callback that isn't awaited) so the process logs the
@@ -31,6 +33,8 @@ app.get("/health", (_req, res) => {
 
 app.use("/api", coursesRouter);
 app.use("/api", chatRouter);
+app.use("/api", statsRouter);
+app.use("/api", searchRouter);
 
 // Error-handling middleware must be registered last, after all routes, and take
 // exactly 4 args — that arity is how Express recognizes it as an error handler.
