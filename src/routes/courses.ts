@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { Course, Lesson } from "../models";
+import { NotFoundError } from "../utils/errors";
 
 export const coursesRouter = Router();
 
@@ -24,8 +25,7 @@ coursesRouter.get("/lessons/:id", async (req, res, next) => {
     });
 
     if (!lesson) {
-      res.status(404).json({ error: "Lesson not found" });
-      return;
+      throw new NotFoundError("Lesson not found");
     }
 
     res.json(lesson);
