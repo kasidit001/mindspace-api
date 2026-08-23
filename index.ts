@@ -1,4 +1,5 @@
 import express, { type ErrorRequestHandler } from "express";
+import cors from "cors";
 import { connectDB } from "./src/config/database";
 import { syncModels } from "./src/models";
 import { coursesRouter } from "./src/routes/courses";
@@ -15,7 +16,13 @@ process.on("unhandledRejection", (reason) => {
   console.error("[fatal] Unhandled rejection:", reason);
 });
 
+// mindspace-web (Nuxt) runs on a different origin/port than this API, so the browser
+// needs CORS headers to allow the cross-origin fetches — without this, requests fail
+// silently in the browser (server itself is fine, as curl/server-to-server calls show).
+const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:3000";
+
 const app = express();
+app.use(cors({ origin: WEB_ORIGIN }));
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
