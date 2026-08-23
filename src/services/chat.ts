@@ -1,9 +1,13 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { CHAT_MODEL } from "../config/constants";
+import { CHAT_MODEL, OPENROUTER_BASE_URL } from "../config/constants";
 import { searchSimilarChunks, type RetrievedChunk } from "./embeddings";
 
-const chatModel = new ChatOpenAI({ model: CHAT_MODEL, temperature: 0.2 });
+const chatModel = new ChatOpenAI({
+  model: CHAT_MODEL,
+  temperature: 0.2,
+  configuration: { baseURL: OPENROUTER_BASE_URL },
+});
 
 export interface AskResult {
   answer: string;
