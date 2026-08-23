@@ -3,8 +3,10 @@ import { EMBEDDING_DIM } from "../config/constants";
 import { Course } from "./Course";
 import { Lesson } from "./Lesson";
 import { LessonEmbedding } from "./LessonEmbedding";
+import { Progress } from "./Progress";
+import { Note } from "./Note";
 
-export { Course, Lesson, LessonEmbedding };
+export { Course, Lesson, LessonEmbedding, Progress, Note };
 
 /**
  * Adds the pgvector `embedding` column + an HNSW cosine index to lesson_embeddings.
@@ -24,5 +26,5 @@ async function ensureVectorColumn(): Promise<void> {
 export async function syncModels(): Promise<void> {
   await sequelize.sync();
   await ensureVectorColumn();
-  console.log("[db] Models synced (courses, lessons, lesson_embeddings).");
+  console.log("[db] Models synced (courses, lessons, lesson_embeddings, user_progress, notes).");
 }

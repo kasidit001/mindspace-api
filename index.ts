@@ -4,6 +4,8 @@ import { connectDB } from "./src/config/database";
 import { syncModels } from "./src/models";
 import { coursesRouter } from "./src/routes/courses";
 import { chatRouter } from "./src/routes/chat";
+import { progressRouter } from "./src/routes/progress";
+import { notesRouter } from "./src/routes/notes";
 import { statsRouter } from "./src/routes/stats";
 import { searchRouter } from "./src/routes/search";
 import { AppError } from "./src/utils/errors";
@@ -34,6 +36,8 @@ app.get("/health", (_req, res) => {
 
 app.use("/api", coursesRouter);
 app.use("/api", chatRouter);
+app.use("/api", progressRouter);
+app.use("/api", notesRouter);
 app.use("/api", statsRouter);
 app.use("/api", searchRouter);
 
