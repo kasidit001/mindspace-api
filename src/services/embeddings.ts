@@ -2,10 +2,13 @@ import { randomUUID } from "node:crypto";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { QueryTypes } from "sequelize";
 import sequelize from "../config/database";
-import { EMBEDDING_MODEL } from "../config/constants";
+import { EMBEDDING_MODEL, OPENROUTER_BASE_URL } from "../config/constants";
 import type { Lesson } from "../models/Lesson";
 
-const embeddings = new OpenAIEmbeddings({ model: EMBEDDING_MODEL });
+const embeddings = new OpenAIEmbeddings({
+  model: EMBEDDING_MODEL,
+  configuration: { baseURL: OPENROUTER_BASE_URL },
+});
 
 /** pgvector expects a "[0.1,0.2,...]" text literal, cast to ::vector in SQL. */
 function toVectorLiteral(vector: number[]): string {
@@ -40,7 +43,7 @@ export async function embedAndStoreLesson(lesson: Lesson): Promise<number> {
 
   for (let i = 0; i < chunks.length; i++) {
     await sequelize.query(
-      `INSERT INTO lesson_embeddings (id, lesson_id, chunk_index, content, model, embedding, created_at, updated_at)
+      `INSERT INTO lesson_embeddings (id, lesson_id, chunk_index, content, model, embedding, "createdAt", "updatedAt")
        VALUES (:id, :lessonId, :chunkIndex, :content, :model, :embedding::vector, NOW(), NOW())`,
       {
         replacements: {
