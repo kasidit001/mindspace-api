@@ -43,6 +43,19 @@ function dedupeReferences(chunks: RetrievedChunk[]): AskResult["references"] {
   return [...seen.values()];
 }
 
+function buildMessages(question: string, context: string) {
+  return [
+    new SystemMessage(
+      "You are a TypeScript tutor. Answer the user's question using ONLY the numbered lesson " +
+        "excerpts below as source material. Cite lessons by name inline (e.g. \"as covered in " +
+        "'Lesson Title'\"). If the excerpts don't contain the answer, say so plainly instead of " +
+        "guessing.\n\n" +
+        context
+    ),
+    new HumanMessage(question),
+  ];
+}
+
 /** Retrieves relevant lesson chunks via pgvector, then asks the LLM to answer grounded in them. */
 export async function askQuestion(question: string): Promise<AskResult> {
   const chunks = await searchSimilarChunks(question, 5);
@@ -55,20 +68,39 @@ export async function askQuestion(question: string): Promise<AskResult> {
   }
 
   const context = buildContext(chunks);
-
-  const response = await chatModel.invoke([
-    new SystemMessage(
-      "You are a TypeScript tutor. Answer the user's question using ONLY the numbered lesson " +
-        "excerpts below as source material. Cite lessons by name inline (e.g. \"as covered in " +
-        "'Lesson Title'\"). If the excerpts don't contain the answer, say so plainly instead of " +
-        "guessing.\n\n" +
-        context
-    ),
-    new HumanMessage(question),
-  ]);
+  const response = await chatModel.invoke(buildMessages(question, context));
 
   return {
     answer: typeof response.content === "string" ? response.content : JSON.stringify(response.content),
     references: dedupeReferences(chunks),
   };
+}
+
+export type StreamEvent =
+  | { type: "token"; token: string }
+  | { type: "done"; references: AskResult["references"] };
+
+/**
+ * Same retrieval + grounding as askQuestion, but yields the answer token-by-token
+ * (via ChatOpenAI's streaming API) so the route can forward it as SSE. Ends with a
+ * single "done" event carrying the references, mirroring askQuestion's return shape.
+ */
+export async function* streamAnswer(question: string): AsyncGenerator<StreamEvent> {
+  const chunks = await searchSimilarChunks(question, 5);
+
+  if (chunks.length === 0) {
+    yield { type: "token", token: "I don't have any lesson content indexed yet, so I can't answer that." };
+    yield { type: "done", references: [] };
+    return;
+  }
+
+  const context = buildContext(chunks);
+  const stream = await chatModel.stream(buildMessages(question, context));
+
+  for await (const messageChunk of stream) {
+    const token = typeof messageChunk.content === "string" ? messageChunk.content : "";
+    if (token) yield { type: "token", token };
+  }
+
+  yield { type: "done", references: dedupeReferences(chunks) };
 }
