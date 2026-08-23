@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { askQuestion, streamAnswer } from "../services/chat";
+import { BadGatewayError, BadRequestError } from "../utils/errors";
 
 export const chatRouter = Router();
 
@@ -8,11 +9,11 @@ export const chatRouter = Router();
 // emitting "token" events as the answer generates and a final "done" event with
 // the references -- same convention as OpenAI/OpenRouter's own `stream` flag.
 // Default (stream omitted/false) keeps the original single-JSON-response shape.
-chatRouter.post("/chat/ask", async (req, res) => {
+chatRouter.post("/chat/ask", async (req, res, next) => {
   const { question, stream } = req.body ?? {};
 
   if (typeof question !== "string" || !question.trim()) {
-    res.status(400).json({ error: "BadRequestError", message: "Body must include a non-empty 'question' string" });
+    next(new BadRequestError("Body must include a non-empty 'question' string"));
     return;
   }
 
@@ -26,7 +27,7 @@ chatRouter.post("/chat/ask", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("[chat] askQuestion failed:", err);
-    res.status(502).json({ error: "BadGatewayError", message: (err as Error).message || "Failed to answer question" });
+    next(new BadGatewayError((err as Error).message || "Failed to answer question"));
   }
 });
 
@@ -59,8 +60,12 @@ async function handleStreamingAsk(question: string, req: Request, res: Response)
     }
   } catch (err) {
     console.error("[chat] streamAnswer failed:", err);
+    // Headers are already sent (SSE), so this can't go through the normal error
+    // middleware -- emit an "error" SSE event in the same { error, message } shape
+    // as the rest of the API's error responses instead.
     if (!clientGone) {
-      send("error", { error: "BadGatewayError", message: (err as Error).message || "Streaming failed" });
+      const gatewayErr = new BadGatewayError((err as Error).message || "Streaming failed");
+      send("error", { error: gatewayErr.name, message: gatewayErr.message });
     }
   } finally {
     res.end();
