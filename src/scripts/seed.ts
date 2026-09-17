@@ -18,10 +18,18 @@ async function main() {
   for (const courseSeed of seedCourses) {
     const [course] = await Course.findOrCreate({
       where: { slug: courseSeed.slug },
-      defaults: { title: courseSeed.title, description: courseSeed.description },
+      defaults: {
+        title: courseSeed.title,
+        descriptionEn: courseSeed.descriptionEn,
+        descriptionTh: courseSeed.descriptionTh ?? null,
+      },
     });
     // Keep title/description in sync on re-runs.
-    await course.update({ title: courseSeed.title, description: courseSeed.description });
+    await course.update({
+      title: courseSeed.title,
+      descriptionEn: courseSeed.descriptionEn,
+      descriptionTh: courseSeed.descriptionTh ?? null,
+    });
 
     console.log(`[seed] Course: ${course.title}`);
 
@@ -30,18 +38,22 @@ async function main() {
         where: { courseId: course.id, slug: lessonSeed.slug },
         defaults: {
           courseId: course.id,
-          title: lessonSeed.title,
-          content: lessonSeed.content,
+          titleEn: lessonSeed.titleEn,
+          titleTh: lessonSeed.titleTh ?? null,
+          contentEn: lessonSeed.contentEn,
+          contentTh: lessonSeed.contentTh ?? null,
           order: lessonSeed.order,
         },
       });
       await lesson.update({
-        title: lessonSeed.title,
-        content: lessonSeed.content,
+        titleEn: lessonSeed.titleEn,
+        titleTh: lessonSeed.titleTh ?? null,
+        contentEn: lessonSeed.contentEn,
+        contentTh: lessonSeed.contentTh ?? null,
         order: lessonSeed.order,
       });
 
-      console.log(`  [seed] Lesson: ${lesson.title}`);
+      console.log(`  [seed] Lesson: ${lesson.titleEn}`);
 
       if (canEmbed) {
         // Re-embed from scratch so re-running the seed doesn't duplicate chunks.

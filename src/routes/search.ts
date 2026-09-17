@@ -9,6 +9,8 @@ export const searchRouter = Router();
 // plainto_tsquery), separate from the pgvector semantic search used by /api/chat/ask —
 // keyword search is what a "jump to this exact lesson" spotlight needs; RAG retrieval
 // is for the chat's grounding context.
+// English-only: searches title_en/content_en. The 'english' text-search config below
+// doesn't stem/tokenize Thai correctly, so Thai lesson content isn't indexed here yet.
 searchRouter.get("/search", async (req, res, next) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
 
@@ -27,19 +29,19 @@ searchRouter.get("/search", async (req, res, next) => {
       snippet: string;
       rank: number;
     }>(
-      `SELECT l.id, l.title, l.slug,
+      `SELECT l.id, l.title_en AS title, l.slug,
               c.title AS course_title, c.slug AS course_slug,
               ts_headline(
-                'english', l.content, plainto_tsquery('english', :q),
+                'english', l.content_en, plainto_tsquery('english', :q),
                 'MaxFragments=1, MaxWords=30, MinWords=15'
               ) AS snippet,
               ts_rank(
-                to_tsvector('english', l.title || ' ' || l.content),
+                to_tsvector('english', l.title_en || ' ' || l.content_en),
                 plainto_tsquery('english', :q)
               ) AS rank
          FROM lessons l
          JOIN courses c ON c.id = l.course_id
-        WHERE to_tsvector('english', l.title || ' ' || l.content) @@ plainto_tsquery('english', :q)
+        WHERE to_tsvector('english', l.title_en || ' ' || l.content_en) @@ plainto_tsquery('english', :q)
         ORDER BY rank DESC
         LIMIT 20`,
       { replacements: { q }, type: QueryTypes.SELECT }

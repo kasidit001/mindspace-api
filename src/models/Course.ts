@@ -5,7 +5,10 @@ export class Course extends Model<InferAttributes<Course>, InferCreationAttribut
   declare id: CreationOptional<string>;
   declare title: string;
   declare slug: string;
-  declare description: string | null;
+  // Thai is an optional translation layered on English — API/frontend fall back to
+  // English when descriptionTh is null. Same pattern as Lesson's title/content split.
+  declare descriptionEn: string | null;
+  declare descriptionTh: string | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -26,9 +29,15 @@ Course.init(
       allowNull: false,
       unique: true,
     },
-    description: {
+    descriptionEn: {
       type: DataTypes.TEXT,
       allowNull: true,
+      field: "description_en",
+    },
+    descriptionTh: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "description_th",
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,
