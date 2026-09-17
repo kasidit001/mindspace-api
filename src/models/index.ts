@@ -5,8 +5,10 @@ import { Lesson } from "./Lesson";
 import { LessonEmbedding } from "./LessonEmbedding";
 import { Progress } from "./Progress";
 import { Note } from "./Note";
+import { Role, ROLE_NAMES } from "./Role";
+import { User } from "./User";
 
-export { Course, Lesson, LessonEmbedding, Progress, Note };
+export { Course, Lesson, LessonEmbedding, Progress, Note, Role, User };
 
 /**
  * Adds the pgvector `embedding` column + an HNSW cosine index to lesson_embeddings.
@@ -23,8 +25,16 @@ async function ensureVectorColumn(): Promise<void> {
   );
 }
 
+/** Ensures the fixed role rows (SYSTEM_ADMIN, USER) exist — idempotent, safe to re-run. */
+async function ensureRoles(): Promise<void> {
+  for (const name of ROLE_NAMES) {
+    await Role.findOrCreate({ where: { name } });
+  }
+}
+
 export async function syncModels(): Promise<void> {
   await sequelize.sync();
   await ensureVectorColumn();
-  console.log("[db] Models synced (courses, lessons, lesson_embeddings, user_progress, notes).");
+  await ensureRoles();
+  console.log("[db] Models synced (courses, lessons, lesson_embeddings, user_progress, notes, roles, users).");
 }

@@ -36,9 +36,13 @@ export function chunkText(content: string, maxChars = 1200): string[] {
   return chunks.length ? chunks : [content];
 }
 
-/** Chunks, embeds, and stores a lesson's content in lesson_embeddings. */
+/**
+ * Chunks, embeds, and stores a lesson's content in lesson_embeddings.
+ * English only for now — retrieval/grounding in src/services/chat.ts is English-only
+ * too, so a Thai-only chunk would just be dead weight in the vector index.
+ */
 export async function embedAndStoreLesson(lesson: Lesson): Promise<number> {
-  const chunks = chunkText(lesson.content);
+  const chunks = chunkText(lesson.contentEn);
   const vectors = await embeddings.embedDocuments(chunks);
 
   for (let i = 0; i < chunks.length; i++) {
@@ -88,7 +92,7 @@ export async function searchSimilarChunks(question: string, k = 5): Promise<Retr
             le.chunk_index,
             (le.embedding <=> :queryEmbedding::vector) AS distance,
             l.id AS lesson_id,
-            l.title AS lesson_title,
+            l.title_en AS lesson_title,
             l.slug AS lesson_slug,
             c.title AS course_title
        FROM lesson_embeddings le

@@ -15,10 +15,11 @@ coursesRouter.get("/courses/featured", async (_req, res, next) => {
       id: string;
       title: string;
       slug: string;
-      description: string | null;
+      description_en: string | null;
+      description_th: string | null;
       lesson_count: string;
     }>(
-      `SELECT c.id, c.title, c.slug, c.description, COUNT(l.id)::int AS lesson_count
+      `SELECT c.id, c.title, c.slug, c.description_en, c.description_th, COUNT(l.id)::int AS lesson_count
          FROM courses c
          LEFT JOIN lessons l ON l.course_id = c.id
         GROUP BY c.id
@@ -32,7 +33,8 @@ coursesRouter.get("/courses/featured", async (_req, res, next) => {
         id: r.id,
         title: r.title,
         slug: r.slug,
-        description: r.description,
+        descriptionEn: r.description_en,
+        descriptionTh: r.description_th,
         lessonCount: Number(r.lesson_count),
       }))
     );
@@ -45,7 +47,9 @@ coursesRouter.get("/courses/featured", async (_req, res, next) => {
 coursesRouter.get("/courses", async (_req, res, next) => {
   try {
     const courses = await Course.findAll({
-      include: [{ model: Lesson, as: "lessons", attributes: ["id", "title", "slug", "order"] }],
+      include: [
+        { model: Lesson, as: "lessons", attributes: ["id", "titleEn", "titleTh", "slug", "order"] },
+      ],
       order: [["createdAt", "ASC"]],
     });
     res.json(courses);

@@ -5,11 +5,16 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch index.ts",
-    "seed": "bun run src/scripts/seed.ts"
+    "seed": "bun run src/scripts/seed.ts",
+    "migrate": "bunx sequelize-cli db:migrate",
+    "migrate:undo": "bunx sequelize-cli db:migrate:undo",
+    "migrate:status": "bunx sequelize-cli db:migrate:status",
+    "migrate:generate": "bunx sequelize-cli migration:generate --name"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/cors": "^2.8.19"
+    "@types/cors": "^2.8.19",
+    "sequelize-cli": "^6.6.5"
   },
   "peerDependencies": {
     "typescript": "^5"

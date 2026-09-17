@@ -5,9 +5,15 @@ import { Course } from "./Course";
 export class Lesson extends Model<InferAttributes<Lesson>, InferCreationAttributes<Lesson>> {
   declare id: CreationOptional<string>;
   declare courseId: ForeignKey<Course["id"]>;
-  declare title: string;
+  // English is required (the RAG chat/embeddings pipeline and full-text search — see
+  // embeddings.ts and routes/search.ts — only read the *_en columns for now). Thai is
+  // an optional translation layered on top; the API/frontend fall back to English when
+  // a Thai field is null.
+  declare titleEn: string;
+  declare titleTh: string | null;
   declare slug: string;
-  declare content: string;
+  declare contentEn: string;
+  declare contentTh: string | null;
   declare order: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -25,17 +31,29 @@ Lesson.init(
       allowNull: false,
       field: "course_id",
     },
-    title: {
+    titleEn: {
       type: DataTypes.STRING,
       allowNull: false,
+      field: "title_en",
+    },
+    titleTh: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "title_th",
     },
     slug: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    content: {
+    contentEn: {
       type: DataTypes.TEXT,
       allowNull: false,
+      field: "content_en",
+    },
+    contentTh: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "content_th",
     },
     order: {
       type: DataTypes.INTEGER,
