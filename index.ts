@@ -8,6 +8,7 @@ import { progressRouter } from "./src/routes/progress";
 import { notesRouter } from "./src/routes/notes";
 import { statsRouter } from "./src/routes/stats";
 import { searchRouter } from "./src/routes/search";
+import { authRouter } from "./src/routes/auth";
 import { AppError } from "./src/utils/errors";
 
 // Catch anything that slips past Express's own error handling (e.g. errors thrown
@@ -34,6 +35,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use("/api", authRouter);
 app.use("/api", coursesRouter);
 app.use("/api", chatRouter);
 app.use("/api", progressRouter);

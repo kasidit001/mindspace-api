@@ -1,14 +1,16 @@
 import { DataTypes, Model, type CreationOptional, type ForeignKey, type InferAttributes, type InferCreationAttributes } from "sequelize";
 import sequelize from "../config/database";
 import { Lesson } from "./Lesson";
+import { User } from "./User";
 
 /**
- * Single-user app (no auth/user table exists anywhere in the codebase yet) — this
- * tracks lesson completion globally, not per-account. One row per completed lesson;
- * unique on lessonId so POST /api/lessons/:id/complete is a safe upsert.
+ * Tracks lesson completion per account. One row per (user, lesson); unique on
+ * that pair so POST /api/lessons/:id/complete is a safe upsert scoped to the
+ * authenticated user (see src/utils/auth.ts requireAuth).
  */
 export class Progress extends Model<InferAttributes<Progress>, InferCreationAttributes<Progress>> {
   declare id: CreationOptional<string>;
+  declare userId: ForeignKey<User["id"]>;
   declare lessonId: ForeignKey<Lesson["id"]>;
   declare completed: CreationOptional<boolean>;
   declare completedAt: CreationOptional<Date>;
@@ -23,11 +25,15 @@ Progress.init(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: "user_id",
+    },
     lessonId: {
       type: DataTypes.UUID,
       allowNull: false,
       field: "lesson_id",
-      unique: true,
     },
     completed: {
       type: DataTypes.BOOLEAN,
@@ -47,10 +53,13 @@ Progress.init(
     sequelize,
     modelName: "Progress",
     tableName: "user_progress",
+    indexes: [{ unique: true, fields: ["user_id", "lesson_id"] }],
   }
 );
 
-Lesson.hasOne(Progress, { foreignKey: "lessonId", as: "progress" });
+Lesson.hasMany(Progress, { foreignKey: "lessonId", as: "progress" });
 Progress.belongsTo(Lesson, { foreignKey: "lessonId", as: "lesson" });
+User.hasMany(Progress, { foreignKey: "userId", as: "progress" });
+Progress.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 export default Progress;
