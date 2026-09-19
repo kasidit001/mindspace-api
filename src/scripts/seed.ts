@@ -1,6 +1,6 @@
 import { connectDB } from "../config/database";
 import { syncModels, Course, Lesson } from "../models";
-import { embedAndStoreLesson } from "../services/embeddings";
+import { embedAndStoreLesson } from "../services/embedding.service";
 import { seedCourses } from "./seedContent";
 import sequelize from "../config/database";
 

@@ -6,7 +6,7 @@ import { User } from "./User";
 /**
  * Tracks lesson completion per account. One row per (user, lesson); unique on
  * that pair so POST /api/lessons/:id/complete is a safe upsert scoped to the
- * authenticated user (see src/utils/auth.ts requireAuth).
+ * authenticated user (see src/middlewares/auth.middleware.ts requireAuth).
  */
 export class Progress extends Model<InferAttributes<Progress>, InferCreationAttributes<Progress>> {
   declare id: CreationOptional<string>;

@@ -1,23 +1,15 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { CHAT_MODEL, OPENROUTER_BASE_URL } from "../config/constants";
-import { searchSimilarChunks, type RetrievedChunk } from "./embeddings";
+import { searchSimilarChunks } from "./embedding.service";
+import type { RetrievedChunk } from "../interfaces/embedding.interface";
+import type { AskResult, StreamEvent } from "../interfaces/chat.interface";
 
 const chatModel = new ChatOpenAI({
   model: CHAT_MODEL,
   temperature: 0.2,
   configuration: { baseURL: OPENROUTER_BASE_URL },
 });
-
-export interface AskResult {
-  answer: string;
-  references: Array<{
-    lessonId: string;
-    lessonTitle: string;
-    lessonSlug: string;
-    courseTitle: string;
-  }>;
-}
 
 function buildContext(chunks: RetrievedChunk[]): string {
   return chunks
@@ -76,13 +68,9 @@ export async function askQuestion(question: string): Promise<AskResult> {
   };
 }
 
-export type StreamEvent =
-  | { type: "token"; token: string }
-  | { type: "done"; references: AskResult["references"] };
-
 /**
  * Same retrieval + grounding as askQuestion, but yields the answer token-by-token
- * (via ChatOpenAI's streaming API) so the route can forward it as SSE. Ends with a
+ * (via ChatOpenAI's streaming API) so the caller can forward it as SSE. Ends with a
  * single "done" event carrying the references, mirroring askQuestion's return shape.
  */
 export async function* streamAnswer(question: string): AsyncGenerator<StreamEvent> {

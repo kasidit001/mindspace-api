@@ -6,8 +6,9 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare id: CreationOptional<string>;
   declare name: string;
   declare email: string;
-  // Never selected back to a client — see src/utils/auth.ts (hash/verify) and
-  // toPublicUser() in src/routes/auth.ts, which strips this before responding.
+  // Never selected back to a client — see src/services/auth.service.ts (hash/verify)
+  // and the AuthResult shape (src/interfaces/auth.interface.ts), built in
+  // src/usecases/auth/*.usecase.ts, which strips this before responding.
   declare passwordHash: string;
   declare roleId: ForeignKey<Role["id"]>;
   declare createdAt: CreationOptional<Date>;

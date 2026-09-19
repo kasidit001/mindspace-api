@@ -1,7 +1,4 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import type { NextFunction, Request, Response } from "express";
-import { User, Role } from "../models";
-import { UnauthorizedError } from "./errors";
 
 const SESSION_SECRET = process.env.SESSION_SECRET;
 if (!SESSION_SECRET) {
@@ -55,50 +52,4 @@ export function hashPassword(password: string): Promise<string> {
 
 export function verifyPassword(password: string, hash: string): Promise<boolean> {
   return Bun.password.verify(password, hash);
-}
-
-export interface AuthedUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Request {
-      user?: AuthedUser;
-    }
-  }
-}
-
-async function resolveUserFromHeader(req: Request): Promise<AuthedUser | null> {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return null;
-
-  const decoded = verifyToken(header.slice("Bearer ".length));
-  if (!decoded) return null;
-
-  const user = await User.findByPk(decoded.userId, { include: [{ model: Role, as: "role" }] });
-  if (!user) return null;
-
-  return { id: user.id, name: user.name, email: user.email, role: user.role!.name };
-}
-
-/** Rejects the request with 401 unless a valid session token identifies a user. */
-export async function requireAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  const user = await resolveUserFromHeader(req);
-  if (!user) {
-    next(new UnauthorizedError("Missing or invalid Authorization token"));
-    return;
-  }
-  req.user = user;
-  next();
-}
-
-/** Attaches req.user if a valid token is present, but never rejects the request. */
-export async function optionalAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
-  req.user = (await resolveUserFromHeader(req)) ?? undefined;
-  next();
 }
