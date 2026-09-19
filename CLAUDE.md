@@ -25,7 +25,38 @@ This is a plain Express API (`index.ts`), not `Bun.serve()` — despite the gene
 guidance further down this file, this codebase already commits to Express + `pg` (via
 Sequelize) throughout. Match that, don't reintroduce `Bun.serve()`/`Bun.sql` here.
 
-**Data layer**: Postgres + pgvector, accessed through Sequelize.
+**Layered flow**: every request goes `Route → Controller → UseCase → Service → Repository →
+Model → Database`, strictly in that order — a layer only calls the one directly below it.
+
+- `src/routes/*.ts` — thin. Just `Router()` + wiring a path/method (and `requireAuth` where
+  needed) to a controller function. No request parsing, no business logic here.
+- `src/controllers/*.controller.ts` — the HTTP boundary. Parses `req.body`/`params`/`query`,
+  validates the *shape* of the input (missing/wrong-typed fields -> `BadRequestError`), calls
+  exactly one usecase, and shapes the response (`res.json`/status codes/SSE plumbing for
+  chat). Business-rule validation (does this resource exist, is this email taken) does NOT
+  belong here — that's the usecase's job.
+- `src/usecases/<domain>/*.usecase.ts` — orchestration and business rules (e.g. "USER role
+  must exist", "email must be unique", "lesson must exist before completing it"). Calls one
+  or more services, never a repository or model directly.
+- `src/services/*.service.ts` — domain logic and external integrations: `auth.service.ts`
+  (password hashing, session tokens — pure crypto, no DB), `embedding.service.ts` (chunking +
+  OpenAI embeddings), `chat.service.ts` (retrieval-augmented completion), plus one thin
+  service per domain (`course.service.ts`, `note.service.ts`, etc.) that delegates to its
+  repository. Calls repositories, never touches Sequelize/raw SQL directly.
+- `src/repositories/*.repository.ts` — the only layer that touches Sequelize models or raw
+  SQL. One file per aggregate (`user`, `course`, `lesson`, `note`, `progress`,
+  `lessonEmbedding`, `search`, `stats`). Returns already-camelCased data, hiding
+  column-naming/SQL details from everything above it.
+- `src/middlewares/auth.middleware.ts` — `requireAuth`/`optionalAuth` sit *between* route and
+  controller (Express middleware, not one of the layers above), populating `req.user`.
+- `src/interfaces/*.interface.ts` — shared TypeScript contracts, one file per domain
+  (`auth`, `user`, `course`, `note`, `progress`, `embedding`, `chat`, `search`, `stats`).
+  Not a stop in the chain — every layer above may import from here, but nothing should
+  define a request/response/query-input shape inline anymore. When a repository/service/
+  usecase needs a new data shape, add it to the matching `*.interface.ts` file rather than
+  declaring it locally, so the type has exactly one source of truth other layers can import.
+
+**Data layer**: Postgres + pgvector, accessed through Sequelize (via repositories only).
 - Models live in `src/models/*.ts`; `src/models/index.ts` exports them all and its
   `syncModels()` (called once at startup in `index.ts`) is what actually creates/updates
   tables via `sequelize.sync()`. It also runs `ensureVectorColumn()` — raw SQL to add the
@@ -40,41 +71,48 @@ Sequelize) throughout. Match that, don't reintroduce `Bun.serve()`/`Bun.sql` her
   `Lesson.hasMany(Progress)`, `Lesson.hasMany(Note)` (nullable `lessonId` — a saved chat
   answer may not be tied to one lesson), `Role.hasMany(User)`, `User.hasMany(Progress)`,
   `User.hasMany(Note)`. `Progress` is unique on `(userId, lessonId)`, not `lessonId` alone —
-  it used to be global/single-user; see auth below for when that changed.
+  it used to be global/single-user; see auth below for when that changed. None of the models
+  declare typed association properties (no `NonAttribute<...>` fields) — accessing e.g.
+  `user.role` after an `include` works at runtime but isn't typechecked; this is a
+  pre-existing gap across every model, not specific to one.
 
-**RAG chat flow** (the core feature): `src/services/embeddings.ts` chunks lesson content
-on paragraph boundaries, embeds it via `OpenAIEmbeddings` pointed at OpenRouter, and writes
-rows to `lesson_embeddings` with raw SQL (`::vector` cast — again, no Sequelize pgvector
-type). `src/services/chat.ts` embeds the question, does a cosine-distance similarity search
-(raw SQL, `<=>` operator) via `searchSimilarChunks`, then asks `ChatOpenAI` to answer
-grounded only in the retrieved chunks, citing lesson titles. Two entry points mirror each
-other: `askQuestion()` (single JSON response) and `streamAnswer()` (async generator of
-token/done events). `src/routes/chat.ts` exposes both through one endpoint
-(`POST /api/chat/ask`, `stream: true` switches to SSE) — note it listens on `res.on("close")`
-rather than `req.on("close")` to detect client disconnects correctly.
+**RAG chat flow** (the core feature): `src/services/embedding.service.ts` chunks lesson
+content on paragraph boundaries, embeds it via `OpenAIEmbeddings` pointed at OpenRouter, and
+(through `src/repositories/lessonEmbedding.repository.ts`) writes rows to `lesson_embeddings`
+with raw SQL (`::vector` cast — again, no Sequelize pgvector type). `src/services/chat.service.ts`
+embeds the question, does a cosine-distance similarity search (raw SQL, `<=>` operator, via
+the same repository's `findSimilarChunks`), then asks `ChatOpenAI` to answer grounded only in
+the retrieved chunks, citing lesson titles. Two entry points mirror each other:
+`askQuestion()` (single JSON response) and `streamAnswer()` (async generator of token/done
+events), each wrapped by a same-named usecase. `src/controllers/chat.controller.ts` exposes
+both through one endpoint (`POST /api/chat/ask`, `stream: true` switches to SSE) — note it
+listens on `res.on("close")` rather than `req.on("close")` to detect client disconnects
+correctly.
 
-**Auth**: `src/utils/auth.ts` — `Bun.password.hash`/`verify` (argon2id, no bcrypt dependency)
-for passwords, and a minimal HMAC-SHA256 signed session token (not a full JWT — no external
-JWT library) via `signToken`/`verifyToken`. `SESSION_SECRET` is required at startup; the
-process throws immediately if it's unset, rather than signing with a guessable default.
-`requireAuth`/`optionalAuth` Express middleware populate `req.user` (`{ id, name, email,
-role }`); routes needing an account (`/api/lessons/:id/complete`, `/api/progress`,
-`/api/notes`) use `requireAuth` and scope their queries by `req.user!.id`. `src/routes/auth.ts`
-exposes `POST /api/auth/signup` (always assigns the `USER` role — `SYSTEM_ADMIN` is granted
-out of band, directly in the DB, never through this endpoint), `POST /api/auth/login`, and
-`GET /api/auth/me`.
+**Auth**: `src/services/auth.service.ts` — `Bun.password.hash`/`verify` (argon2id, no bcrypt
+dependency) for passwords, and a minimal HMAC-SHA256 signed session token (not a full JWT —
+no external JWT library) via `signToken`/`verifyToken`. `SESSION_SECRET` is required at
+startup; the process throws immediately if it's unset, rather than signing with a guessable
+default. `src/middlewares/auth.middleware.ts`'s `requireAuth`/`optionalAuth` populate
+`req.user` (`{ id, name, email, role }`); routes needing an account
+(`/api/lessons/:id/complete`, `/api/progress`, `/api/notes`) use `requireAuth` and scope
+their queries by `req.user!.id`. `src/usecases/auth/{signup,login}.usecase.ts` hold the
+signup/login business rules (always assigns the `USER` role on signup — `SYSTEM_ADMIN` is
+granted out of band, directly in the DB, never through this public endpoint; same error for
+"no such user" and "wrong password" on login, to avoid an account-enumeration oracle).
+`GET /api/auth/me` just echoes `req.user` — no usecase needed for that one.
 
-**Search** is two independent systems, not one: `/api/search` is Postgres full-text search
-(`to_tsvector`/`ts_rank`) for the Cmd+K "jump to this lesson" spotlight; the pgvector search
-above is only for chat retrieval grounding.
+**Search** is two independent systems, not one: `/api/search`
+(`src/repositories/search.repository.ts`) is Postgres full-text search (`to_tsvector`/
+`ts_rank`) for the Cmd+K "jump to this lesson" spotlight; the pgvector search above is only
+for chat retrieval grounding.
 
 **Errors**: `AppError` and its subclasses (`src/utils/errors.ts`) carry an intended HTTP
 status + safe-to-expose message. The catch-all error middleware in `index.ts` must stay
 registered last and keep its 4-arg signature (`(err, req, res, next)`) — that arity is what
-Express uses to recognize an error handler. Some routes (`notes.ts`, `progress.ts`,
-`search.ts`) still write `res.status(...).json(...)` directly for validation errors instead
-of throwing/`next()`-ing an `AppError` — match whichever pattern the file you're editing
-already uses.
+Express uses to recognize an error handler. Controllers `next(err)` on failure (either an
+error thrown by a usecase, or a locally-constructed `BadRequestError` for malformed input);
+usecases and services throw rather than touching `res` directly.
 
 **Config**: `src/config/constants.ts` centralizes the OpenRouter base URL and model names
 (embedding + chat) both `src/services/*` use; `OPENAI_API_KEY` is the env var name despite
