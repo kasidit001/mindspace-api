@@ -2,6 +2,13 @@ import { DataTypes, Model, type CreationOptional, type ForeignKey, type InferAtt
 import sequelize from "../config/database";
 import { Course } from "./Course";
 
+// Every lesson today is rendered the same way (Markdown via app/components/mdc/*
+// in mindspace-web) — 'video'/'advlab'/'ctf' are real values the column (and a DB
+// CHECK constraint, see the migration) already supports, but nothing sets them
+// yet since those reader experiences don't exist. Keep in sync with the CHECK
+// constraint in 20260920030000-add-content-type-to-lessons.cjs.
+export type LessonContentType = "article" | "video" | "advlab" | "ctf";
+
 export class Lesson extends Model<InferAttributes<Lesson>, InferCreationAttributes<Lesson>> {
   declare id: CreationOptional<string>;
   declare courseId: ForeignKey<Course["id"]>;
@@ -14,6 +21,7 @@ export class Lesson extends Model<InferAttributes<Lesson>, InferCreationAttribut
   declare slug: string;
   declare contentEn: string;
   declare contentTh: string | null;
+  declare contentType: CreationOptional<LessonContentType>;
   declare order: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -54,6 +62,12 @@ Lesson.init(
       type: DataTypes.TEXT,
       allowNull: true,
       field: "content_th",
+    },
+    contentType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "article",
+      field: "content_type",
     },
     order: {
       type: DataTypes.INTEGER,

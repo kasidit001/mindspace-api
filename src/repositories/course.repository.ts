@@ -35,7 +35,7 @@ export async function findFeaturedWithLessonCounts(): Promise<FeaturedCourseRow[
 export function findAllWithLessons() {
   return Course.findAll({
     include: [
-      { model: Lesson, as: "lessons", attributes: ["id", "titleEn", "titleTh", "slug", "order"] },
+      { model: Lesson, as: "lessons", attributes: ["id", "titleEn", "titleTh", "slug", "order", "contentType"] },
     ],
     order: [["createdAt", "ASC"]],
   });

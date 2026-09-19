@@ -1,3 +1,5 @@
+import type { LessonContentType } from "../models/Lesson";
+
 export interface DashboardStats {
   totalLessons: number;
   completedLessons: number;
@@ -13,6 +15,9 @@ export interface DashboardCourseRow {
   completedLessons: number;
   progressPercent: number;
   nextLessonId: string | null;
+  /** The next lesson's real content_type column (see Lesson model) — 'article' for
+   * every lesson today, since video/lab reader experiences don't exist yet. */
+  nextLessonContentType: LessonContentType | null;
   lastAccessedAt: Date | null;
 }
 

@@ -15,7 +15,7 @@ import type {
 // aren't part of the models' own declared attributes (see Course/Lesson/Progress.ts) —
 // narrowed to just the fields each repository query actually selects.
 type CourseWithLessons = Pick<Course, "id" | "title"> & {
-  lessons: Array<Pick<Lesson, "id" | "order">>;
+  lessons: Array<Pick<Lesson, "id" | "order" | "contentType">>;
 };
 type ProgressWithLessonId = Pick<Progress, "lessonId" | "completedAt">;
 
@@ -147,6 +147,7 @@ export async function getDashboard(userId: string): Promise<DashboardResponse> {
       completedLessons: completedLessons.length,
       progressPercent: percent(completedLessons.length, lessons.length),
       nextLessonId: nextLesson?.id ?? null,
+      nextLessonContentType: nextLesson?.contentType ?? null,
       lastAccessedAt,
     };
   });
