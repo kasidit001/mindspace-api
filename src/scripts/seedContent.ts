@@ -1251,4 +1251,331 @@ printName({ name: 'Alice', age: 25 }); // ✅ Valid
       },
     ],
   },
+  {
+    slug: "docker-for-beginners",
+    title: "Docker for Beginners",
+    descriptionEn:
+      "Package, run, and ship applications in containers — the fundamentals of Docker for developers who've never touched it before.",
+    lessons: [
+      {
+        slug: "what-is-docker",
+        titleEn: "What is Docker?",
+        order: 1,
+        contentEn: `Docker packages an application together with everything it needs to run — code, runtime, system libraries, and settings — into a single unit called a container. Containers solve the "it works on my machine" problem: the same container runs identically on your laptop, a teammate's laptop, and a production server, because it carries its own environment with it.
+
+Containers are often compared to virtual machines, but they're much lighter. A VM virtualizes an entire operating system, including its own kernel, which takes gigabytes of disk space and tens of seconds (or minutes) to boot. A container shares the host machine's kernel and only isolates the application's processes and filesystem, so it starts in milliseconds and takes megabytes, not gigabytes.
+
+An image is the blueprint — a read-only template describing what should be inside the container (an OS base, your application code, its dependencies). A container is a running instance of an image, the same way an object is an instance of a class. You can start many containers from the same image, each isolated from the others.
+
+Docker Hub is a public registry of pre-built images — official images exist for almost every language runtime, database, and tool (\`node\`, \`postgres\`, \`python\`, \`nginx\`), so you rarely build an image entirely from scratch.`,
+      },
+      {
+        slug: "your-first-dockerfile",
+        titleEn: "Your First Dockerfile",
+        order: 2,
+        contentEn: `A Dockerfile is a plain-text recipe for building an image — a sequence of instructions Docker executes in order, each one producing a new layer on top of the last.
+
+\`\`\`dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json bun.lock ./
+RUN npm install
+COPY . .
+CMD ["node", "index.js"]
+\`\`\`
+
+\`FROM\` picks a base image to build on top of — here, a minimal ("alpine") Node.js 20 image. \`WORKDIR\` sets the working directory inside the container for every instruction after it. \`COPY\` copies files from your machine into the image; copying just the dependency manifests before the rest of the source lets Docker cache the (usually slow) install step — it only reruns if those files change. \`RUN\` executes a command at build time. \`CMD\` specifies the command that runs when a container starts from this image — unlike \`RUN\`, it doesn't execute during the build.
+
+Build the image with \`docker build -t my-app .\` — \`-t\` tags it with a name, and \`.\` tells Docker to look for the Dockerfile (and use everything in) the current directory.`,
+      },
+      {
+        slug: "running-containers",
+        titleEn: "Running and Managing Containers",
+        order: 3,
+        contentEn: `\`docker run my-app\` starts a container from an image. A few flags come up constantly: \`-p 8080:80\` maps port 80 inside the container to port 8080 on your machine (host:container), \`-d\` runs the container in the background ("detached") instead of blocking your terminal, \`-e KEY=value\` sets an environment variable, and \`--name\` gives the container a memorable name instead of a random one.
+
+\`docker ps\` lists running containers; add \`-a\` to see stopped ones too. \`docker logs <name>\` prints a container's stdout/stderr — the first place to look when something isn't working. \`docker exec -it <name> sh\` opens an interactive shell inside a running container, useful for poking around or debugging. \`docker stop <name>\` stops a container gracefully; \`docker rm <name>\` removes a stopped container entirely.
+
+Containers are meant to be disposable: instead of patching a running container, you rebuild the image and start a fresh container from it. Anything written to a container's own filesystem disappears when the container is removed — durable data belongs in a *volume*, a directory Docker manages outside any single container's lifecycle.`,
+      },
+      {
+        slug: "docker-compose-basics",
+        titleEn: "Docker Compose Basics",
+        order: 4,
+        contentEn: `Real applications are rarely a single container — a typical web app needs the app server, a database, and maybe a cache, all running together. Docker Compose describes that whole stack in one YAML file and starts it with one command.
+
+\`\`\`yaml
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://db:5432/app
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
+\`\`\`
+
+Each top-level entry under \`services\` is a container Compose manages. \`web\` builds an image from the Dockerfile in the current directory; \`db\` instead pulls a ready-made Postgres image. Containers in the same Compose file can reach each other by service name — \`web\` connects to \`db\` at the hostname \`db\`, not \`localhost\`, because Compose puts them on a shared internal network. \`depends_on\` controls start order. The named \`volumes\` block persists the database's data directory across container restarts and rebuilds.
+
+\`docker compose up\` builds (if needed) and starts every service; add \`-d\` to run in the background. \`docker compose down\` stops and removes them. This one file is usually enough to describe an entire local development environment.`,
+      },
+    ],
+  },
+  {
+    slug: "react-ui-patterns",
+    title: "React UI Patterns",
+    descriptionEn: "Practical patterns for building React interfaces — composition, state, and reusable hooks.",
+    lessons: [
+      {
+        slug: "component-composition",
+        titleEn: "Component Composition and Props",
+        order: 1,
+        contentEn: `React interfaces are built by composing components — small, focused functions that return JSX (a syntax that looks like HTML but compiles to plain JavaScript function calls). A component receives inputs called *props* and returns what should appear on screen; the same component can be reused anywhere by passing it different props.
+
+\`\`\`jsx
+function Avatar({ src, name }) {
+  return <img className="avatar" src={src} alt={name} />
+}
+
+function UserCard({ user }) {
+  return (
+    <div className="card">
+      <Avatar src={user.avatarUrl} name={user.name} />
+      <h3>{user.name}</h3>
+    </div>
+  )
+}
+\`\`\`
+
+\`UserCard\` doesn't know or care how \`Avatar\` renders internally — it just passes props down. This is *composition*: building complex UI out of small, independently testable pieces, rather than one large component that does everything.
+
+The \`children\` prop is special — it's whatever's nested between a component's opening and closing tags in JSX (\`<Card>...</Card>\`), letting a component wrap arbitrary content it doesn't need to know about in advance. This is how generic layout components (\`Modal\`, \`Card\`, \`Panel\`) stay reusable across very different content.
+
+Props flow one direction: parent to child. A child component can't modify the props it receives — if a user action needs to change something the parent owns, the parent passes the child a function (also just a prop) that the child calls.`,
+      },
+      {
+        slug: "state-with-hooks",
+        titleEn: "Managing State with useState and useReducer",
+        order: 2,
+        contentEn: `\`useState\` is the basic way a component remembers something between renders — a value that, when changed, causes React to re-render the component with the new value.
+
+\`\`\`jsx
+function Counter() {
+  const [count, setCount] = useState(0)
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Clicked {count} times
+    </button>
+  )
+}
+\`\`\`
+
+Calling \`setCount\` doesn't mutate \`count\` in place — it schedules a re-render where \`count\` will hold the new value. State updates based on the previous value should use the function form, \`setCount(c => c + 1)\`, to avoid bugs when multiple updates happen close together.
+
+\`useState\` works well for independent pieces of state, but once several pieces of state change together in response to the same actions, \`useReducer\` is usually clearer. It centralizes "what changes, and how" into one function (the *reducer*) that takes the current state and an *action*, and returns the next state:
+
+\`\`\`jsx
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment': return { count: state.count + 1 }
+    case 'reset': return { count: 0 }
+    default: return state
+  }
+}
+
+const [state, dispatch] = useReducer(reducer, { count: 0 })
+// dispatch({ type: 'increment' })
+\`\`\`
+
+Component code calls \`dispatch\` with a plain description of *what happened* (an action); the reducer alone decides *what changes as a result* — which keeps update logic in one place instead of scattered across event handlers.`,
+      },
+      {
+        slug: "effects-and-data-fetching",
+        titleEn: "Effects and Data Fetching with useEffect",
+        order: 3,
+        contentEn: `Rendering a component should be a pure calculation from its props and state — no side effects like network requests, subscriptions, or manually touching the DOM. \`useEffect\` is the escape hatch for exactly that: code that needs to run *after* React has rendered, as a reaction to something changing.
+
+\`\`\`jsx
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(\`/api/users/\${userId}\`)
+      .then(res => res.json())
+      .then(data => { if (!cancelled) setUser(data) })
+    return () => { cancelled = true }
+  }, [userId])
+
+  if (!user) return <p>Loading…</p>
+  return <h1>{user.name}</h1>
+}
+\`\`\`
+
+The second argument — the *dependency array* — tells React when to re-run the effect: only when one of the listed values (\`userId\`) changes since the last render. An empty array (\`[]\`) means "run once, after the first render." Omitting the array entirely re-runs the effect after every render, which is rarely what you want.
+
+The function an effect returns is its *cleanup* — React calls it before running the effect again, and when the component unmounts. The \`cancelled\` flag above prevents a slow, stale request from overwriting state with old data if \`userId\` changes again before the first request finishes — a common and easy-to-miss data-fetching bug.
+
+For anything beyond the simplest fetches, a dedicated data-fetching library (React Query, SWR) handles caching, retries, and race conditions like this one for you — but understanding what \`useEffect\` is doing underneath is what makes those libraries' behavior make sense.`,
+      },
+      {
+        slug: "custom-hooks",
+        titleEn: "Building Reusable Custom Hooks",
+        order: 4,
+        contentEn: `A custom hook is just a regular JavaScript function whose name starts with \`use\` and that calls other hooks inside it. It's the standard way to extract stateful logic out of a component so it can be reused in another one — the *logic* is shared, not the UI.
+
+\`\`\`jsx
+function useToggle(initial = false) {
+  const [value, setValue] = useState(initial)
+  const toggle = useCallback(() => setValue(v => !v), [])
+  return [value, toggle]
+}
+
+function Accordion() {
+  const [open, toggleOpen] = useToggle()
+  return (
+    <div>
+      <button onClick={toggleOpen}>{open ? 'Hide' : 'Show'}</button>
+      {open && <p>Details…</p>}
+    </div>
+  )
+}
+\`\`\`
+
+Every component that calls \`useToggle\` gets its own independent \`value\`/\`setValue\` pair — a custom hook doesn't share state between the components that use it, it shares the *pattern* for creating that state.
+
+\`useCallback\` above memoizes the \`toggle\` function so it isn't recreated on every render; this matters mainly when the function is passed down to a child wrapped in \`React.memo\`, where a new function reference on every render would defeat the memoization. It's an optimization, not something every function needs.
+
+The naming convention (\`useSomething\`) isn't just style — React's linter rules use it to enforce the *Rules of Hooks* (only call hooks at the top level, only from React functions or other hooks), which is what makes hooks reliably preserve state across renders in the first place.`,
+      },
+    ],
+  },
+  {
+    slug: "go-microservices",
+    title: "Go Microservices",
+    descriptionEn:
+      "Build and structure HTTP-based microservices in Go, from language fundamentals to service-to-service communication.",
+    lessons: [
+      {
+        slug: "go-fundamentals-for-services",
+        titleEn: "Go Fundamentals for Service Development",
+        order: 1,
+        contentEn: `Go compiles to a single static binary with no runtime dependency to install on the server — the same trait that makes it a natural fit for small, deployable microservices. A Go program starts in \`func main()\` inside \`package main\`; every other file in the project belongs to a named package that other files import by path.
+
+\`\`\`go
+package main
+
+import "fmt"
+
+func add(a int, b int) int {
+    return a + b
+}
+
+func main() {
+    result := add(2, 3)
+    fmt.Println(result) // 5
+}
+\`\`\`
+
+Go is statically typed, but \`:=\` lets you declare a variable and let the compiler infer its type from the value on the right, which is idiomatic for local variables. Functions can return multiple values — the standard library's own error handling relies on this: a call that might fail conventionally returns \`(result, error)\`, and callers check the error explicitly instead of relying on exceptions:
+
+\`\`\`go
+value, err := strconv.Atoi("42")
+if err != nil {
+    // handle it here, not several stack frames away
+}
+\`\`\`
+
+Goroutines (\`go someFunc()\`) are Go's lightweight concurrency primitive — the runtime multiplexes many goroutines onto a small number of OS threads, so spawning thousands of them (one per incoming request, for example) is cheap. Channels (\`chan int\`) are typed pipes goroutines use to send values to each other safely, without manual locks.`,
+      },
+      {
+        slug: "http-service-with-net-http",
+        titleEn: "Building an HTTP Service with net/http",
+        order: 2,
+        contentEn: `Go's standard library includes a production-capable HTTP server — \`net/http\` — so a real service doesn't need a framework to get started.
+
+\`\`\`go
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+)
+
+type HealthResponse struct {
+    Status string \`json:"status"\`
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(HealthResponse{Status: "ok"})
+}
+
+func main() {
+    http.HandleFunc("/health", healthHandler)
+    http.ListenAndServe(":8080", nil)
+}
+\`\`\`
+
+A *handler* is any function matching \`func(http.ResponseWriter, *http.Request)\` — \`http.HandleFunc\` registers one against a path. \`http.ResponseWriter\` is what you write the response to (headers, status code, body); \`*http.Request\` carries everything about the incoming request (method, URL, headers, body).
+
+The backtick-quoted text after each struct field — \`json:"status"\` — is a *struct tag*. \`encoding/json\` reads it via reflection to decide what key to use when marshalling that field to JSON, letting a Go-idiomatic \`PascalCase\` field name (\`Status\`) serialize as a JSON-idiomatic \`camelCase\` or \`snake_case\` key.
+
+\`http.ListenAndServe\` blocks forever, accepting connections and dispatching them to the registered handlers — the entire lifetime of a simple service is often just those two lines at the bottom of \`main\`.`,
+      },
+      {
+        slug: "structuring-a-microservice",
+        titleEn: "Structuring a Microservice",
+        order: 3,
+        contentEn: `A single \`main.go\` works for a demo, but a real service benefits from splitting responsibilities into packages the same way you'd split responsibilities into modules in any other language. A common layout:
+
+\`\`\`
+cmd/api/main.go       – wires everything together, starts the server
+internal/handler/     – HTTP handlers: parse the request, call a service, write the response
+internal/service/     – business logic, independent of HTTP
+internal/repository/  – database access
+internal/config/      – loading configuration from env vars
+\`\`\`
+
+The \`internal/\` directory is special to the Go compiler: packages under it can only be imported by code inside the same module, which is Go's way of marking "not a public API" without a separate access-control keyword.
+
+Handlers should stay thin — parse the request, call into a service function, translate the result (or error) into an HTTP response — the same layered idea shows up across most backend stacks, including this project's own mindspace-api (Route → Controller → UseCase → Service → Repository). Keeping business logic out of the handler means it can be tested directly, as plain Go functions, without spinning up an HTTP server.
+
+Configuration (database URLs, ports, feature flags) is conventionally read from environment variables at startup — \`os.Getenv("DATABASE_URL")\` — rather than hardcoded, so the same compiled binary runs unchanged across local, staging, and production.`,
+      },
+      {
+        slug: "service-to-service-communication",
+        titleEn: "Service-to-Service Communication",
+        order: 4,
+        contentEn: `Once an application is split into multiple services, they need a way to talk to each other. The simplest and most common approach is plain HTTP with JSON — one service is a client of another's REST API, using nothing more exotic than Go's standard \`net/http\` client:
+
+\`\`\`go
+resp, err := http.Get("http://users-service:8080/users/42")
+if err != nil {
+    // network error — the other service may be down
+}
+defer resp.Body.Close()
+
+var user User
+json.NewDecoder(resp.Body).Decode(&user)
+\`\`\`
+
+Every network call can fail in ways a local function call can't — the other service could be slow, unreachable, or returning an error status — so production code sets an explicit timeout (\`http.Client{Timeout: 2 * time.Second}\`) rather than trusting the default, and checks \`resp.StatusCode\` before assuming the body is a valid success response.
+
+For higher-throughput or lower-latency internal communication, gRPC is a common alternative to REST/JSON: it defines a service's methods and message shapes in a \`.proto\` file, generates strongly-typed Go client and server code from it, and sends binary-encoded messages over HTTP/2 — trading REST's human-readability for a smaller wire format and compiler-checked contracts between services.
+
+Whichever protocol is used, the calling service should treat the network itself as unreliable: retries with backoff, timeouts, and fallback behavior are what keep one slow dependency from cascading into an outage across the whole system.`,
+      },
+    ],
+  },
 ];
