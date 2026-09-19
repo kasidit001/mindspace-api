@@ -76,16 +76,17 @@ function getCourseTech(title: string): TechId {
   return "ts";
 }
 
-/** Not-started courses lead (this already excludes anything the user has
- * completed even one lesson of — "already taking" — since those aren't in
- * `notStarted` at all), then in-progress ones. Within the not-started pool,
- * picks across distinct detected techs before repeating one, so three
- * TypeScript courses being not-started doesn't crowd out Docker/React/Go —
- * no fabricated personalization signal, just real course data reordered
- * for breadth. */
+/** Only not-started courses are ever recommended — anything the user has completed
+ * even one lesson of (in-progress OR fully completed) is "already taking"/"already
+ * taken" and belongs in `courses`/the Continue Learning surface, never here. Picks
+ * across distinct detected techs before repeating one, so three not-started
+ * TypeScript courses don't crowd out Docker/React/Go in the slice below — no
+ * fabricated personalization signal, just real course data reordered for breadth.
+ * If there are fewer than MAX_RECOMMENDATIONS not-started courses left, this simply
+ * returns fewer — it must never backfill with an active/completed course, since
+ * that's exactly what caused a course to show in both Continue Learning and here. */
 function buildRecommendations(courses: DashboardCourseRow[]): DashboardRecommendation[] {
   const notStarted = courses.filter((c) => c.totalLessons > 0 && c.completedLessons === 0);
-  const inProgress = courses.filter((c) => c.completedLessons > 0 && c.completedLessons < c.totalLessons);
 
   const seenTech = new Set<TechId>();
   const firstOfEachTech: DashboardCourseRow[] = [];
@@ -101,10 +102,9 @@ function buildRecommendations(courses: DashboardCourseRow[]): DashboardRecommend
   }
   const diversifiedNotStarted = [...firstOfEachTech, ...remainder];
 
-  return [
-    ...diversifiedNotStarted.map((c) => ({ courseId: c.id, reason: "Not started yet" })),
-    ...inProgress.map((c) => ({ courseId: c.id, reason: "Continue where you left off" })),
-  ].slice(0, MAX_RECOMMENDATIONS);
+  return diversifiedNotStarted
+    .map((c) => ({ courseId: c.id, reason: "Not started yet" }))
+    .slice(0, MAX_RECOMMENDATIONS);
 }
 
 // Badge catalog, ordered easiest-to-hardest. There's no exams/quiz concept (or any
