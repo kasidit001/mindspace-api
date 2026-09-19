@@ -52,14 +52,57 @@ function percent(completed: number, total: number): number {
   return total === 0 ? 0 : Math.round((completed / total) * 100);
 }
 
-/** Not-started courses first (clearest gap), then in-progress ones — no fabricated
- * personalization signal, just what's honestly derivable from real progress data. */
+// Real, disclosed title-keyword heuristic — same idea as courseLevel.ts on the
+// frontend, and kept in sync with mindspace-web's ~/utils/courseTech.ts
+// getCourseTech so a course's detected "tech" here matches the logo the
+// frontend actually renders for it.
+type TechId = "ts" | "js" | "python" | "node" | "go" | "docker" | "react" | "vue";
+
+const TECH_HINTS: Array<{ id: TechId; pattern: RegExp }> = [
+  { id: "ts", pattern: /\btypescript\b/i },
+  { id: "js", pattern: /\bjavascript\b/i },
+  { id: "python", pattern: /\bpython\b/i },
+  { id: "go", pattern: /\bgo(lang)?\b/i },
+  { id: "docker", pattern: /\bdocker\b/i },
+  { id: "react", pattern: /\breact\b/i },
+  { id: "vue", pattern: /\b(vue|nuxt)\b/i },
+  { id: "node", pattern: /\bnode(\.js)?\b/i },
+];
+
+function getCourseTech(title: string): TechId {
+  for (const hint of TECH_HINTS) {
+    if (hint.pattern.test(title)) return hint.id;
+  }
+  return "ts";
+}
+
+/** Not-started courses lead (this already excludes anything the user has
+ * completed even one lesson of — "already taking" — since those aren't in
+ * `notStarted` at all), then in-progress ones. Within the not-started pool,
+ * picks across distinct detected techs before repeating one, so three
+ * TypeScript courses being not-started doesn't crowd out Docker/React/Go —
+ * no fabricated personalization signal, just real course data reordered
+ * for breadth. */
 function buildRecommendations(courses: DashboardCourseRow[]): DashboardRecommendation[] {
   const notStarted = courses.filter((c) => c.totalLessons > 0 && c.completedLessons === 0);
   const inProgress = courses.filter((c) => c.completedLessons > 0 && c.completedLessons < c.totalLessons);
 
+  const seenTech = new Set<TechId>();
+  const firstOfEachTech: DashboardCourseRow[] = [];
+  const remainder: DashboardCourseRow[] = [];
+  for (const course of notStarted) {
+    const tech = getCourseTech(course.title);
+    if (seenTech.has(tech)) {
+      remainder.push(course);
+    } else {
+      seenTech.add(tech);
+      firstOfEachTech.push(course);
+    }
+  }
+  const diversifiedNotStarted = [...firstOfEachTech, ...remainder];
+
   return [
-    ...notStarted.map((c) => ({ courseId: c.id, reason: "Not started yet" })),
+    ...diversifiedNotStarted.map((c) => ({ courseId: c.id, reason: "Not started yet" })),
     ...inProgress.map((c) => ({ courseId: c.id, reason: "Continue where you left off" })),
   ].slice(0, MAX_RECOMMENDATIONS);
 }
