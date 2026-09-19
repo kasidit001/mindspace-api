@@ -1,7 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { askQuestion as askQuestionUseCase } from "../usecases/chat/askQuestion.usecase";
 import { streamAnswer as streamAnswerUseCase } from "../usecases/chat/streamAnswer.usecase";
-import { BadGatewayError, BadRequestError } from "../utils/errors";
+import { BadGatewayError } from "../utils/errors";
+import { askQuestionSchema } from "../schemas/chat.schema";
+import { parse } from "../schemas/validate";
 
 // POST /api/chat/ask  { question: string, stream?: boolean }
 // stream: true switches the response to Server-Sent Events (text/event-stream),
@@ -9,20 +11,21 @@ import { BadGatewayError, BadRequestError } from "../utils/errors";
 // the references -- same convention as OpenAI/OpenRouter's own `stream` flag.
 // Default (stream omitted/false) keeps the original single-JSON-response shape.
 export async function ask(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { question, stream } = req.body ?? {};
-
-  if (typeof question !== "string" || !question.trim()) {
-    next(new BadRequestError("Body must include a non-empty 'question' string"));
+  let input: ReturnType<typeof askQuestionSchema.parse>;
+  try {
+    input = parse(askQuestionSchema, req.body ?? {});
+  } catch (err) {
+    next(err);
     return;
   }
 
-  if (stream === true) {
-    await handleStreamingAsk(question.trim(), res);
+  if (input.stream === true) {
+    await handleStreamingAsk(input.question, res);
     return;
   }
 
   try {
-    const result = await askQuestionUseCase(question.trim());
+    const result = await askQuestionUseCase(input.question);
     res.json(result);
   } catch (err) {
     console.error("[chat] askQuestion failed:", err);

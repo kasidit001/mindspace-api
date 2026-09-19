@@ -31,10 +31,17 @@ Model → Database`, strictly in that order — a layer only calls the one direc
 - `src/routes/*.ts` — thin. Just `Router()` + wiring a path/method (and `requireAuth` where
   needed) to a controller function. No request parsing, no business logic here.
 - `src/controllers/*.controller.ts` — the HTTP boundary. Parses `req.body`/`params`/`query`,
-  validates the *shape* of the input (missing/wrong-typed fields -> `BadRequestError`), calls
+  Zod-validates it against the matching schema in `src/schemas/` via `parse()`
+  (missing/wrong-typed fields -> `BadRequestError` with the first Zod issue's message), calls
   exactly one usecase, and shapes the response (`res.json`/status codes/SSE plumbing for
   chat). Business-rule validation (does this resource exist, is this email taken) does NOT
   belong here — that's the usecase's job.
+- `src/schemas/*.schema.ts` — one Zod schema per validated endpoint input (`auth`, `notes`,
+  `chat`, `search`; courses/progress/stats have no request body to validate). `validate.ts`'s
+  `parse(schema, data)` is the only way a controller should invoke one — it throws
+  `BadRequestError(issues[0].message)` on failure, so callers just wrap it in the controller's
+  existing try/catch. Custom `error`/`.min(msg, ...)` messages on every field exist to
+  preserve exact, stable API error text — don't let Zod's default messages leak through.
 - `src/usecases/<domain>/*.usecase.ts` — orchestration and business rules (e.g. "USER role
   must exist", "email must be unique", "lesson must exist before completing it"). Calls one
   or more services, never a repository or model directly.
