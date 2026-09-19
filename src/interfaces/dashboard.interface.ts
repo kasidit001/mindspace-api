@@ -21,8 +21,23 @@ export interface DashboardRecommendation {
   reason: string;
 }
 
+export interface DashboardBadge {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface DashboardNextBadge extends DashboardBadge {
+  /** Real, computed from how far the user actually is from the threshold — never a fabricated tip. */
+  hint: string;
+}
+
 export interface DashboardResponse {
   stats: DashboardStats;
   courses: DashboardCourseRow[];
   recommended: DashboardRecommendation[];
+  /** The highest-tier badge earned so far (a proxy for "most recent" — there's no
+   * per-badge earned-at timestamp to sort by, just the real underlying stats). */
+  recentBadge: DashboardBadge | null;
+  nextBadge: DashboardNextBadge | null;
 }

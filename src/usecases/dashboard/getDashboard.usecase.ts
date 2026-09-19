@@ -3,7 +3,13 @@ import * as progressService from "../../services/progress.service";
 import type { Course } from "../../models/Course";
 import type { Lesson } from "../../models/Lesson";
 import type { Progress } from "../../models/Progress";
-import type { DashboardCourseRow, DashboardRecommendation, DashboardResponse } from "../../interfaces/dashboard.interface";
+import type {
+  DashboardBadge,
+  DashboardCourseRow,
+  DashboardNextBadge,
+  DashboardRecommendation,
+  DashboardResponse,
+} from "../../interfaces/dashboard.interface";
 
 // findAllWithLessons()/findAllByUser() attach these via Sequelize associations, which
 // aren't part of the models' own declared attributes (see Course/Lesson/Progress.ts) —
@@ -58,6 +64,62 @@ function buildRecommendations(courses: DashboardCourseRow[]): DashboardRecommend
   ].slice(0, MAX_RECOMMENDATIONS);
 }
 
+// Badge catalog, ordered easiest-to-hardest. There's no exams/quiz concept (or any
+// dedicated badges/achievements table) anywhere in this API yet — rather than
+// fabricate one, every badge is a threshold on stats we already compute for real
+// from Progress rows, so nothing here can drift from what the learner actually did.
+// Keep this catalog in sync with mindspace-web's app/utils/badges.ts, which mirrors
+// it client-side until the frontend consumes this endpoint directly (Phase B).
+type BadgeMetric = "lessonsCompleted" | "streakDays" | "coursesCompleted";
+
+interface BadgeDefinition {
+  id: string;
+  title: string;
+  description: string;
+  metric: BadgeMetric;
+  threshold: number;
+}
+
+const BADGE_CATALOG: BadgeDefinition[] = [
+  { id: "first-lesson", title: "First Lesson", description: "Complete your first lesson", metric: "lessonsCompleted", threshold: 1 },
+  { id: "getting-started", title: "Getting Started", description: "Complete 5 lessons", metric: "lessonsCompleted", threshold: 5 },
+  { id: "three-day-streak", title: "3-Day Streak", description: "Study 3 days in a row", metric: "streakDays", threshold: 3 },
+  { id: "dedicated-learner", title: "Dedicated Learner", description: "Complete 10 lessons", metric: "lessonsCompleted", threshold: 10 },
+  { id: "course-champion", title: "Course Champion", description: "Finish a full course", metric: "coursesCompleted", threshold: 1 },
+  { id: "week-streak", title: "Week-Long Streak", description: "Study 7 days in a row", metric: "streakDays", threshold: 7 },
+];
+
+interface BadgeContext {
+  lessonsCompleted: number;
+  streakDays: number;
+  coursesCompleted: number;
+}
+
+function buildBadgeHint(def: BadgeDefinition, current: number): string {
+  if (def.metric === "streakDays") return `Reach a ${def.threshold}-day streak to unlock`;
+  const remaining = Math.max(def.threshold - current, 1);
+  const noun = def.metric === "coursesCompleted" ? "course" : "lesson";
+  return `Complete ${remaining} more ${noun}${remaining === 1 ? "" : "s"} to unlock`;
+}
+
+/** The highest-tier badge the user has earned (recentBadge — see the interface
+ * comment) and the very next one they haven't, with a real, computed hint. */
+function getBadges(ctx: BadgeContext): { recentBadge: DashboardBadge | null; nextBadge: DashboardNextBadge | null } {
+  let recentBadge: DashboardBadge | null = null;
+  let nextBadge: DashboardNextBadge | null = null;
+
+  for (const def of BADGE_CATALOG) {
+    const value = ctx[def.metric];
+    if (value >= def.threshold) {
+      recentBadge = { id: def.id, title: def.title, description: def.description };
+    } else if (!nextBadge) {
+      nextBadge = { id: def.id, title: def.title, description: def.description, hint: buildBadgeHint(def, value) };
+    }
+  }
+
+  return { recentBadge, nextBadge };
+}
+
 export async function getDashboard(userId: string): Promise<DashboardResponse> {
   const [courses, progress] = await Promise.all([
     courseService.listCourses() as unknown as Promise<CourseWithLessons[]>,
@@ -92,16 +154,22 @@ export async function getDashboard(userId: string): Promise<DashboardResponse> {
   const totalLessons = courseRows.reduce((sum, c) => sum + c.totalLessons, 0);
   const completedLessons = courseRows.reduce((sum, c) => sum + c.completedLessons, 0);
   const coursesInProgress = courseRows.filter((c) => c.completedLessons > 0 && c.completedLessons < c.totalLessons).length;
+  const coursesCompleted = courseRows.filter((c) => c.totalLessons > 0 && c.completedLessons === c.totalLessons).length;
+  const currentStreakDays = calculateStreak(progress.map((p) => p.completedAt));
+
+  const { recentBadge, nextBadge } = getBadges({ lessonsCompleted: completedLessons, streakDays: currentStreakDays, coursesCompleted });
 
   return {
     stats: {
       totalLessons,
       completedLessons,
       completionPercent: percent(completedLessons, totalLessons),
-      currentStreakDays: calculateStreak(progress.map((p) => p.completedAt)),
+      currentStreakDays,
       coursesInProgress,
     },
     courses: courseRows,
     recommended: buildRecommendations(courseRows),
+    recentBadge,
+    nextBadge,
   };
 }
