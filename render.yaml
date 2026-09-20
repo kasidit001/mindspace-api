@@ -1,0 +1,26 @@
+# Render Blueprint — New + > Blueprint, pick this repo/branch, and Render
+# creates the service below. Values marked `sync: false` are secrets: Render
+# prompts for them in the dashboard and they never live in git.
+services:
+  - type: web
+    name: mindspace-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    # Same region as the Neon project (AWS US East 2 / Ohio) to keep DB latency low.
+    region: ohio
+    branch: feature/dashboard-aggregation-endpoint
+    healthCheckPath: /health
+    envVars:
+      # Neon connection string — use the direct (non-pooled) one.
+      - key: DATABASE_URL
+        sync: false
+      # OpenRouter key: embeddings + POST /api/chat/ask.
+      - key: OPENAI_API_KEY
+        sync: false
+      # Render generates a fresh random value; never reuse the local one.
+      - key: SESSION_SECRET
+        generateValue: true
+      # The only browser origin CORS allows (read in index.ts).
+      - key: WEB_ORIGIN
+        value: https://mindspace-web-coral.vercel.app
