@@ -1,18 +1,50 @@
 import { Sequelize } from "sequelize";
 
-const {
-  DB_HOST = "localhost",
-  DB_PORT = "5434",
-  DB_NAME = "mindspace",
-  DB_USER = "mindspace",
-  DB_PASSWORD = "mindspace",
-} = process.env;
+const { DATABASE_URL, DB_SSL } = process.env;
 
-export const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-  host: DB_HOST,
-  port: Number(DB_PORT),
+interface DbConnection {
+  database: string;
+  username: string;
+  password: string;
+  host: string;
+  port: number;
+}
+
+// Managed Postgres hosts (Neon, Render, Supabase) hand out a single DATABASE_URL
+// rather than separate vars. Parsed by hand instead of passed to Sequelize as a
+// URI, because Sequelize forwards URL query params like `sslmode=require` as
+// unrecognized options that pg ignores — TLS would silently stay off.
+function fromUrl(rawUrl: string): DbConnection {
+  const url = new URL(rawUrl);
+  return {
+    database: url.pathname.replace(/^\//, ""),
+    username: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    host: url.hostname,
+    port: Number(url.port || 5432),
+  };
+}
+
+const connection: DbConnection = DATABASE_URL
+  ? fromUrl(DATABASE_URL)
+  : {
+      database: process.env.DB_NAME ?? "mindspace",
+      username: process.env.DB_USER ?? "mindspace",
+      password: process.env.DB_PASSWORD ?? "mindspace",
+      host: process.env.DB_HOST ?? "localhost",
+      port: Number(process.env.DB_PORT ?? "5434"),
+    };
+
+// TLS is on by default when connecting via DATABASE_URL (remote managed DB), off
+// for the local docker-compose Postgres, and either can be forced with DB_SSL.
+const useSsl = DB_SSL ? DB_SSL === "true" : Boolean(DATABASE_URL);
+
+export const sequelize = new Sequelize(connection.database, connection.username, connection.password, {
+  host: connection.host,
+  port: connection.port,
   dialect: "postgres",
   logging: false,
+  dialectOptions: useSsl ? { ssl: { require: true } } : {},
 });
 
 /**
