@@ -35,7 +35,20 @@ export async function findFeaturedWithLessonCounts(): Promise<FeaturedCourseRow[
 export function findAllWithLessons() {
   return Course.findAll({
     include: [
-      { model: Lesson, as: "lessons", attributes: ["id", "titleEn", "titleTh", "slug", "order", "contentType"] },
+      {
+        model: Lesson,
+        as: "lessons",
+        attributes: [
+          "id", "titleEn", "titleTh", "slug", "order", "contentType",
+          // Same 200wpm estimate the lesson page shows, so a course's total matches its lessons.
+          [
+            sequelize.literal(
+              `GREATEST(1, ROUND(cardinality(regexp_split_to_array(btrim("lessons"."content_en"), '\\s+')) / 200.0))::int`
+            ),
+            "readingMinutes",
+          ],
+        ],
+      },
     ],
     order: [["createdAt", "ASC"]],
   });
