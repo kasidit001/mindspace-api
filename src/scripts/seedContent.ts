@@ -23,10 +23,13 @@ export const seedCourses: SeedCourse[] = [
     slug: "typescript-for-js-programmers",
     title: "TypeScript for JS Programmers",
     descriptionEn: "A fast on-ramp to TypeScript for developers who already know JavaScript.",
-    lessons: [
+        descriptionTh:
+      "เส้นทางลัดสู่ TypeScript สำหรับนักพัฒนาที่รู้จัก JavaScript อยู่แล้ว",
+lessons: [
       {
         slug: "why-typescript",
         titleEn: "Why TypeScript",
+        titleTh: "ทำไมต้อง TypeScript",
         order: 1,
         contentEn: `TypeScript is a superset of JavaScript that adds a static type system. Every valid JavaScript program is (almost) valid TypeScript — you opt in to types incrementally rather than rewriting your codebase.
 
@@ -35,10 +38,18 @@ The core value is catching a class of bugs — wrong argument types, typos in pr
 TypeScript also powers editor tooling: autocomplete, inline documentation, "go to definition", and safe renames all rely on the type information TypeScript computes. This is often the biggest day-to-day win — better tooling, not just fewer bugs.
 
 Crucially, types are erased at compile time. TypeScript emits plain JavaScript with no runtime type-checking overhead — the type system is a development-time tool only.`,
+        contentTh: `TypeScript คือ superset ของ JavaScript ที่เพิ่มระบบชนิดข้อมูลแบบสถิต (static type system) เข้ามา โปรแกรม JavaScript ที่ถูกต้องแทบทุกตัวถือเป็น TypeScript ที่ถูกต้องด้วยเช่นกัน (เกือบทั้งหมด) — คุณสามารถค่อยๆ เพิ่ม type เข้าไปทีละส่วนได้ โดยไม่จำเป็นต้องเขียนโค้ดทั้งหมดใหม่
+
+คุณค่าหลักของมันคือการดักจับบั๊กบางประเภท เช่น argument ที่ชนิดข้อมูลผิด, การพิมพ์ชื่อ property ผิด, การเรียกฟังก์ชันด้วยจำนวน argument ที่ไม่ครบ, หรือการลืมจัดการกรณี null — ได้ตั้งแต่ตอน compile time แทนที่จะไปพังตอน runtime บน production จริง ตัวคอมไพเลอร์ของ TypeScript (tsc) จะอ่านโค้ดของคุณ, อนุมานหรือตรวจสอบชนิดข้อมูล, และรายงาน error ก่อนที่โค้ดจะถูกรันเสียอีก
+
+TypeScript ยังเป็นแรงขับเคลื่อนเบื้องหลังเครื่องมือใน editor ด้วย: autocomplete, เอกสารอธิบายแบบ inline, ฟีเจอร์ "go to definition" และการ rename แบบปลอดภัย ล้วนพึ่งพาข้อมูลชนิดข้อมูลที่ TypeScript คำนวณไว้ทั้งสิ้น นี่มักเป็นประโยชน์ที่ใหญ่ที่สุดในการใช้งานจริงแต่ละวัน — เครื่องมือที่ดีขึ้น ไม่ใช่แค่บั๊กที่น้อยลง
+
+ที่สำคัญคือ type ทั้งหมดจะถูกลบทิ้งตอน compile time เสมอ TypeScript จะสร้างเป็น JavaScript ธรรมดาออกมา โดยไม่มี overhead ในการตรวจสอบ type ตอน runtime เลย — ระบบชนิดข้อมูลนี้เป็นเครื่องมือสำหรับตอนพัฒนา (development-time) เท่านั้น`,
       },
       {
         slug: "basic-types",
         titleEn: "Basic Types",
+        titleTh: "ชนิดข้อมูลพื้นฐาน",
         order: 2,
         contentEn: `TypeScript's basic types mirror JavaScript's primitives: string, number, boolean, null, undefined, bigint, and symbol. You annotate a variable's type with a colon: let age: number = 30;.
 
@@ -47,10 +58,18 @@ Arrays are written as type[] or Array<type>, e.g. let names: string[] = ["Ada", 
 The any type disables type checking for a value — useful as an escape hatch, but it defeats the purpose of TypeScript if overused. unknown is the type-safe counterpart: you can assign anything to an unknown value, but you must narrow it (with a type guard) before using it.
 
 void describes a function that returns nothing meaningful. never describes a value that can never occur — e.g. the return type of a function that always throws or loops forever. TypeScript can often infer types without explicit annotations; this is called type inference, and relying on it for local variables is idiomatic.`,
+        contentTh: `ชนิดข้อมูลพื้นฐานของ TypeScript สะท้อนมาจาก primitive ของ JavaScript ได้แก่ string, number, boolean, null, undefined, bigint และ symbol คุณสามารถกำกับชนิดข้อมูลของตัวแปรด้วยเครื่องหมายโคลอนได้ดังนี้ let age: number = 30;
+
+Array เขียนได้ในรูปแบบ type[] หรือ Array<type> เช่น let names: string[] = ["Ada", "Grace"]; ส่วน Tuple คือ array ที่มีความยาวคงที่และรู้ชนิดข้อมูลของแต่ละตำแหน่งล่วงหน้า เช่น let pair: [string, number] = ["x", 1];
+
+ชนิดข้อมูล any จะปิดการตรวจสอบ type ของค่านั้นๆ ไปเลย — มีประโยชน์ในฐานะทางออกฉุกเฉิน (escape hatch) แต่ถ้าใช้มากเกินไปก็จะทำลายจุดประสงค์ของ TypeScript ไปเลย ส่วน unknown คือคู่หูที่ปลอดภัยกว่า: คุณสามารถกำหนดค่าอะไรก็ได้ให้กับตัวแปรชนิด unknown แต่คุณต้อง narrow มัน (ด้วย type guard) ก่อนจะนำไปใช้งาน
+
+void ใช้อธิบายฟังก์ชันที่ไม่ return ค่าที่มีความหมายใดๆ ส่วน never ใช้อธิบายค่าที่ไม่มีทางเกิดขึ้นได้เลย เช่น return type ของฟังก์ชันที่ throw error เสมอหรือวนลูปไม่สิ้นสุด TypeScript มักจะอนุมานชนิดข้อมูลได้เองโดยไม่ต้องกำกับไว้อย่างชัดเจน สิ่งนี้เรียกว่า type inference และการพึ่งพามันสำหรับตัวแปร local ถือเป็นแนวทางที่ idiomatic`,
       },
       {
         slug: "interfaces-and-type-aliases",
         titleEn: "Interfaces & Type Aliases",
+        titleTh: "Interfaces และ Type Aliases",
         order: 3,
         contentEn: `Interfaces describe the shape of an object: interface User { id: string; name: string; age?: number }. The ? marks age as optional. A value satisfies an interface if it has at least those properties with compatible types — TypeScript uses structural typing, not nominal typing, so unrelated types with the same shape are interchangeable.
 
@@ -59,10 +78,18 @@ Type aliases (type User = { id: string; name: string }) can describe the same ob
 Interfaces support declaration merging — declaring the same interface twice merges their members — and extends for inheritance: interface Admin extends User { role: string }. Type aliases use intersection (&) instead: type Admin = User & { role: string };.
 
 readonly properties (readonly id: string) prevent reassignment after creation, which is useful for immutable data structures.`,
+        contentTh: `Interface ใช้อธิบายรูปร่าง (shape) ของอ็อบเจกต์ เช่น interface User { id: string; name: string; age?: number } เครื่องหมาย ? บ่งบอกว่า age เป็น optional ค่าหนึ่งๆ จะถือว่าตรงกับ interface ก็ต่อเมื่อมี property เหล่านั้นครบอย่างน้อยพร้อมชนิดข้อมูลที่เข้ากันได้ — TypeScript ใช้ structural typing ไม่ใช่ nominal typing ดังนั้นชนิดข้อมูลที่ไม่เกี่ยวข้องกันเลยแต่มีรูปร่างเดียวกันก็สามารถใช้แทนกันได้
+
+Type alias (type User = { id: string; name: string }) สามารถอธิบายรูปร่างอ็อบเจกต์แบบเดียวกันได้ รวมถึง union, tuple และ primitive ซึ่ง interface ทำไม่ได้ เช่น type ID = string | number; ในทางปฏิบัติ ให้ใช้ interface สำหรับรูปร่างอ็อบเจกต์ที่คุณคาดว่าจะถูก extend หรือ implement โดยคลาสในอนาคต และใช้ type สำหรับ union, tuple หรือ mapped/utility type
+
+Interface รองรับ declaration merging — การประกาศ interface ชื่อเดียวกันซ้ำสองครั้งจะทำให้สมาชิกของทั้งคู่ถูกรวมเข้าด้วยกัน — และรองรับ extends สำหรับการสืบทอด เช่น interface Admin extends User { role: string } ส่วน type alias ใช้ intersection (&) แทน เช่น type Admin = User & { role: string };
+
+property ที่เป็น readonly (readonly id: string) จะป้องกันไม่ให้มีการกำหนดค่าใหม่หลังจากสร้างแล้ว ซึ่งมีประโยชน์สำหรับโครงสร้างข้อมูลแบบ immutable`,
       },
       {
         slug: "functions",
         titleEn: "Functions",
+        titleTh: "ฟังก์ชัน",
         order: 4,
         contentEn: `Function parameters and return values can be typed explicitly: function add(a: number, b: number): number { return a + b; }. TypeScript infers the return type from the function body when omitted, so explicit return types are mostly for documentation and to catch unintended type changes.
 
@@ -71,10 +98,18 @@ Optional parameters use ?: function greet(name: string, title?: string) {}. Defa
 Function types can be written as a standalone type: type BinaryOp = (a: number, b: number) => number;. This is how you type callbacks and higher-order functions, e.g. function apply(op: BinaryOp, a: number, b: number) { return op(a, b); }.
 
 Overloads let a function have multiple valid call signatures with different parameter/return types, useful when a function's behavior genuinely varies by input shape rather than by a simple union type.`,
+        contentTh: `พารามิเตอร์และค่า return ของฟังก์ชันสามารถกำกับชนิดข้อมูลได้อย่างชัดเจน เช่น function add(a: number, b: number): number { return a + b; } หากไม่ระบุ return type ไว้ TypeScript จะอนุมานให้จาก body ของฟังก์ชันเอง ดังนั้นการระบุ return type อย่างชัดเจนส่วนใหญ่จึงมีไว้เพื่อเป็นเอกสารอธิบายและเพื่อดักจับการเปลี่ยนแปลงชนิดข้อมูลที่ไม่ได้ตั้งใจ
+
+พารามิเตอร์แบบ optional ใช้เครื่องหมาย ? เช่น function greet(name: string, title?: string) {} ส่วนพารามิเตอร์ที่มีค่าเริ่มต้น (function greet(name: string, title = "Friend")) จะถูกถือว่าเป็น optional โดยอัตโนมัติ
+
+ชนิดข้อมูลของฟังก์ชันสามารถเขียนแยกเป็น type ของตัวเองได้ เช่น type BinaryOp = (a: number, b: number) => number; นี่คือวิธีที่คุณใช้กำกับชนิดข้อมูลให้กับ callback และ higher-order function เช่น function apply(op: BinaryOp, a: number, b: number) { return op(a, b); }
+
+Overload ช่วยให้ฟังก์ชันหนึ่งมี call signature ที่ถูกต้องได้หลายแบบ โดยมีพารามิเตอร์/return type ต่างกัน ซึ่งมีประโยชน์เมื่อพฤติกรรมของฟังก์ชันเปลี่ยนแปลงไปจริงๆ ตามรูปร่างของ input มากกว่าจะเป็นแค่ union type ธรรมดา`,
       },
       {
         slug: "generics",
         titleEn: "Generics",
+        titleTh: "Generics",
         order: 5,
         contentEn: `Generics let you write reusable code that works over a variety of types while preserving type information, instead of falling back to any. A generic function identity<T>(value: T): T { return value; } returns exactly the type it was given — identity(5) is typed number, identity("x") is typed string.
 
@@ -83,10 +118,18 @@ Generic constraints (extends) restrict what a type parameter can be: function ge
 Generics apply to interfaces, type aliases, and classes too: interface Box<T> { value: T }, class Stack<T> { push(item: T): void {} }. This is how built-in types like Array<T>, Promise<T>, and Map<K, V> are defined.
 
 Default type parameters (function wrap<T = string>(value: T)) let callers omit the generic argument when a sensible default exists.`,
+        contentTh: `Generics ช่วยให้คุณเขียนโค้ดที่นำกลับมาใช้ใหม่ได้ (reusable) และรองรับชนิดข้อมูลได้หลากหลาย โดยยังคงรักษาข้อมูลชนิดข้อมูลไว้ แทนที่จะต้องพึ่งพา any ฟังก์ชัน generic อย่าง identity<T>(value: T): T { return value; } จะ return ชนิดข้อมูลเดียวกับที่ถูกส่งเข้ามาเป๊ะๆ — identity(5) จะมีชนิดข้อมูลเป็น number ส่วน identity("x") จะมีชนิดข้อมูลเป็น string
+
+Generic constraint (extends) ใช้จำกัดว่า type parameter สามารถเป็นอะไรได้บ้าง เช่น function getLength<T extends { length: number }>(item: T) { return item.length; } — ฟังก์ชันนี้จะรับได้ทั้ง array, string หรืออ็อบเจกต์ใดๆ ที่มี property length เป็นตัวเลข
+
+Generics สามารถใช้กับ interface, type alias และคลาสได้ด้วยเช่นกัน เช่น interface Box<T> { value: T }, class Stack<T> { push(item: T): void {} } นี่คือวิธีที่ชนิดข้อมูลในตัวอย่าง Array<T>, Promise<T> และ Map<K, V> ถูกนิยามขึ้นมา
+
+Default type parameter (function wrap<T = string>(value: T)) ช่วยให้ผู้เรียกใช้สามารถละ generic argument ไปได้ เมื่อมีค่าเริ่มต้นที่สมเหตุสมผลอยู่แล้ว`,
       },
       {
         slug: "union-types-and-narrowing",
         titleEn: "Union Types & Narrowing",
+        titleTh: "Union Types และ Narrowing",
         order: 6,
         contentEn: `A union type (type Id = string | number;) means a value can be one of several types. TypeScript only allows operations that are valid for every member of the union until you narrow it to a more specific type.
 
@@ -95,6 +138,13 @@ Narrowing happens through control flow: typeof checks (if (typeof id === "string
 Discriminated unions use a shared literal-typed field to distinguish variants: type Shape = { kind: "circle"; radius: number } | { kind: "square"; side: number };. Switching on shape.kind lets TypeScript narrow to the exact variant inside each case, and exhaustiveness checking (via a never-typed default case) catches missing cases at compile time.
 
 Type predicates (function isString(x: unknown): x is string { return typeof x === "string"; }) let you encapsulate a narrowing check in a reusable function that TypeScript understands as a type guard.`,
+        contentTh: `Union type (type Id = string | number;) หมายความว่าค่านั้นสามารถเป็นได้หนึ่งในหลายชนิดข้อมูล TypeScript จะอนุญาตให้ทำเฉพาะ operation ที่ใช้ได้กับทุกสมาชิกของ union เท่านั้น จนกว่าคุณจะ narrow มันให้แคบลงเป็นชนิดข้อมูลที่เจาะจงมากขึ้น
+
+การ narrow เกิดขึ้นผ่าน control flow ต่างๆ ได้แก่ การตรวจสอบด้วย typeof (if (typeof id === "string")), การตรวจสอบด้วย instanceof, Array.isArray, การตรวจสอบความเป็นจริง (truthiness) และการตรวจสอบความเท่ากันกับ literal type — ทั้งหมดนี้จะ narrow union ให้แคบลงภายใน branch ที่เงื่อนไขนั้นเป็นจริง
+
+Discriminated union ใช้ field ที่เป็น literal type ร่วมกันเพื่อแยกแยะแต่ละ variant เช่น type Shape = { kind: "circle"; radius: number } | { kind: "square"; side: number }; การ switch บน shape.kind จะทำให้ TypeScript narrow ไปยัง variant ที่ถูกต้องในแต่ละ case ได้ และการตรวจสอบ exhaustiveness (ผ่าน default case ที่มีชนิดข้อมูลเป็น never) จะช่วยดักจับ case ที่ตกหล่นไปได้ตั้งแต่ตอน compile time
+
+Type predicate (function isString(x: unknown): x is string { return typeof x === "string"; }) ช่วยให้คุณสามารถห่อหุ้มการตรวจสอบเพื่อ narrow ไว้ในฟังก์ชันที่นำกลับมาใช้ใหม่ได้ ซึ่ง TypeScript จะเข้าใจว่าเป็น type guard`,
       },
     ],
   },
@@ -102,10 +152,13 @@ Type predicates (function isString(x: unknown): x is string { return typeof x ==
     slug: "typescript-tooling",
     title: "TypeScript Tooling",
     descriptionEn: "Configuring and running the TypeScript compiler, editors, and linters effectively.",
-    lessons: [
+        descriptionTh:
+      "การตั้งค่าและใช้งานคอมไพเลอร์ของ TypeScript, editor และ linter อย่างมีประสิทธิภาพ",
+lessons: [
       {
         slug: "tsconfig-essentials",
         titleEn: "tsconfig.json Essentials",
+        titleTh: "พื้นฐานของ tsconfig.json",
         order: 1,
         contentEn: `tsconfig.json configures the TypeScript compiler for a project. Running tsc --init generates a starter file. The most important field is compilerOptions.
 
@@ -114,10 +167,18 @@ target sets which JS version tsc compiles down to (e.g. "ES2020"); module sets t
 outDir and rootDir control where compiled output goes and what the source root is. include and exclude (top-level, not inside compilerOptions) control which files are part of the program — exclude commonly lists node_modules and dist.
 
 For projects that only use TypeScript for type-checking (with bundlers like esbuild, swc, or Bun handling actual compilation), noEmit: true tells tsc to check types without writing output files.`,
+        contentTh: `tsconfig.json คือไฟล์ที่ใช้ตั้งค่าคอมไพเลอร์ของ TypeScript สำหรับโปรเจกต์หนึ่งๆ การรัน tsc --init จะสร้างไฟล์เริ่มต้นให้ โดย field ที่สำคัญที่สุดคือ compilerOptions
+
+target กำหนดว่า tsc จะ compile ลงไปเป็น JavaScript เวอร์ชันไหน (เช่น "ES2020") ส่วน module กำหนดระบบ module ที่ใช้ ("ESNext", "CommonJS", "NodeNext") การตั้งค่า strict: true จะเปิดใช้งาน flag การตรวจสอบชนิดข้อมูลแบบเข้มงวดทั้งชุด (strictNullChecks, noImplicitAny, strictFunctionTypes ฯลฯ) และเป็นสิ่งที่แนะนำอย่างยิ่งสำหรับโปรเจกต์ใหม่ — เพราะเริ่มต้นแบบ strict ตั้งแต่แรกนั้นง่ายกว่าการย้อนกลับมาทำให้ strict ทีหลังมาก
+
+outDir และ rootDir ใช้ควบคุมว่าผลลัพธ์ที่ compile แล้วจะไปอยู่ที่ไหน และอะไรคือ root ของ source code ส่วน include และ exclude (อยู่ระดับบนสุด ไม่ได้อยู่ใน compilerOptions) ใช้ควบคุมว่าไฟล์ไหนบ้างที่นับเป็นส่วนหนึ่งของโปรแกรม — exclude มักจะระบุ node_modules และ dist ไว้เป็นปกติ
+
+สำหรับโปรเจกต์ที่ใช้ TypeScript แค่เพื่อตรวจสอบชนิดข้อมูลเท่านั้น (โดยให้ bundler อย่าง esbuild, swc หรือ Bun เป็นตัวจัดการการ compile จริงๆ) การตั้งค่า noEmit: true จะบอกให้ tsc ตรวจสอบชนิดข้อมูลโดยไม่ต้องเขียนไฟล์ผลลัพธ์ออกมา`,
       },
       {
         slug: "the-typescript-compiler",
         titleEn: "The TypeScript Compiler (tsc)",
+        titleTh: "TypeScript Compiler (tsc)",
         order: 2,
         contentEn: `tsc is the TypeScript compiler CLI. Run it with no arguments in a project with a tsconfig.json to type-check and compile the whole project according to that config. tsc --noEmit type-checks without producing output — commonly used as a CI step or pre-commit check.
 
@@ -126,26 +187,45 @@ tsc --watch re-runs type-checking incrementally whenever a file changes, which i
 tsc file.ts compiles a single file directly, ignoring tsconfig.json unless you also pass config-relevant flags. This is rarely used in real projects — prefer the project-wide config-driven mode.
 
 Project references (composite: true plus "references": [{ "path": "../otherPackage" }] in tsconfig.json) let you split a large codebase into independently type-checked, incrementally built sub-projects — useful in monorepos.`,
+        contentTh: `tsc คือ CLI ของคอมไพเลอร์ TypeScript การรันมันโดยไม่ใส่ argument ใดๆ ในโปรเจกต์ที่มี tsconfig.json จะเป็นการตรวจสอบชนิดข้อมูลและ compile ทั้งโปรเจกต์ตามการตั้งค่านั้น ส่วน tsc --noEmit จะตรวจสอบชนิดข้อมูลโดยไม่สร้างผลลัพธ์ออกมา — มักใช้เป็นขั้นตอนหนึ่งใน CI หรือเป็น pre-commit check
+
+tsc --watch จะรันการตรวจสอบชนิดข้อมูลใหม่แบบ incremental ทุกครั้งที่มีไฟล์เปลี่ยนแปลง ซึ่งเร็วกว่าการตรวจสอบใหม่ทั้งหมดในโปรเจกต์ขนาดใหญ่มาก เพราะ tsc จะแคชข้อมูลไว้ระหว่างการรันแต่ละครั้ง
+
+tsc file.ts จะ compile ไฟล์เดียวโดยตรง โดยไม่สนใจ tsconfig.json เลย เว้นแต่คุณจะใส่ flag ที่เกี่ยวข้องกับการตั้งค่าเพิ่มเข้าไปด้วย วิธีนี้แทบไม่ถูกใช้ในโปรเจกต์จริง — ควรใช้โหมดที่ขับเคลื่อนด้วย config ทั้งโปรเจกต์แทน
+
+Project references (การตั้งค่า composite: true ร่วมกับ "references": [{ "path": "../otherPackage" }] ใน tsconfig.json) ช่วยให้คุณแบ่งโค้ดเบสขนาดใหญ่ออกเป็นโปรเจกต์ย่อยที่ตรวจสอบชนิดข้อมูลและ build แบบ incremental ได้อย่างอิสระจากกัน — มีประโยชน์มากในโปรเจกต์แบบ monorepo`,
       },
       {
         slug: "editor-integration",
         titleEn: "Editor Integration & the Language Server",
+        titleTh: "Editor Integration และ Language Server",
         order: 3,
         contentEn: `TypeScript ships a language server (tsserver) that editors talk to over a JSON-based protocol to provide autocomplete, hover types, inline errors, "go to definition", "find all references", and automated refactors like renaming a symbol project-wide.
 
 VS Code bundles a version of TypeScript and uses tsserver out of the box; other editors (Neovim, JetBrains IDEs, Sublime) use it via a Language Server Protocol (LSP) adapter. The editor's TypeScript version can differ from the project's — mismatches show up as inconsistent errors between the editor and a manual tsc run, so pinning and using the workspace's local TypeScript version is recommended.
 
 Inline errors from the editor come directly from the same type checker tsc uses, so "no red squiggles" is a reasonable (though not complete) proxy for "tsc --noEmit would pass" — background compilation errors and stricter batch-mode checks can still differ slightly from live editor state.`,
+        contentTh: `TypeScript มาพร้อมกับ language server (tsserver) ที่ editor จะสื่อสารด้วยผ่านโปรโตคอลแบบ JSON เพื่อให้บริการ autocomplete, การแสดงชนิดข้อมูลเมื่อ hover, error แบบ inline, ฟีเจอร์ "go to definition", "find all references" และการ refactor อัตโนมัติ เช่น การ rename symbol ทั้งโปรเจกต์
+
+VS Code มาพร้อมกับ TypeScript เวอร์ชันหนึ่งในตัวและใช้ tsserver ได้ทันทีโดยไม่ต้องตั้งค่าเพิ่ม ส่วน editor อื่นๆ (Neovim, JetBrains IDE, Sublime) จะใช้งานผ่าน adapter ของ Language Server Protocol (LSP) เวอร์ชัน TypeScript ที่ editor ใช้อาจแตกต่างจากเวอร์ชันของโปรเจกต์ได้ — ความไม่ตรงกันนี้จะแสดงออกมาเป็น error ที่ไม่สอดคล้องกันระหว่าง editor กับการรัน tsc ด้วยมือ ดังนั้นจึงแนะนำให้ pin และใช้เวอร์ชัน TypeScript ในเครื่องของ workspace นั้นๆ
+
+Error แบบ inline ที่ editor แสดงมาจาก type checker ตัวเดียวกับที่ tsc ใช้โดยตรง ดังนั้น "ไม่มีขีดหยักสีแดง" จึงเป็นตัวชี้วัดที่พอใช้ได้ (แม้จะไม่สมบูรณ์แบบ) ว่า "tsc --noEmit จะผ่าน" — error จากการ compile เบื้องหลังและการตรวจสอบแบบ batch-mode ที่เข้มงวดกว่ายังคงอาจแตกต่างไปจากสถานะของ editor สดๆ ได้เล็กน้อย`,
       },
       {
         slug: "linting-with-eslint",
         titleEn: "Linting with ESLint + typescript-eslint",
+        titleTh: "Linting ด้วย ESLint + typescript-eslint",
         order: 4,
         contentEn: `TypeScript's compiler catches type errors, but not style or correctness issues like unused variables, inconsistent naming, or unsafe patterns (e.g. floating promises). ESLint fills that gap, and typescript-eslint provides the parser and rule set needed to lint TypeScript syntax and use type information in rules.
 
 A typical setup installs eslint, typescript-eslint, and configures eslint.config.js (flat config) to extend typescript-eslint's recommended rule sets. Type-aware rules (e.g. no-floating-promises, no-unsafe-assignment) require pointing ESLint at your tsconfig.json so it can build a full type-checked program — these rules are slower but catch real bugs that non-type-aware linting can't.
 
 Formatting (indentation, quote style, line length) is usually delegated to Prettier rather than ESLint, since ESLint's style rules and Prettier can conflict; eslint-config-prettier disables ESLint's formatting rules so the two tools don't fight.`,
+        contentTh: `คอมไพเลอร์ของ TypeScript จะดักจับ error เกี่ยวกับชนิดข้อมูล แต่ไม่ได้ดักจับปัญหาเรื่อง style หรือความถูกต้องของโค้ด เช่น ตัวแปรที่ไม่ได้ใช้, การตั้งชื่อที่ไม่สอดคล้องกัน หรือ pattern ที่ไม่ปลอดภัย (เช่น floating promise) ESLint จะมาเติมเต็มช่องว่างตรงนี้ และ typescript-eslint จะให้ parser และชุด rule ที่จำเป็นสำหรับ lint syntax ของ TypeScript รวมถึงใช้ข้อมูลชนิดข้อมูลใน rule ต่างๆ ได้ด้วย
+
+การตั้งค่าทั่วไปคือติดตั้ง eslint, typescript-eslint แล้วตั้งค่าไฟล์ eslint.config.js (flat config) ให้ extend ชุด rule ที่ typescript-eslint แนะนำไว้ Rule ที่ต้องพึ่งพาข้อมูลชนิดข้อมูล (type-aware) เช่น no-floating-promises, no-unsafe-assignment จำเป็นต้องชี้ ESLint ไปที่ tsconfig.json ของคุณ เพื่อให้มันสร้างโปรแกรมที่ผ่านการตรวจสอบชนิดข้อมูลแบบเต็มรูปแบบได้ — rule กลุ่มนี้จะทำงานช้ากว่า แต่สามารถดักจับบั๊กจริงๆ ที่การ lint แบบไม่รู้จัก type ทำไม่ได้
+
+เรื่องการจัดรูปแบบโค้ด (formatting) เช่น การเว้นวรรค, สไตล์ของเครื่องหมายคำพูด, ความยาวบรรทัด มักจะถูกส่งต่อให้ Prettier จัดการแทนที่จะใช้ ESLint เพราะ rule ด้าน style ของ ESLint อาจขัดแย้งกับ Prettier ได้ eslint-config-prettier จะปิด rule ด้านการจัดรูปแบบของ ESLint เพื่อไม่ให้เครื่องมือทั้งสองตัวทำงานขัดกันเอง`,
       },
     ],
   },
@@ -1256,10 +1336,13 @@ printName({ name: 'Alice', age: 25 }); // ✅ Valid
     title: "Docker for Beginners",
     descriptionEn:
       "Package, run, and ship applications in containers — the fundamentals of Docker for developers who've never touched it before.",
-    lessons: [
+        descriptionTh:
+      "แพ็กเกจ รัน และส่งมอบแอปพลิเคชันในรูปแบบ container — พื้นฐานของ Docker สำหรับนักพัฒนาที่ไม่เคยแตะต้องมันมาก่อน",
+lessons: [
       {
         slug: "what-is-docker",
         titleEn: "What is Docker?",
+        titleTh: "Docker คืออะไร?",
         order: 1,
         contentEn: `Docker packages an application together with everything it needs to run — code, runtime, system libraries, and settings — into a single unit called a container. Containers solve the "it works on my machine" problem: the same container runs identically on your laptop, a teammate's laptop, and a production server, because it carries its own environment with it.
 
@@ -1268,10 +1351,18 @@ Containers are often compared to virtual machines, but they're much lighter. A V
 An image is the blueprint — a read-only template describing what should be inside the container (an OS base, your application code, its dependencies). A container is a running instance of an image, the same way an object is an instance of a class. You can start many containers from the same image, each isolated from the others.
 
 Docker Hub is a public registry of pre-built images — official images exist for almost every language runtime, database, and tool (\`node\`, \`postgres\`, \`python\`, \`nginx\`), so you rarely build an image entirely from scratch.`,
+        contentTh: `Docker แพ็กแอปพลิเคชันรวมกับทุกสิ่งที่มันต้องการเพื่อรัน — code, runtime, system libraries และ settings — ไว้เป็นหน่วยเดียวที่เรียกว่า container ปัญหาแบบ "it works on my machine" หมดไปด้วย container: container เดียวกันรันได้เหมือนกันทุกประการทั้งบนแล็ปท็อปของคุณ แล็ปท็อปของเพื่อนร่วมทีม และเซิร์ฟเวอร์ production เพราะมันพก environment ของตัวเองติดไปด้วย
+
+Container มักถูกเปรียบเทียบกับ virtual machine แต่มันเบากว่ามาก VM จำลองระบบปฏิบัติการทั้งระบบ รวมถึง kernel ของตัวเอง ซึ่งกินพื้นที่ดิสก์หลายกิกะไบต์และใช้เวลาบูตหลายสิบวินาที (หรือหลายนาที) ส่วน container ใช้ kernel ร่วมกับเครื่อง host และแยกแค่ process กับ filesystem ของแอปพลิเคชันเท่านั้น จึงเริ่มทำงานได้ในเสี้ยววินาทีและกินพื้นที่แค่หลักเมกะไบต์ ไม่ใช่กิกะไบต์
+
+Image คือพิมพ์เขียว — เทมเพลตแบบอ่านอย่างเดียวที่อธิบายว่าข้างในของ container ควรมีอะไรบ้าง (OS พื้นฐาน, โค้ดแอปพลิเคชันของคุณ, dependencies ของมัน) ส่วน container คืออินสแตนซ์ที่กำลังรันของ image เดียวกัน เปรียบเทียบได้กับที่ object เป็นอินสแตนซ์ของ class คุณสามารถสตาร์ท container ได้หลายตัวจาก image เดียวกัน โดยแต่ละตัวแยกจากกันโดยสมบูรณ์
+
+Docker Hub คือ registry สาธารณะของ image ที่สร้างไว้ล่วงหน้า — มี official image ให้ใช้แทบทุก language runtime, database และ tool (\`node\`, \`postgres\`, \`python\`, \`nginx\`) ดังนั้นคุณแทบไม่ต้องสร้าง image ขึ้นมาเองตั้งแต่ศูนย์`,
       },
       {
         slug: "your-first-dockerfile",
         titleEn: "Your First Dockerfile",
+        titleTh: "Dockerfile แรกของคุณ",
         order: 2,
         contentEn: `A Dockerfile is a plain-text recipe for building an image — a sequence of instructions Docker executes in order, each one producing a new layer on top of the last.
 
@@ -1287,20 +1378,41 @@ CMD ["node", "index.js"]
 \`FROM\` picks a base image to build on top of — here, a minimal ("alpine") Node.js 20 image. \`WORKDIR\` sets the working directory inside the container for every instruction after it. \`COPY\` copies files from your machine into the image; copying just the dependency manifests before the rest of the source lets Docker cache the (usually slow) install step — it only reruns if those files change. \`RUN\` executes a command at build time. \`CMD\` specifies the command that runs when a container starts from this image — unlike \`RUN\`, it doesn't execute during the build.
 
 Build the image with \`docker build -t my-app .\` — \`-t\` tags it with a name, and \`.\` tells Docker to look for the Dockerfile (and use everything in) the current directory.`,
+        contentTh: `Dockerfile คือสูตรแบบ plain-text สำหรับสร้าง image — เป็นลำดับของคำสั่งที่ Docker รันตามลำดับ แต่ละคำสั่งจะสร้าง layer ใหม่ซ้อนทับ layer ก่อนหน้า
+
+\`\`\`dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json bun.lock ./
+RUN npm install
+COPY . .
+CMD ["node", "index.js"]
+\`\`\`
+
+\`FROM\` เลือก base image ที่จะสร้างต่อยอด — ในที่นี้คือ Node.js 20 image แบบมินิมอล ("alpine") \`WORKDIR\` กำหนด working directory ภายใน container สำหรับทุกคำสั่งที่ตามมา \`COPY\` คัดลอกไฟล์จากเครื่องของคุณเข้าไปใน image การคัดลอกแค่ dependency manifest ก่อน source code ส่วนที่เหลือทำให้ Docker cache ขั้นตอน install (ซึ่งมักจะช้า) ได้ — มันจะรันใหม่ก็ต่อเมื่อไฟล์เหล่านั้นเปลี่ยนแปลงเท่านั้น \`RUN\` รันคำสั่งตอน build time ส่วน \`CMD\` กำหนดคำสั่งที่จะรันเมื่อ container สตาร์ทขึ้นจาก image นี้ — ต่างจาก \`RUN\` ตรงที่มันไม่ได้ทำงานระหว่างขั้นตอน build
+
+Build image ด้วย \`docker build -t my-app .\` — \`-t\` ตั้งชื่อ (tag) ให้มัน และ \`.\` บอก Docker ให้มองหา Dockerfile (และใช้ทุกอย่างใน) directory ปัจจุบัน`,
       },
       {
         slug: "running-containers",
         titleEn: "Running and Managing Containers",
+        titleTh: "การรันและจัดการ Container",
         order: 3,
         contentEn: `\`docker run my-app\` starts a container from an image. A few flags come up constantly: \`-p 8080:80\` maps port 80 inside the container to port 8080 on your machine (host:container), \`-d\` runs the container in the background ("detached") instead of blocking your terminal, \`-e KEY=value\` sets an environment variable, and \`--name\` gives the container a memorable name instead of a random one.
 
 \`docker ps\` lists running containers; add \`-a\` to see stopped ones too. \`docker logs <name>\` prints a container's stdout/stderr — the first place to look when something isn't working. \`docker exec -it <name> sh\` opens an interactive shell inside a running container, useful for poking around or debugging. \`docker stop <name>\` stops a container gracefully; \`docker rm <name>\` removes a stopped container entirely.
 
 Containers are meant to be disposable: instead of patching a running container, you rebuild the image and start a fresh container from it. Anything written to a container's own filesystem disappears when the container is removed — durable data belongs in a *volume*, a directory Docker manages outside any single container's lifecycle.`,
+        contentTh: `\`docker run my-app\` สตาร์ท container จาก image มี flag บางตัวที่เจอบ่อยมาก: \`-p 8080:80\` แมป port 80 ภายใน container ไปยัง port 8080 บนเครื่องของคุณ (host:container), \`-d\` รัน container แบบ background ("detached") แทนที่จะบล็อก terminal ของคุณ, \`-e KEY=value\` ตั้งค่า environment variable และ \`--name\` ตั้งชื่อ container ที่จำง่ายแทนชื่อแบบสุ่ม
+
+\`docker ps\` แสดงรายการ container ที่กำลังรันอยู่ เพิ่ม \`-a\` เพื่อดู container ที่หยุดแล้วด้วย \`docker logs <name>\` แสดง stdout/stderr ของ container — ที่แรกที่ควรดูเมื่อมีอะไรผิดปกติ \`docker exec -it <name> sh\` เปิด interactive shell ภายใน container ที่กำลังรันอยู่ มีประโยชน์เวลาต้องเข้าไปสำรวจหรือ debug \`docker stop <name>\` หยุด container อย่างสุภาพ ส่วน \`docker rm <name>\` ลบ container ที่หยุดแล้วออกไปทั้งหมด
+
+Container ถูกออกแบบมาให้ใช้แล้วทิ้งได้ (disposable): แทนที่จะแพตช์ container ที่กำลังรันอยู่ คุณควร rebuild image แล้วสตาร์ท container ใหม่จากมัน สิ่งใดก็ตามที่เขียนลงบน filesystem ของ container เองจะหายไปเมื่อ container ถูกลบ — ข้อมูลที่ต้องคงอยู่ถาวรควรเก็บไว้ใน *volume* ซึ่งเป็น directory ที่ Docker จัดการแยกออกจาก lifecycle ของ container ตัวใดตัวหนึ่งโดยเฉพาะ`,
       },
       {
         slug: "docker-compose-basics",
         titleEn: "Docker Compose Basics",
+        titleTh: "พื้นฐานของ Docker Compose",
         order: 4,
         contentEn: `Real applications are rarely a single container — a typical web app needs the app server, a database, and maybe a cache, all running together. Docker Compose describes that whole stack in one YAML file and starts it with one command.
 
@@ -1328,6 +1440,32 @@ volumes:
 Each top-level entry under \`services\` is a container Compose manages. \`web\` builds an image from the Dockerfile in the current directory; \`db\` instead pulls a ready-made Postgres image. Containers in the same Compose file can reach each other by service name — \`web\` connects to \`db\` at the hostname \`db\`, not \`localhost\`, because Compose puts them on a shared internal network. \`depends_on\` controls start order. The named \`volumes\` block persists the database's data directory across container restarts and rebuilds.
 
 \`docker compose up\` builds (if needed) and starts every service; add \`-d\` to run in the background. \`docker compose down\` stops and removes them. This one file is usually enough to describe an entire local development environment.`,
+        contentTh: `แอปพลิเคชันจริงแทบไม่เคยเป็น container เดียว — เว็บแอปทั่วไปต้องการทั้ง app server, database และบางทีก็ cache ให้ทำงานพร้อมกันทั้งหมด Docker Compose อธิบาย stack ทั้งหมดนั้นไว้ในไฟล์ YAML เดียว และสตาร์ทมันด้วยคำสั่งเดียว
+
+\`\`\`yaml
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://db:5432/app
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
+\`\`\`
+
+แต่ละรายการระดับบนสุดภายใต้ \`services\` คือ container ที่ Compose จัดการ \`web\` build image จาก Dockerfile ใน directory ปัจจุบัน ส่วน \`db\` ดึง Postgres image ที่สร้างไว้พร้อมใช้งานแล้วมาใช้แทน Container ในไฟล์ Compose เดียวกันสามารถเชื่อมถึงกันได้ด้วยชื่อ service — \`web\` เชื่อมต่อไปยัง \`db\` ที่ hostname \`db\` ไม่ใช่ \`localhost\` เพราะ Compose วาง container เหล่านี้ไว้บน network ภายในที่ใช้ร่วมกัน \`depends_on\` ควบคุมลำดับการสตาร์ท ส่วน block \`volumes\` ที่ตั้งชื่อไว้ทำให้ data directory ของฐานข้อมูลคงอยู่ต่อไปแม้ container จะ restart หรือ rebuild
+
+\`docker compose up\` build (ถ้าจำเป็น) และสตาร์ททุก service เพิ่ม \`-d\` เพื่อรันแบบ background \`docker compose down\` หยุดและลบ container ทั้งหมดออกไป ไฟล์เดียวนี้มักจะเพียงพอที่จะอธิบาย local development environment ทั้งหมด`,
       },
     ],
   },
@@ -1335,10 +1473,13 @@ Each top-level entry under \`services\` is a container Compose manages. \`web\` 
     slug: "react-ui-patterns",
     title: "React UI Patterns",
     descriptionEn: "Practical patterns for building React interfaces — composition, state, and reusable hooks.",
-    lessons: [
+        descriptionTh:
+      "แพทเทิร์นที่ใช้งานได้จริงสำหรับสร้าง React interface — composition, state และ reusable hooks",
+lessons: [
       {
         slug: "component-composition",
         titleEn: "Component Composition and Props",
+        titleTh: "Component Composition และ Props",
         order: 1,
         contentEn: `React interfaces are built by composing components — small, focused functions that return JSX (a syntax that looks like HTML but compiles to plain JavaScript function calls). A component receives inputs called *props* and returns what should appear on screen; the same component can be reused anywhere by passing it different props.
 
@@ -1362,10 +1503,33 @@ function UserCard({ user }) {
 The \`children\` prop is special — it's whatever's nested between a component's opening and closing tags in JSX (\`<Card>...</Card>\`), letting a component wrap arbitrary content it doesn't need to know about in advance. This is how generic layout components (\`Modal\`, \`Card\`, \`Panel\`) stay reusable across very different content.
 
 Props flow one direction: parent to child. A child component can't modify the props it receives — if a user action needs to change something the parent owns, the parent passes the child a function (also just a prop) that the child calls.`,
+        contentTh: `React interface ถูกสร้างขึ้นด้วยการประกอบ (compose) component เข้าด้วยกัน — เป็นฟังก์ชันเล็กๆ ที่โฟกัสเฉพาะเรื่องและคืนค่าเป็น JSX (syntax ที่หน้าตาเหมือน HTML แต่ compile เป็น JavaScript function call ธรรมดา) component รับ input ที่เรียกว่า *props* และคืนค่าสิ่งที่ควรแสดงบนหน้าจอ component ตัวเดียวกันสามารถนำกลับมาใช้ซ้ำได้ทุกที่โดยส่ง props ที่ต่างกันเข้าไป
+
+\`\`\`jsx
+function Avatar({ src, name }) {
+  return <img className="avatar" src={src} alt={name} />
+}
+
+function UserCard({ user }) {
+  return (
+    <div className="card">
+      <Avatar src={user.avatarUrl} name={user.name} />
+      <h3>{user.name}</h3>
+    </div>
+  )
+}
+\`\`\`
+
+\`UserCard\` ไม่รู้และไม่สนใจว่า \`Avatar\` render ภายในอย่างไร — มันแค่ส่ง props ลงไป นี่คือ *composition*: การสร้าง UI ที่ซับซ้อนจากชิ้นส่วนเล็กๆ ที่ทดสอบแยกกันได้ แทนที่จะเป็น component ใหญ่ตัวเดียวที่ทำทุกอย่าง
+
+prop \`children\` เป็นพิเศษ — มันคือทุกอย่างที่ซ้อนอยู่ระหว่าง tag เปิดและปิดของ component ใน JSX (\`<Card>...</Card>\`) ทำให้ component สามารถห่อหุ้มเนื้อหาที่ไม่จำเป็นต้องรู้ล่วงหน้าได้ นี่คือวิธีที่ generic layout component (\`Modal\`, \`Card\`, \`Panel\`) ยังคงนำกลับมาใช้ซ้ำได้กับเนื้อหาที่แตกต่างกันมาก
+
+Props ไหลไปทิศทางเดียว: จาก parent ไปยัง child child component ไม่สามารถแก้ไข props ที่มันได้รับ — ถ้า action ของผู้ใช้ต้องเปลี่ยนแปลงบางอย่างที่ parent เป็นเจ้าของ parent จะส่งฟังก์ชัน (ซึ่งก็เป็นแค่ prop อีกตัว) ให้ child เรียกใช้`,
       },
       {
         slug: "state-with-hooks",
         titleEn: "Managing State with useState and useReducer",
+        titleTh: "การจัดการ State ด้วย useState และ useReducer",
         order: 2,
         contentEn: `\`useState\` is the basic way a component remembers something between renders — a value that, when changed, causes React to re-render the component with the new value.
 
@@ -1398,10 +1562,42 @@ const [state, dispatch] = useReducer(reducer, { count: 0 })
 \`\`\`
 
 Component code calls \`dispatch\` with a plain description of *what happened* (an action); the reducer alone decides *what changes as a result* — which keeps update logic in one place instead of scattered across event handlers.`,
+        contentTh: `\`useState\` คือวิธีพื้นฐานที่ component ใช้จดจำบางสิ่งไว้ระหว่างการ render แต่ละครั้ง — เป็นค่าที่เมื่อเปลี่ยนแปลงแล้วจะทำให้ React re-render component ด้วยค่าใหม่
+
+\`\`\`jsx
+function Counter() {
+  const [count, setCount] = useState(0)
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Clicked {count} times
+    </button>
+  )
+}
+\`\`\`
+
+การเรียก \`setCount\` ไม่ได้ mutate \`count\` โดยตรง — มันกำหนดตารางให้เกิดการ re-render ที่ \`count\` จะถือค่าใหม่ การอัปเดต state ที่อิงจากค่าก่อนหน้าควรใช้รูปแบบฟังก์ชัน \`setCount(c => c + 1)\` เพื่อหลีกเลี่ยงบั๊กเมื่อมีการอัปเดตหลายครั้งเกิดขึ้นใกล้กัน
+
+\`useState\` เหมาะกับ state ที่เป็นอิสระจากกัน แต่เมื่อ state หลายตัวเปลี่ยนแปลงพร้อมกันจาก action เดียวกัน \`useReducer\` มักจะชัดเจนกว่า มันรวมศูนย์ "อะไรเปลี่ยน และเปลี่ยนอย่างไร" ไว้ในฟังก์ชันเดียว (*reducer*) ที่รับ state ปัจจุบันและ *action* แล้วคืนค่า state ถัดไป:
+
+\`\`\`jsx
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment': return { count: state.count + 1 }
+    case 'reset': return { count: 0 }
+    default: return state
+  }
+}
+
+const [state, dispatch] = useReducer(reducer, { count: 0 })
+// dispatch({ type: 'increment' })
+\`\`\`
+
+โค้ดใน component เรียก \`dispatch\` พร้อมคำอธิบายง่ายๆ ว่า *เกิดอะไรขึ้น* (action) ส่วน reducer เท่านั้นที่ตัดสินใจว่า *อะไรจะเปลี่ยนแปลงเป็นผล* — ซึ่งทำให้ logic การอัปเดตอยู่ในที่เดียวแทนที่จะกระจัดกระจายไปตาม event handler ต่างๆ`,
       },
       {
         slug: "effects-and-data-fetching",
         titleEn: "Effects and Data Fetching with useEffect",
+        titleTh: "Effects และการดึงข้อมูลด้วย useEffect",
         order: 3,
         contentEn: `Rendering a component should be a pure calculation from its props and state — no side effects like network requests, subscriptions, or manually touching the DOM. \`useEffect\` is the escape hatch for exactly that: code that needs to run *after* React has rendered, as a reaction to something changing.
 
@@ -1427,10 +1623,35 @@ The second argument — the *dependency array* — tells React when to re-run th
 The function an effect returns is its *cleanup* — React calls it before running the effect again, and when the component unmounts. The \`cancelled\` flag above prevents a slow, stale request from overwriting state with old data if \`userId\` changes again before the first request finishes — a common and easy-to-miss data-fetching bug.
 
 For anything beyond the simplest fetches, a dedicated data-fetching library (React Query, SWR) handles caching, retries, and race conditions like this one for you — but understanding what \`useEffect\` is doing underneath is what makes those libraries' behavior make sense.`,
+        contentTh: `การ render component ควรเป็นการคำนวณล้วนๆ (pure calculation) จาก props และ state ของมัน — ไม่มี side effect อย่างการยิง network request, subscription หรือการแตะต้อง DOM โดยตรง \`useEffect\` คือทางออกสำหรับสิ่งเหล่านี้โดยเฉพาะ: โค้ดที่ต้องรัน *หลังจาก* React render เสร็จแล้ว เพื่อตอบสนองต่อบางสิ่งที่เปลี่ยนแปลง
+
+\`\`\`jsx
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch(\`/api/users/\${userId}\`)
+      .then(res => res.json())
+      .then(data => { if (!cancelled) setUser(data) })
+    return () => { cancelled = true }
+  }, [userId])
+
+  if (!user) return <p>Loading…</p>
+  return <h1>{user.name}</h1>
+}
+\`\`\`
+
+argument ตัวที่สอง — *dependency array* — บอก React ว่าจะรัน effect ใหม่เมื่อไหร่: เฉพาะเมื่อค่าใดค่าหนึ่งในรายการ (\`userId\`) เปลี่ยนแปลงไปจากการ render ครั้งก่อน array ว่าง (\`[]\`) หมายถึง "รันครั้งเดียวหลังจาก render ครั้งแรก" การละ array ไปเลยจะทำให้ effect รันใหม่หลังทุกการ render ซึ่งแทบไม่ใช่สิ่งที่คุณต้องการ
+
+ฟังก์ชันที่ effect คืนค่าคือ *cleanup* ของมัน — React จะเรียกมันก่อนรัน effect ใหม่อีกครั้ง และตอน component unmount ตัวแปร \`cancelled\` ด้านบนป้องกันไม่ให้ request ที่ช้าและล้าสมัยเขียนทับ state ด้วยข้อมูลเก่า หาก \`userId\` เปลี่ยนอีกครั้งก่อนที่ request แรกจะเสร็จ — เป็นบั๊กเกี่ยวกับการดึงข้อมูลที่พบบ่อยและมองข้ามได้ง่าย
+
+สำหรับอะไรที่ซับซ้อนกว่าการ fetch ง่ายๆ ไลบรารีสำหรับดึงข้อมูลโดยเฉพาะ (React Query, SWR) จะจัดการเรื่อง caching, retry และ race condition แบบนี้ให้คุณ — แต่การเข้าใจว่า \`useEffect\` ทำอะไรอยู่เบื้องหลังคือสิ่งที่ทำให้พฤติกรรมของไลบรารีเหล่านั้นสมเหตุสมผล`,
       },
       {
         slug: "custom-hooks",
         titleEn: "Building Reusable Custom Hooks",
+        titleTh: "การสร้าง Custom Hooks ที่นำกลับมาใช้ซ้ำได้",
         order: 4,
         contentEn: `A custom hook is just a regular JavaScript function whose name starts with \`use\` and that calls other hooks inside it. It's the standard way to extract stateful logic out of a component so it can be reused in another one — the *logic* is shared, not the UI.
 
@@ -1457,6 +1678,31 @@ Every component that calls \`useToggle\` gets its own independent \`value\`/\`se
 \`useCallback\` above memoizes the \`toggle\` function so it isn't recreated on every render; this matters mainly when the function is passed down to a child wrapped in \`React.memo\`, where a new function reference on every render would defeat the memoization. It's an optimization, not something every function needs.
 
 The naming convention (\`useSomething\`) isn't just style — React's linter rules use it to enforce the *Rules of Hooks* (only call hooks at the top level, only from React functions or other hooks), which is what makes hooks reliably preserve state across renders in the first place.`,
+        contentTh: `Custom hook ก็เป็นแค่ฟังก์ชัน JavaScript ธรรมดาที่ชื่อขึ้นต้นด้วย \`use\` และเรียกใช้ hook อื่นๆ อยู่ภายใน มันคือวิธีมาตรฐานในการดึง stateful logic ออกจาก component เพื่อนำไปใช้ซ้ำใน component อื่น — สิ่งที่ถูกแชร์คือ *logic* ไม่ใช่ UI
+
+\`\`\`jsx
+function useToggle(initial = false) {
+  const [value, setValue] = useState(initial)
+  const toggle = useCallback(() => setValue(v => !v), [])
+  return [value, toggle]
+}
+
+function Accordion() {
+  const [open, toggleOpen] = useToggle()
+  return (
+    <div>
+      <button onClick={toggleOpen}>{open ? 'Hide' : 'Show'}</button>
+      {open && <p>Details…</p>}
+    </div>
+  )
+}
+\`\`\`
+
+ทุก component ที่เรียก \`useToggle\` จะได้คู่ \`value\`/\`setValue\` ของตัวเองที่เป็นอิสระ — custom hook ไม่ได้แชร์ state ระหว่าง component ที่ใช้มัน มันแชร์แค่ *แพทเทิร์น* สำหรับสร้าง state นั้น
+
+\`useCallback\` ด้านบน memoize ฟังก์ชัน \`toggle\` เพื่อไม่ให้มันถูกสร้างใหม่ทุกครั้งที่ render ซึ่งสำคัญเป็นหลักเมื่อฟังก์ชันนี้ถูกส่งลงไปยัง child ที่ห่อด้วย \`React.memo\` ซึ่ง function reference ใหม่ทุกครั้งที่ render จะทำให้ memoization นั้นไร้ประโยชน์ มันเป็นการ optimize ไม่ใช่สิ่งที่ทุกฟังก์ชันต้องการ
+
+ข้อตกลงการตั้งชื่อ (\`useSomething\`) ไม่ใช่แค่เรื่องสไตล์ — กฎ linter ของ React ใช้มันเพื่อบังคับใช้ *Rules of Hooks* (เรียก hook ได้แค่ที่ระดับบนสุดเท่านั้น และเรียกได้แค่จากฟังก์ชันของ React หรือจาก hook อื่น) ซึ่งเป็นสิ่งที่ทำให้ hook รักษา state ข้ามการ render ได้อย่างน่าเชื่อถือตั้งแต่แรก`,
       },
     ],
   },
@@ -1465,10 +1711,13 @@ The naming convention (\`useSomething\`) isn't just style — React's linter rul
     title: "Go Microservices",
     descriptionEn:
       "Build and structure HTTP-based microservices in Go, from language fundamentals to service-to-service communication.",
-    lessons: [
+        descriptionTh:
+      "สร้างและจัดโครงสร้าง HTTP-based microservice ด้วย Go ตั้งแต่พื้นฐานของภาษาไปจนถึงการสื่อสารระหว่าง service",
+lessons: [
       {
         slug: "go-fundamentals-for-services",
         titleEn: "Go Fundamentals for Service Development",
+        titleTh: "พื้นฐาน Go สำหรับการพัฒนา Service",
         order: 1,
         contentEn: `Go compiles to a single static binary with no runtime dependency to install on the server — the same trait that makes it a natural fit for small, deployable microservices. A Go program starts in \`func main()\` inside \`package main\`; every other file in the project belongs to a named package that other files import by path.
 
@@ -1497,10 +1746,38 @@ if err != nil {
 \`\`\`
 
 Goroutines (\`go someFunc()\`) are Go's lightweight concurrency primitive — the runtime multiplexes many goroutines onto a small number of OS threads, so spawning thousands of them (one per incoming request, for example) is cheap. Channels (\`chan int\`) are typed pipes goroutines use to send values to each other safely, without manual locks.`,
+        contentTh: `Go compile เป็น static binary ตัวเดียวโดยไม่ต้องติดตั้ง runtime dependency บนเซิร์ฟเวอร์ — คุณสมบัตินี้เองที่ทำให้มันเหมาะกับ microservice ขนาดเล็กที่ต้อง deploy ได้ง่าย โปรแกรม Go เริ่มต้นที่ \`func main()\` ภายใน \`package main\` ส่วนไฟล์อื่นๆ ในโปรเจกต์จะอยู่ใน package ที่มีชื่อ ซึ่งไฟล์อื่นสามารถ import ผ่าน path ได้
+
+\`\`\`go
+package main
+
+import "fmt"
+
+func add(a int, b int) int {
+    return a + b
+}
+
+func main() {
+    result := add(2, 3)
+    fmt.Println(result) // 5
+}
+\`\`\`
+
+Go เป็นภาษาแบบ static typed แต่ \`:=\` ทำให้คุณประกาศตัวแปรและให้ compiler infer ชนิดข้อมูลจากค่าทางขวาได้ ซึ่งเป็นวิธีที่ idiomatic สำหรับตัวแปร local ฟังก์ชันสามารถคืนค่าได้หลายค่า — standard library เองก็อาศัยสิ่งนี้ในการจัดการ error: การเรียกที่อาจล้มเหลวโดยทั่วไปจะคืนค่า \`(result, error)\` และผู้เรียกจะตรวจสอบ error อย่างชัดเจนแทนที่จะพึ่งพา exception:
+
+\`\`\`go
+value, err := strconv.Atoi("42")
+if err != nil {
+    // handle it here, not several stack frames away
+}
+\`\`\`
+
+Goroutine (\`go someFunc()\`) คือ primitive สำหรับ concurrency แบบเบาของ Go — runtime จะ multiplex goroutine จำนวนมากลงบน OS thread จำนวนน้อย ดังนั้นการสร้าง goroutine เป็นพันๆ ตัว (เช่น หนึ่งตัวต่อ request ที่เข้ามา) จึงมีต้นทุนต่ำ Channel (\`chan int\`) คือท่อที่มีชนิดข้อมูลชัดเจนที่ goroutine ใช้ส่งค่าหากันอย่างปลอดภัย โดยไม่ต้อง lock ด้วยตัวเอง`,
       },
       {
         slug: "http-service-with-net-http",
         titleEn: "Building an HTTP Service with net/http",
+        titleTh: "การสร้าง HTTP Service ด้วย net/http",
         order: 2,
         contentEn: `Go's standard library includes a production-capable HTTP server — \`net/http\` — so a real service doesn't need a framework to get started.
 
@@ -1532,10 +1809,41 @@ A *handler* is any function matching \`func(http.ResponseWriter, *http.Request)\
 The backtick-quoted text after each struct field — \`json:"status"\` — is a *struct tag*. \`encoding/json\` reads it via reflection to decide what key to use when marshalling that field to JSON, letting a Go-idiomatic \`PascalCase\` field name (\`Status\`) serialize as a JSON-idiomatic \`camelCase\` or \`snake_case\` key.
 
 \`http.ListenAndServe\` blocks forever, accepting connections and dispatching them to the registered handlers — the entire lifetime of a simple service is often just those two lines at the bottom of \`main\`.`,
+        contentTh: `Standard library ของ Go มี HTTP server ที่พร้อมใช้งานระดับ production อยู่แล้ว — \`net/http\` — ดังนั้น service จริงจึงไม่จำเป็นต้องมี framework เพื่อเริ่มต้น
+
+\`\`\`go
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+)
+
+type HealthResponse struct {
+    Status string \`json:"status"\`
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(HealthResponse{Status: "ok"})
+}
+
+func main() {
+    http.HandleFunc("/health", healthHandler)
+    http.ListenAndServe(":8080", nil)
+}
+\`\`\`
+
+*handler* คือฟังก์ชันใดๆ ที่มี signature ตรงกับ \`func(http.ResponseWriter, *http.Request)\` — \`http.HandleFunc\` ลงทะเบียน handler ตัวหนึ่งกับ path หนึ่ง \`http.ResponseWriter\` คือสิ่งที่คุณเขียน response ลงไป (headers, status code, body) ส่วน \`*http.Request\` พก everything เกี่ยวกับ request ที่เข้ามา (method, URL, headers, body)
+
+ข้อความที่อยู่ในเครื่องหมาย backtick ต่อท้ายแต่ละ struct field — \`json:"status"\` — คือ *struct tag* \`encoding/json\` อ่านมันผ่าน reflection เพื่อตัดสินใจว่าจะใช้ key อะไรตอน marshal field นั้นเป็น JSON ทำให้ชื่อ field แบบ \`PascalCase\` ที่ idiomatic กับ Go (\`Status\`) สามารถ serialize เป็น key แบบ \`camelCase\` หรือ \`snake_case\` ที่ idiomatic กับ JSON ได้
+
+\`http.ListenAndServe\` จะ block ตลอดไป คอยรับ connection และส่งต่อไปยัง handler ที่ลงทะเบียนไว้ — อายุการทำงานทั้งหมดของ service ง่ายๆ มักจะเป็นแค่สองบรรทัดนี้ที่อยู่ท้าย \`main\``,
       },
       {
         slug: "structuring-a-microservice",
         titleEn: "Structuring a Microservice",
+        titleTh: "การจัดโครงสร้าง Microservice",
         order: 3,
         contentEn: `A single \`main.go\` works for a demo, but a real service benefits from splitting responsibilities into packages the same way you'd split responsibilities into modules in any other language. A common layout:
 
@@ -1552,10 +1860,26 @@ The \`internal/\` directory is special to the Go compiler: packages under it can
 Handlers should stay thin — parse the request, call into a service function, translate the result (or error) into an HTTP response — the same layered idea shows up across most backend stacks, including this project's own mindspace-api (Route → Controller → UseCase → Service → Repository). Keeping business logic out of the handler means it can be tested directly, as plain Go functions, without spinning up an HTTP server.
 
 Configuration (database URLs, ports, feature flags) is conventionally read from environment variables at startup — \`os.Getenv("DATABASE_URL")\` — rather than hardcoded, so the same compiled binary runs unchanged across local, staging, and production.`,
+        contentTh: `\`main.go\` ไฟล์เดียวใช้ได้ดีสำหรับ demo แต่ service จริงจะได้ประโยชน์จากการแยกความรับผิดชอบออกเป็น package เหมือนที่คุณจะแยกความรับผิดชอบเป็น module ในภาษาอื่นๆ โครงสร้างที่พบได้ทั่วไป:
+
+\`\`\`
+cmd/api/main.go       – wires everything together, starts the server
+internal/handler/     – HTTP handlers: parse the request, call a service, write the response
+internal/service/     – business logic, independent of HTTP
+internal/repository/  – database access
+internal/config/      – loading configuration from env vars
+\`\`\`
+
+ directory \`internal/\` มีความพิเศษสำหรับ Go compiler: package ที่อยู่ภายใต้มันสามารถถูก import ได้เฉพาะจากโค้ดภายใน module เดียวกันเท่านั้น ซึ่งเป็นวิธีของ Go ในการระบุว่า "ไม่ใช่ public API" โดยไม่ต้องมี access-control keyword แยกต่างหาก
+
+Handler ควรเบาบาง — parse request, เรียกฟังก์ชันของ service, แปลผลลัพธ์ (หรือ error) เป็น HTTP response — แนวคิดแบบเป็นชั้นเดียวกันนี้ปรากฏอยู่ใน backend stack ส่วนใหญ่ รวมถึง mindspace-api ของโปรเจกต์นี้เองด้วย (Route → Controller → UseCase → Service → Repository) การเก็บ business logic ไว้นอก handler หมายความว่ามันสามารถถูกทดสอบได้โดยตรงในฐานะฟังก์ชัน Go ธรรมดา โดยไม่ต้องรัน HTTP server ขึ้นมา
+
+Configuration (database URL, port, feature flag) โดยทั่วไปจะถูกอ่านจาก environment variable ตอน startup — \`os.Getenv("DATABASE_URL")\` — แทนที่จะ hardcode ไว้ เพื่อให้ compiled binary ตัวเดียวกันรันได้เหมือนเดิมทั้งบน local, staging และ production`,
       },
       {
         slug: "service-to-service-communication",
         titleEn: "Service-to-Service Communication",
+        titleTh: "การสื่อสารระหว่าง Service",
         order: 4,
         contentEn: `Once an application is split into multiple services, they need a way to talk to each other. The simplest and most common approach is plain HTTP with JSON — one service is a client of another's REST API, using nothing more exotic than Go's standard \`net/http\` client:
 
@@ -1575,6 +1899,24 @@ Every network call can fail in ways a local function call can't — the other se
 For higher-throughput or lower-latency internal communication, gRPC is a common alternative to REST/JSON: it defines a service's methods and message shapes in a \`.proto\` file, generates strongly-typed Go client and server code from it, and sends binary-encoded messages over HTTP/2 — trading REST's human-readability for a smaller wire format and compiler-checked contracts between services.
 
 Whichever protocol is used, the calling service should treat the network itself as unreliable: retries with backoff, timeouts, and fallback behavior are what keep one slow dependency from cascading into an outage across the whole system.`,
+        contentTh: `เมื่อแอปพลิเคชันถูกแยกออกเป็นหลาย service แล้ว พวกมันต้องมีวิธีคุยกัน วิธีที่ง่ายและพบบ่อยที่สุดคือ HTTP ธรรมดาร่วมกับ JSON — service หนึ่งเป็น client ของ REST API ของอีก service หนึ่ง โดยใช้แค่ HTTP client มาตรฐานของ Go (\`net/http\`) ไม่มีอะไรพิเศษไปกว่านั้น:
+
+\`\`\`go
+resp, err := http.Get("http://users-service:8080/users/42")
+if err != nil {
+    // network error — the other service may be down
+}
+defer resp.Body.Close()
+
+var user User
+json.NewDecoder(resp.Body).Decode(&user)
+\`\`\`
+
+ทุก network call สามารถล้มเหลวได้ในแบบที่ local function call ไม่ล้มเหลว — อีก service หนึ่งอาจช้า เข้าถึงไม่ได้ หรือคืน error status มา — ดังนั้นโค้ด production จึงตั้ง timeout ไว้อย่างชัดเจน (\`http.Client{Timeout: 2 * time.Second}\`) แทนที่จะเชื่อค่า default และตรวจสอบ \`resp.StatusCode\` ก่อนที่จะสันนิษฐานว่า body เป็น response ที่สำเร็จและถูกต้อง
+
+สำหรับการสื่อสารภายในที่ต้องการ throughput สูงกว่าหรือ latency ต่ำกว่า gRPC เป็นทางเลือกที่พบบ่อยแทน REST/JSON: มันกำหนด method และรูปแบบ message ของ service ไว้ในไฟล์ \`.proto\` สร้างโค้ด client และ server ของ Go ที่มีชนิดข้อมูลชัดเจนจากมัน และส่ง message ที่เข้ารหัสแบบ binary ผ่าน HTTP/2 — แลกความอ่านง่ายของ REST กับ wire format ที่เล็กกว่าและ contract ระหว่าง service ที่ compiler ตรวจสอบได้
+
+ไม่ว่าจะใช้ protocol ไหน service ที่เรียกออกไปควรมองว่า network เองนั้นไม่น่าเชื่อถือ: การ retry พร้อม backoff, timeout และ fallback behavior คือสิ่งที่ป้องกันไม่ให้ dependency ตัวหนึ่งที่ช้าลุกลามกลายเป็น outage ทั้งระบบ`,
       },
     ],
   },
@@ -1583,10 +1925,13 @@ Whichever protocol is used, the calling service should treat the network itself 
     title: "Claude Agent Skills",
     descriptionEn:
       "How to package repeatable expertise for Claude as Agent Skills: SKILL.md files, progressive disclosure, bundled scripts and references, and where skills live across Claude Code, the Claude Agent SDK, and the Claude API.",
-    lessons: [
+        descriptionTh:
+      "วิธีแพ็กเกจความเชี่ยวชาญที่ทำซ้ำได้ให้ Claude ในรูปแบบ Agent Skills: ไฟล์ SKILL.md, progressive disclosure, การรวมสคริปต์และเอกสารอ้างอิง และตำแหน่งที่ skills อาศัยอยู่ทั้งใน Claude Code, Claude Agent SDK และ Claude API",
+lessons: [
       {
         slug: "what-is-an-agent-skill",
         titleEn: "What Is an Agent Skill?",
+        titleTh: "Agent Skill คืออะไร?",
         order: 1,
         contentEn: `A Skill is a packaged, reusable set of instructions that teaches Claude how to do a specific task well — a folder containing at minimum one file, \`SKILL.md\`, and optionally scripts, templates, or reference documents alongside it. Think of it as an onboarding document you'd hand a new hire for one recurring job: "here's how we file expense reports," "here's our PDF-generation checklist," "here's how this repo wants its migrations written."
 
@@ -1595,10 +1940,18 @@ Skills exist because a model's context window and system prompt are finite, but 
 This is different from just telling Claude what to do in a single message. A Skill is discoverable and reusable: once it's saved, Claude (or a teammate, or a future you) can trigger it by name or by describing the task, without re-explaining the procedure every time. It's also different from a plain system-prompt addition, because a library of many Skills scales — adding the hundredth Skill costs the same small amount of always-loaded context as adding the first.
 
 At the highest level, three things make a Skill work: a short *description* that Claude sees at all times so it knows the Skill exists and when to reach for it; a longer *body* with the actual instructions, only loaded into context once the Skill is triggered; and, optionally, *bundled files* — scripts, templates, reference docs — loaded only if the instructions in the body actually need them. That loading strategy is called progressive disclosure, and it's the subject of the next lesson.`,
+        contentTh: `Skill คือชุดคำสั่งที่ถูกแพ็กเกจไว้และนำกลับมาใช้ซ้ำได้ ซึ่งสอน Claude ให้ทำงานเฉพาะอย่างได้ดี — เป็นโฟลเดอร์ที่มีไฟล์อย่างน้อยหนึ่งไฟล์คือ \`SKILL.md\` และอาจมีสคริปต์ เทมเพลต หรือเอกสารอ้างอิงประกอบอยู่ด้วยก็ได้ ลองนึกภาพว่ามันคือเอกสาร onboarding ที่คุณจะมอบให้พนักงานใหม่สำหรับงานที่ต้องทำซ้ำๆ งานหนึ่ง: "นี่คือวิธีที่เราเบิกค่าใช้จ่าย" "นี่คือ checklist การสร้าง PDF ของเรา" "นี่คือวิธีที่ repo นี้ต้องการให้เขียน migration"
+
+Skills มีอยู่เพราะ context window และ system prompt ของโมเดลนั้นมีจำกัด แต่จำนวนงานที่องค์กรต้องการให้ agent ทำได้ดีนั้นไม่มีขีดจำกัด คุณไม่สามารถแปะข้อตกลงของทุกทีม ความแปลกประหลาดของทุก internal API และ edge case ของทุกรูปแบบไฟล์ลงใน system prompt เดียวได้ — มันจะกิน context budget จนหมดก่อนที่บทสนทนาจะเริ่มด้วยซ้ำ และส่วนใหญ่ก็ไม่เกี่ยวข้องกับคำขอใดๆ ที่เกิดขึ้นจริง Skill แก้ปัญหานี้ด้วยการอยู่นิ่งๆ ข้างๆ ไม่ปรากฏตัว จนกว่างานเฉพาะที่มันครอบคลุมจะเกิดขึ้นจริง
+
+สิ่งนี้แตกต่างจากการบอก Claude ให้ทำอะไรในข้อความเดียว Skill สามารถถูกค้นพบได้และนำกลับมาใช้ซ้ำได้: เมื่อบันทึกไว้แล้ว Claude (หรือเพื่อนร่วมทีม หรือตัวคุณในอนาคต) สามารถเรียกใช้มันได้ด้วยชื่อ หรือโดยการอธิบายงาน โดยไม่ต้องอธิบายขั้นตอนซ้ำทุกครั้ง มันยังแตกต่างจากการเพิ่มเนื้อหาลงใน system prompt ตรงๆ เพราะคลัง Skills จำนวนมากสามารถขยายได้ — การเพิ่ม Skill ที่ร้อยขึ้นไปก็ยังเสีย context ที่โหลดตลอดเวลาในปริมาณน้อยๆ เท่ากับการเพิ่ม Skill แรก
+
+ในระดับสูงสุด มีสามสิ่งที่ทำให้ Skill ทำงานได้: *description* สั้นๆ ที่ Claude เห็นอยู่ตลอดเวลาเพื่อให้รู้ว่า Skill นี้มีอยู่และควรหยิบมาใช้เมื่อไหร่; *body* ที่ยาวกว่าซึ่งมีคำสั่งจริงๆ จะถูกโหลดเข้า context ก็ต่อเมื่อ Skill ถูกกระตุ้นเท่านั้น; และ *bundled files* ที่เป็นทางเลือก — สคริปต์ เทมเพลต เอกสารอ้างอิง — ซึ่งจะถูกโหลดก็ต่อเมื่อคำสั่งใน body ต้องการมันจริงๆ กลยุทธ์การโหลดแบบนี้เรียกว่า progressive disclosure ซึ่งเป็นหัวข้อของบทเรียนถัดไป`,
       },
       {
         slug: "progressive-disclosure",
         titleEn: "Progressive Disclosure: The Three Levels",
+        titleTh: "Progressive Disclosure: สามระดับของการโหลด",
         order: 2,
         contentEn: `Progressive disclosure is the mechanism that lets an agent have access to hundreds of Skills without paying the context cost of all of them at once. It works in three levels, each loaded only when the previous level justifies it.
 
@@ -1615,10 +1968,26 @@ graph LR
 \`\`\`
 
 The practical upshot: write the \`description\` to be the thing Claude decides on, write the body to be the thing Claude executes with, and push anything long, rarely needed, or mechanical (boilerplate scripts, exhaustive references) into bundled files rather than the body. Skills that respect this stay cheap to keep around even when most of them go unused in any given conversation.`,
+        contentTh: `Progressive disclosure คือกลไกที่ทำให้ agent เข้าถึง Skills ได้นับร้อยโดยไม่ต้องเสียค่าใช้จ่ายด้าน context ของทั้งหมดพร้อมกัน มันทำงานเป็นสามระดับ แต่ละระดับจะถูกโหลดก็ต่อเมื่อระดับก่อนหน้ามีเหตุผลเพียงพอ
+
+**ระดับ 1 — metadata** \`name\` และ \`description\` จาก YAML frontmatter ของทุก Skill ที่มีอยู่จะถูกโหลดเข้า context ล่วงหน้า สำหรับทุกบทสนทนา สิ่งนี้ถูกออกแบบให้มีต้นทุนต่ำโดยเจตนา: หนึ่งหรือสองประโยคต่อ Skill นี่คือวิธีที่ Claude รู้ว่า Skill หนึ่งมีอยู่และคร่าวๆ ว่าควรใช้เมื่อไหร่ โดยยังไม่รู้อะไรเลยว่ามันทำงานอย่างไรจริงๆ
+
+**ระดับ 2 — body ของ SKILL.md** เมื่อ Claude ตัดสินใจแล้วว่า Skill นั้นเกี่ยวข้องกับงานปัจจุบันเท่านั้น body ทั้งหมดของ \`SKILL.md\` ถึงจะถูกโหลดเข้า context — คำสั่งแบบทีละขั้นตอน ข้อตกลง และตัวอย่างจริงๆ Skill ที่ไม่เคยถูกกระตุ้นในเซสชันหนึ่งจะไม่มีต้นทุนมากไปกว่า description บรรทัดเดียวของมัน
+
+**ระดับ 3 — bundled files** ตัว body เองสามารถชี้ไปยังไฟล์อื่นๆ ในโฟลเดอร์ของ Skill ได้ — เอกสารอ้างอิง สคีมาข้อมูล สคริปต์ — และ Claude จะอ่านหรือรันไฟล์เหล่านั้นก็ต่อเมื่อคำสั่งเรียกร้องขั้นตอนนั้นๆ จริงๆ เอกสารอ้างอิง API ยาว 2,000 บรรทัดที่แนบมากับ Skill จะไม่มีต้นทุนใดๆ เลย เว้นแต่งานจะต้องการส่วนนั้นจริงๆ
+
+\`\`\`mermaid
+graph LR
+    A["Level 1: name + description<br/>always in context"] -->|"Skill looks relevant"| B["Level 2: SKILL.md body<br/>loaded on trigger"]
+    B -->|"instructions reference a file"| C["Level 3: bundled scripts/docs<br/>loaded on demand"]
+\`\`\`
+
+สรุปในเชิงปฏิบัติ: เขียน \`description\` ให้เป็นสิ่งที่ Claude ใช้ตัดสินใจ เขียน body ให้เป็นสิ่งที่ Claude ใช้ลงมือทำ และผลักดันสิ่งที่ยาว ไม่ค่อยได้ใช้ หรือเป็นกลไกล้วนๆ (สคริปต์ boilerplate เอกสารอ้างอิงแบบละเอียดยิบ) ไปไว้ใน bundled files แทนที่จะอยู่ใน body Skills ที่เคารพหลักการนี้จะยังคงมีต้นทุนต่ำแม้ Skill ส่วนใหญ่จะไม่ได้ถูกใช้เลยในบทสนทนาใดบทสนทนาหนึ่ง`,
       },
       {
         slug: "anatomy-of-skill-md",
         titleEn: "Anatomy of SKILL.md",
+        titleTh: "โครงสร้างของ SKILL.md",
         order: 3,
         contentEn: `Every Skill's entry point is a single Markdown file named \`SKILL.md\`, sitting at the root of the Skill's own folder (e.g. \`pdf-filling/SKILL.md\`). It has two parts: YAML frontmatter, then a Markdown body.
 
@@ -1639,10 +2008,30 @@ The frontmatter has two required fields. \`name\` is a short, unique, kebab-case
 The body is ordinary Markdown: numbered steps, code blocks, tables, whatever communicates the procedure clearly. It's written the same way you'd write instructions for a competent person who doesn't know your specific workflow yet — explicit about the order of operations, explicit about edge cases you've hit before, and explicit about what "done" looks like. Anthropic's own guidance is to keep this body reasonably short — roughly under 500 lines is a common rule of thumb — since progressive disclosure only pays off if the body itself stays lean; anything longer belongs in a bundled reference file the body links to instead.
 
 A Skill folder can contain nothing but \`SKILL.md\` — that's a complete, valid Skill. Everything past that (scripts, templates, references) is optional and only added when the task genuinely benefits from it.`,
+        contentTh: `จุดเริ่มต้นของทุก Skill คือไฟล์ Markdown เดียวชื่อ \`SKILL.md\` ซึ่งอยู่ที่รากของโฟลเดอร์ของ Skill นั้นเอง (เช่น \`pdf-filling/SKILL.md\`) มันมีสองส่วน: YAML frontmatter ตามด้วย Markdown body
+
+\`\`\`
+---
+name: pdf-filling
+description: Fills out PDF form fields programmatically and flattens the result. Use this skill when the user needs to fill in a PDF form (tax forms, applications, contracts) with provided data.
+---
+
+# Filling PDF Forms
+
+1. Inspect the form fields with \`pdftk form.pdf dump_data_fields\`.
+2. Map each field name to the value the user provided...
+\`\`\`
+
+Frontmatter มีฟิลด์ที่จำเป็นสองฟิลด์ \`name\` คือตัวระบุแบบสั้น ไม่ซ้ำใคร และเป็น kebab-case — มันคือสิ่งที่ใช้เรียก Skill โดยตรงและใช้อ้างอิงจากที่อื่น \`description\` คือบทสรุปหนึ่งถึงสามประโยคที่ระบุทั้ง *สิ่งที่ Skill ทำ* และ *เมื่อไหร่ควรใช้มัน* — นี่คือส่วนเดียวของ Skill ที่มองเห็นได้ก่อนที่มันจะถูกกระตุ้น ดังนั้นถ้อยคำของมันจึงแบกรับกลไกการค้นพบทั้งหมด (บทเรียนถัดไปจะพูดถึงวิธีเขียนมันให้ดี)
+
+Body เป็น Markdown ธรรมดา: ขั้นตอนที่มีตัวเลข code block ตาราง อะไรก็ตามที่สื่อสารขั้นตอนได้อย่างชัดเจน มันถูกเขียนในแบบเดียวกับที่คุณจะเขียนคำสั่งให้คนที่มีความสามารถแต่ยังไม่รู้จัก workflow เฉพาะของคุณ — ชัดเจนเรื่องลำดับการทำงาน ชัดเจนเรื่อง edge case ที่คุณเคยเจอมาก่อน และชัดเจนว่า "เสร็จแล้ว" หน้าตาเป็นอย่างไร คำแนะนำของ Anthropic เองคือให้ body นี้สั้นพอสมควร — ประมาณไม่เกิน 500 บรรทัดเป็นกฎคร่าวๆ ที่ใช้กันทั่วไป — เพราะ progressive disclosure จะคุ้มค่าก็ต่อเมื่อตัว body เองยังคงกระชับ อะไรที่ยาวกว่านั้นควรอยู่ในไฟล์อ้างอิงที่แนบมาซึ่ง body ลิงก์ไปหาแทน
+
+โฟลเดอร์ของ Skill สามารถมีแค่ \`SKILL.md\` เพียงอย่างเดียวได้ — นั่นคือ Skill ที่สมบูรณ์และใช้งานได้แล้ว ทุกอย่างที่มากกว่านั้น (สคริปต์ เทมเพลต เอกสารอ้างอิง) เป็นทางเลือก และเพิ่มเข้ามาก็ต่อเมื่องานนั้นได้ประโยชน์จริงๆ เท่านั้น`,
       },
       {
         slug: "writing-an-effective-description",
         titleEn: "Writing an Effective Description",
+        titleTh: "การเขียน Description ให้มีประสิทธิภาพ",
         order: 4,
         contentEn: `The \`description\` field is the single highest-leverage sentence in a Skill, because it's the only part of the Skill that's always in context. If it's vague, Claude either never triggers the Skill when it should, or triggers it when it shouldn't — and unlike a body full of wrong instructions, a bad description fails silently, since nothing ever surfaces the mismatch to you.
 
@@ -1661,10 +2050,28 @@ description: Extracts tables from scanned PDF invoices into structured
 Include concrete trigger words a real request would contain — file types, task verbs, domain terms — rather than only abstract category names. "Use this skill when the user needs to fill in a PDF form" fires on the phrase "fill in this form"; "Helps with forms" doesn't give Claude much to match against.
 
 Also disambiguate from Skills that sound similar. If a codebase has both \`pdf-filling\` (writing into existing form fields) and \`pdf-generation\` (creating a new PDF from scratch), each description should make the boundary obvious, so Claude doesn't have to guess between them mid-task.`,
+        contentTh: `ฟิลด์ \`description\` คือประโยคที่ทรงพลังที่สุดเพียงประโยคเดียวใน Skill เพราะมันคือส่วนเดียวของ Skill ที่อยู่ใน context ตลอดเวลา ถ้ามันคลุมเครือ Claude จะไม่กระตุ้น Skill เมื่อควรจะทำ หรือไม่ก็กระตุ้นมันเมื่อไม่ควรทำ — และต่างจาก body ที่เต็มไปด้วยคำสั่งผิดๆ description ที่แย่จะล้มเหลวแบบเงียบๆ เพราะไม่มีอะไรมาเผยให้เห็นความไม่ตรงกันนี้กับคุณเลย
+
+เขียนมันในบุรุษที่สาม ราวกับกำลังบันทึกเอกสารของ Skill ไว้ให้ใครสักคนที่กำลังเลื่อนดูรายการความสามารถ — ไม่ใช่เขียนเป็นคำสั่งถึง Claude ("คุณควร...") และไม่ใช่การเสนอตัวในบุรุษที่หนึ่ง ("ฉันช่วยคุณได้...") ระบุสองสิ่งให้ชัดเจน: Skill ทำอะไร และควรใช้เมื่อไหร่
+
+\`\`\`
+# Too vague — Claude can't tell when this applies
+description: Helps with documents.
+
+# Specific — states the capability and the trigger
+description: Extracts tables from scanned PDF invoices into structured
+  JSON. Use this skill when the user shares a PDF invoice or receipt and
+  wants the line items pulled out as data.
+\`\`\`
+
+ใส่คำกระตุ้นที่เป็นรูปธรรมซึ่งคำขอจริงๆ จะมี — ประเภทไฟล์ คำกริยาของงาน คำศัพท์เฉพาะด้าน — แทนที่จะใช้แค่ชื่อหมวดหมู่ที่เป็นนามธรรม "Use this skill when the user needs to fill in a PDF form" จะทำงานเมื่อเจอวลี "fill in this form"; ส่วน "Helps with forms" ไม่ได้ให้อะไรกับ Claude มากพอที่จะจับคู่ได้
+
+นอกจากนี้ยังต้องแยกความแตกต่างจาก Skills ที่ฟังดูคล้ายกันด้วย ถ้า codebase หนึ่งมีทั้ง \`pdf-filling\` (การเขียนลงในฟิลด์ฟอร์มที่มีอยู่แล้ว) และ \`pdf-generation\` (การสร้าง PDF ใหม่ตั้งแต่ต้น) description ของแต่ละอันควรทำให้เส้นแบ่งนั้นชัดเจน เพื่อที่ Claude จะได้ไม่ต้องเดาระหว่างสองอย่างนี้กลางงาน`,
       },
       {
         slug: "bundling-scripts-and-references",
         titleEn: "Bundling Scripts & Reference Files",
+        titleTh: "การรวมสคริปต์และไฟล์อ้างอิง",
         order: 5,
         contentEn: `\`SKILL.md\` doesn't have to carry the entire task by itself. A Skill's folder can include any other files the instructions need, and the body references them by their relative path.
 
@@ -1684,10 +2091,29 @@ pdf-filling/
 \`\`\`
 
 A body instruction like "run \`scripts/fill_form.py --input form.pdf --data values.json\`" is both more reliable and cheaper than describing the equivalent logic in prose for Claude to reimplement each time. The rule of thumb: prose for things that need judgment or vary by request, a script for the parts that don't.`,
+        contentTh: `\`SKILL.md\` ไม่จำเป็นต้องแบกรับงานทั้งหมดด้วยตัวมันเองเพียงลำพัง โฟลเดอร์ของ Skill สามารถมีไฟล์อื่นๆ ที่คำสั่งต้องการได้ และ body จะอ้างอิงถึงไฟล์เหล่านั้นด้วยเส้นทางแบบสัมพัทธ์
+
+ไฟล์ที่แนบมาสองประเภทครอบคลุม Skills จริงส่วนใหญ่:
+
+**Reference files** เก็บเนื้อหาที่จำเป็นแต่ยาวเกินไปหรือถูกใช้น้อยเกินไปที่จะฝังไว้ใน body โดยตรง — สคีมา API เต็มรูปแบบ style guide ตารางรหัสข้อผิดพลาด body จะบอกประมาณว่า "ดู \`reference/api-schema.json\` สำหรับรายการฟิลด์ทั้งหมด" และ Claude จะเปิดไฟล์นั้นก็ต่อเมื่อขั้นตอนปัจจุบันต้องการมันจริงๆ ทำให้เส้นทางทั่วไปผ่าน Skill นั้นสั้น
+
+**Scripts** เก็บ logic ที่เชื่อถือได้มากกว่าเมื่อเป็นโค้ดแทนที่จะเป็นคำสั่งแบบร้อยแก้ว — โดยเฉพาะอะไรก็ตามที่เป็นกลไก แน่นอนตายตัว หรือยุ่งยากที่จะทำให้ถูกต้องเป๊ะๆ จากคำอธิบายภาษาธรรมชาติทุกครั้ง (การแยกวิเคราะห์รูปแบบไบนารี การรัน CLI pipeline หลายขั้นตอน การตรวจสอบไฟล์กับสคีมา) แทนที่จะขอให้ Claude สร้าง logic นั้นขึ้นมาใหม่ตั้งแต่ต้นทุกครั้งที่รัน — ซึ่งมีโอกาสเกิดบั๊กที่ต่างกันเล็กน้อยในแต่ละครั้ง — Skill จะแนบสคริปต์ที่ผ่านการทดสอบแล้วมาด้วย และ body ก็แค่บอกให้รันมัน
+
+\`\`\`
+pdf-filling/
+├── SKILL.md
+├── scripts/
+│   └── fill_form.py
+└── reference/
+    └── field-types.md
+\`\`\`
+
+คำสั่งใน body แบบ "run \`scripts/fill_form.py --input form.pdf --data values.json\`" นั้นทั้งเชื่อถือได้มากกว่าและมีต้นทุนต่ำกว่าการอธิบาย logic ที่เทียบเท่ากันเป็นร้อยแก้วให้ Claude ต้อง implement ใหม่ทุกครั้ง กฎง่ายๆ ที่ใช้จำ: ร้อยแก้วสำหรับสิ่งที่ต้องใช้วิจารณญาณหรือแตกต่างกันไปตามคำขอ สคริปต์สำหรับส่วนที่ไม่ต้องใช้`,
       },
       {
         slug: "where-skills-live",
         titleEn: "Where Skills Live: Personal, Project & Plugin Skills",
+        titleTh: "Skills อาศัยอยู่ที่ไหน: Personal, Project และ Plugin Skills",
         order: 6,
         contentEn: `A Skill's location determines who it's available to, which is the main design decision when creating one.
 
@@ -1704,10 +2130,26 @@ A body instruction like "run \`scripts/fill_form.py --input form.pdf --data valu
 | Plugin | Bundled in a plugin package | Everyone who installs the plugin |
 
 When more than one Skill with the same name is available at once, precedence and disambiguation rules can vary by environment — plugin skills are typically referenced as \`plugin-name:skill-name\` specifically to avoid colliding with a personal or project Skill of the same short name.`,
+        contentTh: `ตำแหน่งที่ตั้งของ Skill เป็นตัวกำหนดว่ามันจะใช้งานได้กับใครบ้าง ซึ่งเป็นการตัดสินใจด้านการออกแบบหลักเมื่อสร้าง Skill หนึ่งขึ้นมา
+
+**Personal skills** อาศัยอยู่ในไดเรกทอรีระดับผู้ใช้ (ใน Claude Code คือ \`~/.claude/skills/<name>/SKILL.md\`) มันจะติดตามคุณไปในทุกโปรเจกต์บนเครื่องของคุณ แต่จะไม่ถูกแชร์กับใครเลย — เป็นที่ที่เหมาะสำหรับทางลัดใน workflow ของตัวคุณเอง ไม่ใช่สำหรับสิ่งที่เพื่อนร่วมทีมต้องใช้
+
+**Project skills** อาศัยอยู่ภายใน repository เอง (\`.claude/skills/<name>/SKILL.md\`) ถูก commit เข้า version control และใช้งานได้กับทุกคนที่ทำงานใน codebase นั้น นี่คือที่ที่เหมาะสมสำหรับอะไรก็ตามที่เฉพาะเจาะจงกับข้อตกลงของโปรเจกต์เอง — "repo นี้เขียน migration อย่างไร" "กระบวนการ release ของ monorepo นี้ทำงานอย่างไร" — เพราะการ commit มันเข้าไปหมายความว่าทั้งทีม (และ agent ใดๆ ที่ทำงานใน repo) จะได้รับมันโดยอัตโนมัติ ไม่ต้องมีขั้นตอนติดตั้งแยกต่างหาก
+
+**Plugin skills** ถูกส่งมาพร้อมกับ plugin หนึ่ง แจกจ่ายและติดตั้งเป็นหน่วยเดียวกันกับเครื่องมือหรือคำสั่งอื่นๆ ที่ plugin นั้นให้มาด้วย นี่คือรูปแบบที่เหมาะสมสำหรับ Skill ที่ตั้งใจจะแชร์ข้ามหลายโปรเจกต์หรือหลายทีมที่ไม่เกี่ยวข้องกัน มีการกำหนดเวอร์ชันและอัปเดตแยกอิสระจาก codebase ใดๆ
+
+| Scope | Location | Shared with |
+| --- | --- | --- |
+| Personal | \`~/.claude/skills/\` | Just you, across all projects |
+| Project | \`.claude/skills/\` (in repo) | Everyone working in that repo |
+| Plugin | Bundled in a plugin package | Everyone who installs the plugin |
+
+เมื่อมี Skill ที่ชื่อเดียวกันมากกว่าหนึ่งตัวพร้อมใช้งานในเวลาเดียวกัน กฎเรื่องลำดับความสำคัญและการแยกแยะความกำกวมอาจแตกต่างกันไปตามสภาพแวดล้อม — plugin skills มักถูกอ้างอิงในรูปแบบ \`plugin-name:skill-name\` โดยเฉพาะเพื่อหลีกเลี่ยงการชนกับ personal หรือ project Skill ที่มีชื่อสั้นเดียวกัน`,
       },
       {
         slug: "skills-vs-tools-vs-subagents-vs-mcp",
         titleEn: "Skills vs. Tools vs. Subagents vs. MCP",
+        titleTh: "Skills เทียบกับ Tools, Subagents และ MCP",
         order: 7,
         contentEn: `These four pieces of the agent ecosystem are easy to conflate because they all extend what an agent can do, but they solve different problems and are frequently used together.
 
@@ -1720,10 +2162,22 @@ When more than one Skill with the same name is available at once, precedence and
 **A subagent** is a separate agent invocation — its own context window, its own tool access, run either in-process or in isolation — used to keep a large or noisy piece of work (a big search, a long investigation) out of the main conversation's context. A Skill can be the thing that tells an agent *how* to do a task; a subagent is a way of *where* that task's work happens. A Skill's instructions can direct Claude to delegate part of the work to a subagent, and a subagent can itself have access to the same Skills as the parent conversation.
 
 Put together: MCP and native tools give Claude things it can *do*; Skills give Claude knowledge of *how* to do a specific task well with those things; subagents give Claude a place to *do large pieces of work* without crowding the main conversation.`,
+        contentTh: `ทั้งสี่องค์ประกอบนี้ในระบบนิเวศของ agent นั้นสับสนกันได้ง่าย เพราะทั้งหมดขยายความสามารถของ agent แต่ละอย่างแก้ปัญหาคนละแบบ และมักถูกใช้ร่วมกันบ่อยๆ
+
+**Tool** มอบ *ความสามารถ* ใหม่ให้ Claude ที่ไม่เคยมีมาก่อน — ความสามารถในการอ่านไฟล์ รันคำสั่ง shell สอบถามฐานข้อมูล Tools มักถูก implement เป็นโค้ด (โดยตรง หรือผ่าน MCP) และเป็นสิ่งที่ลงมือทำการกระทำจริงในโลกจริง
+
+**MCP (Model Context Protocol)** คือวิธีมาตรฐานในการเปิดเผย tools (และ context อื่นๆ) จาก server ภายนอกให้ agent ที่รองรับตัวใดก็ได้ — มันคือระบบท่อสำหรับ *เชื่อมต่อ* tools และแหล่งข้อมูลใหม่ๆ ไม่ใช่รูปแบบการแพ็กเกจคำสั่ง
+
+**Skill** ไม่ได้เพิ่มความสามารถใหม่ด้วยตัวมันเอง — มันสอน Claude ให้ใช้ความสามารถที่มีอยู่แล้ว (tools, MCP servers, การให้เหตุผลของตัวมันเอง) ได้อย่างมีประสิทธิภาพมากขึ้นสำหรับงานเฉพาะอย่างที่เกิดซ้ำๆ หนึ่งอย่าง Skill สำหรับการกรอกแบบฟอร์ม PDF ไม่ได้สร้างความสามารถในการเขียน PDF ขึ้นมาใหม่ มันบอก Claude ว่าควรเรียก tool ที่มีอยู่แล้วตัวไหน ด้วยอาร์กิวเมนต์อะไร ตามลำดับใด และต้องระวังอะไรบ้าง นี่คือเหตุผลที่ Skills มีต้นทุนต่ำ: มันคือคำสั่งบวกกับ bundled files ที่เป็นทางเลือก ไม่ใช่กลไกใหม่
+
+**Subagent** คือการเรียก agent แยกต่างหาก — มี context window ของตัวเอง มีการเข้าถึง tool ของตัวเอง รันได้ทั้งแบบ in-process หรือแยกต่างหาก — ใช้เพื่อกันงานที่ใหญ่หรือมีเสียงรบกวนมาก (การค้นหาขนาดใหญ่ การสืบสวนที่ยาวนาน) ออกจาก context ของบทสนทนาหลัก Skill สามารถเป็นสิ่งที่บอก agent ว่า *ทำอย่างไร* กับงานหนึ่ง ในขณะที่ subagent เป็นวิธีที่บอกว่า *ที่ไหน* ที่งานนั้นจะถูกทำ คำสั่งของ Skill สามารถสั่งให้ Claude มอบหมายงานบางส่วนให้ subagent ได้ และ subagent เองก็สามารถเข้าถึง Skills ชุดเดียวกันกับบทสนทนาหลักได้เช่นกัน
+
+เมื่อรวมกันแล้ว: MCP และ native tools มอบสิ่งที่ Claude *ทำได้* ให้; Skills มอบความรู้ให้ Claude ว่า *จะทำ*งานเฉพาะอย่างหนึ่งด้วยสิ่งเหล่านั้นให้ดี*อย่างไร*; subagents มอบพื้นที่ให้ Claude *ทำงานชิ้นใหญ่* โดยไม่ทำให้บทสนทนาหลักแออัด`,
       },
       {
         slug: "skill-security",
         titleEn: "Security: Skills Are Data With Authority",
+        titleTh: "ความปลอดภัย: Skills คือข้อมูลที่มีอำนาจ",
         order: 8,
         contentEn: `A Skill's body is not sandboxed prose — once triggered, its instructions carry the same authority as anything else in Claude's context, including permission to call tools. That makes the provenance of a Skill a real security question, not just a quality one.
 
@@ -1738,10 +2192,24 @@ Practical guidelines:
 - Treat a Skill you didn't author as untrusted input if its instructions ever conflict with what the person you're actually working with asked for — the person's request takes precedence over instructions buried in a Skill file.
 
 This mirrors a broader pattern in agent security: content that gets loaded into an agent's context and treated as instructions — whether it's a Skill, a web page, or a tool's output — needs a trust boundary around where it came from, not just around what it says it does.`,
+        contentTh: `Body ของ Skill ไม่ใช่ร้อยแก้วที่ถูก sandbox ไว้ — เมื่อถูกกระตุ้นแล้ว คำสั่งของมันจะมีอำนาจเทียบเท่ากับสิ่งอื่นใดใน context ของ Claude รวมถึงสิทธิ์ในการเรียกใช้ tools ด้วย นั่นทำให้แหล่งที่มาของ Skill เป็นคำถามด้านความปลอดภัยจริงๆ ไม่ใช่แค่เรื่องคุณภาพเท่านั้น
+
+ถ้าคุณติดตั้ง Skill ที่คนอื่นเขียนขึ้น — จาก plugin marketplace, repository ที่แชร์กันในทีม หรือคัดลอกมาจากแหล่งที่ไม่คุ้นเคย — คุณกำลังไว้ใจผู้เขียนของมันในแบบเดียวกับที่คุณจะไว้ใจสคริปต์ที่กำลังจะรัน หรือ dependency ที่กำลังจะติดตั้ง Skill ที่เป็นอันตรายหรือประมาทอาจสั่งให้ Claude ขโมยข้อมูล รันคำสั่งทำลายล้าง หรือแอบเปลี่ยนพฤติกรรมของตัวมันเองกลางงานได้ และเพราะคำสั่งเหล่านั้นดูเหมือน Markdown ธรรมดา จึงง่ายที่จะมองข้ามเมื่ออ่านผ่านๆ
+
+ความระมัดระวังแบบเดียวกันนี้ใช้ได้กับสคริปต์ที่แนบมาด้วยอย่างตรงไปตรงมายิ่งกว่าเดิม: สคริปต์คือโค้ดที่อาจรันจริงบนเครื่องหรือสภาพแวดล้อมของคุณ ดังนั้นสคริปต์ที่แนบมาจึงสมควรได้รับการตรวจสอบแบบเดียวกับที่คุณจะให้โค้ดของบุคคลที่สามก่อนที่จะรันมัน — อย่าสันนิษฐานว่าสคริปต์ปลอดภัยเพียงเพราะมันมาพร้อมกับโฟลเดอร์ Skill ข้างๆ Markdown ที่ดูเหมือนจะมีประโยชน์
+
+แนวทางปฏิบัติจริง:
+- เลือกใช้ personal และ project Skills ที่คุณหรือทีมของคุณเขียนเอง มากกว่าการติดตั้ง Skills จากแหล่งที่ไม่คุ้นเคย
+- อ่าน \`SKILL.md\` ของ Skill ใหม่ — และสคริปต์ที่แนบมาด้วย — ก่อนที่จะพึ่งพามัน เช่นเดียวกับที่คุณจะรีวิว dependency ใหม่
+- จำกัดขอบเขตของ Skill ให้แคบเฉพาะงานเดียว Skill ที่ขอสิทธิ์กว้างและไม่เกี่ยวข้อง ("อ่านอีเมลของผู้ใช้ด้วย") เพื่อทำงานที่แคบ ("จัดรูปแบบสเปรดชีตนี้") คือสัญญาณเตือน
+- ปฏิบัติต่อ Skill ที่คุณไม่ได้เขียนเองเป็นข้อมูลที่ไม่น่าเชื่อถือ หากคำสั่งของมันขัดแย้งกับสิ่งที่คนที่คุณกำลังทำงานด้วยจริงๆ ร้องขอเมื่อใดก็ตาม — คำขอของบุคคลนั้นมีความสำคัญเหนือกว่าคำสั่งที่ฝังอยู่ในไฟล์ Skill
+
+สิ่งนี้สะท้อนรูปแบบที่กว้างกว่าในความปลอดภัยของ agent: เนื้อหาที่ถูกโหลดเข้า context ของ agent และถูกปฏิบัติเหมือนเป็นคำสั่ง — ไม่ว่าจะเป็น Skill หน้าเว็บ หรือผลลัพธ์จาก tool หนึ่ง — ต้องมีขอบเขตความน่าเชื่อถือรอบๆ ที่มาของมัน ไม่ใช่แค่รอบๆ สิ่งที่มันอ้างว่าทำเท่านั้น`,
       },
       {
         slug: "testing-and-iterating",
         titleEn: "Testing, Iterating & Common Pitfalls",
+        titleTh: "การทดสอบ การปรับปรุง และข้อผิดพลาดที่พบบ่อย",
         order: 9,
         contentEn: `A Skill is only as good as its worst real-world trigger, so the practical way to build one is to write a first draft, use it on a real task, and fix what goes wrong — the same loop as debugging any other reusable code.
 
@@ -1758,6 +2226,21 @@ This mirrors a broader pattern in agent security: content that gets loaded into 
 - Bundling a script for logic that actually needs per-request judgment, or writing prose instructions for logic that would be more reliable as a script.
 - Letting the body balloon past what a single task actually needs, instead of moving detail into a bundled reference file.
 - Never re-testing an existing Skill after the underlying tool, API, or convention it wraps changes.`,
+        contentTh: `Skill หนึ่งจะดีได้ก็เท่ากับตัวกระตุ้นที่แย่ที่สุดในโลกจริงของมันเท่านั้น ดังนั้นวิธีที่ใช้ได้จริงในการสร้างมันคือเขียนร่างแรก ใช้กับงานจริง แล้วแก้ไขสิ่งที่ผิดพลาด — วงจรเดียวกันกับการดีบักโค้ดที่นำกลับมาใช้ซ้ำได้อื่นๆ
+
+**ทดสอบตัวกระตุ้น ไม่ใช่แค่คำสั่ง** รันด้วยถ้อยคำเป๊ะๆ แบบที่คำขอจริงจะใช้ และยืนยันว่า Skill ทำงานจริง — จากนั้นรันคำขอที่ฟังดูคล้ายกันแต่ไม่ควรกระตุ้นมัน เพื่อจับ false positive description ที่ปรับแต่งโดยการอ่านด้วยตัวเองเพียงอย่างเดียว มักพลาดว่าผู้ใช้จริงพูดถึงงานเดียวกันด้วยถ้อยคำที่ต่างกันแค่ไหน
+
+**คอยสังเกต Skill ที่กระตือรือร้นเกินไปหรือขี้อายเกินไป** ถ้ามันทำงานกับคำขอที่ไม่เกี่ยวข้อง description นั้นกว้างเกินไปหรือคลุมเครือเกินไป — ทำให้ถ้อยคำกระตุ้นแคบลงและเพิ่มสิ่งที่มัน *ไม่ใช่* สำหรับ ถ้ามันไม่เคยทำงานเลยแม้ควรจะทำงาน description น่าจะใช้ศัพท์เฉพาะภายในหรือชื่อหมวดหมู่แทนที่จะเป็นคำที่คำขอจริงๆ จะมี
+
+**ทำให้ body เป็น checklist ไม่ใช่เรียงความ** คำอธิบายแบบบรรยายยาวๆ นั้นยากกว่าที่โมเดลจะทำตามทีละขั้นตอนภายใต้แรงกดดันด้านเวลา เมื่อเทียบกับคำสั่งแบบสั่งการสั้นๆ พร้อมตัวอย่างที่เป็นรูปธรรม ถ้าขั้นตอนหนึ่งมักถูกข้ามบ่อยๆ ให้แยกมันเป็นบรรทัดที่มีหมายเลขของตัวเอง แทนที่จะฝังไว้เป็นอนุประโยคในย่อหน้า
+
+**อัปเดตมันเมื่อความเป็นจริงเปลี่ยนไป** Skill ที่บันทึก "API นี้ทำงานอย่างไร" หรือ "repo นี้ทำ migration อย่างไร" จะล้าสมัยทันทีที่ API หรือข้อตกลงของ repo เปลี่ยนไป จงปฏิบัติต่อมันเหมือนเอกสารภายในชิ้นอื่นๆ ที่ต้องมีผู้ดูแล ไม่ใช่สิ่งที่เขียนครั้งเดียวจบ
+
+**ข้อผิดพลาดที่พบบ่อยที่ควรระวัง:**
+- description ที่อธิบายว่า Skill *คือ*อะไร ("ตัวช่วยสำหรับ PDF") แทนที่จะอธิบายว่ามัน *ทำอะไรและเมื่อไหร่* ("กรอกฟิลด์แบบฟอร์ม PDF; ใช้เมื่อผู้ใช้แชร์ PDF ที่กรอกได้")
+- การแนบสคริปต์สำหรับ logic ที่จริงๆ ต้องใช้วิจารณญาณเฉพาะคำขอ หรือการเขียนคำสั่งแบบร้อยแก้วสำหรับ logic ที่จะเชื่อถือได้มากกว่าถ้าเป็นสคริปต์
+- ปล่อยให้ body บวมเกินกว่าที่งานเดียวต้องการจริงๆ แทนที่จะย้ายรายละเอียดไปไว้ในไฟล์อ้างอิงที่แนบมา
+- ไม่เคยทดสอบ Skill ที่มีอยู่ซ้ำอีกครั้งหลังจาก tool, API หรือข้อตกลงที่มันครอบคลุมเปลี่ยนแปลงไป`,
       },
     ],
   },
@@ -1766,10 +2249,13 @@ This mirrors a broader pattern in agent security: content that gets loaded into 
     title: "Nuxt",
     descriptionEn:
       "The Vue meta-framework this platform's own frontend is built with: file-based routing, universal rendering, the Nitro server engine, auto-imports, and the module ecosystem that make it the standard way to build production Vue applications.",
-    lessons: [
+        descriptionTh:
+      "เมตาเฟรมเวิร์กของ Vue ที่ฟรอนต์เอนด์ของแพลตฟอร์มนี้เองถูกสร้างขึ้นด้วย: file-based routing, universal rendering, เอนจิน Nitro, auto-imports และระบบนิเวศของ module ที่ทำให้มันเป็นมาตรฐานสำหรับการสร้างแอปพลิเคชัน Vue ระดับโปรดักชัน",
+lessons: [
       {
         slug: "what-is-nuxt",
         titleEn: "What Is Nuxt?",
+        titleTh: "Nuxt คืออะไร?",
         order: 1,
         contentEn: `Nuxt is a meta-framework built on top of Vue — it takes the pieces every real Vue application eventually needs (routing, server-side rendering, a build pipeline, a place to put backend code) and provides them as conventions instead of decisions you make from scratch. This platform's own frontend, mindspace-web, is a Nuxt application.
 
@@ -1782,10 +2268,22 @@ Plain Vue gives you components and reactivity; it doesn't ship a router, a way t
 - **A module ecosystem** — features like Tailwind CSS integration, state management (Pinia), or i18n are added as one-line entries in \`nuxt.config.ts\` rather than hand-wired build configuration.
 
 None of this is magic Nuxt invents from nothing — under the hood it's still Vue, Vite, and Vue Router, configured and wired together with sensible defaults. The rest of this course covers those pieces in the order you'd actually meet them building something real.`,
+        contentTh: `Nuxt เป็นเมตาเฟรมเวิร์ก (meta-framework) ที่สร้างขึ้นบนพื้นฐานของ Vue — มันนำเอาส่วนประกอบที่แอปพลิเคชัน Vue จริงทุกตัวต้องการในที่สุด (routing, server-side rendering, build pipeline, ที่สำหรับใส่โค้ดฝั่ง backend) มาให้ในรูปแบบของ convention แทนที่จะให้คุณต้องตัดสินใจเองตั้งแต่ศูนย์ ฟรอนต์เอนด์ของแพลตฟอร์มนี้เอง คือ mindspace-web ก็เป็นแอปพลิเคชัน Nuxt
+
+Vue เพียวๆ ให้คุณแค่ component และ reactivity — มันไม่มี router มาให้ ไม่มีวิธี render บนฝั่งเซิร์ฟเวอร์ และไม่มีความเห็นเรื่องโครงสร้างโปรเจกต์ Nuxt เพิ่มทั้งสามอย่างนี้ให้ พร้อมกับอีกสองสามอย่าง:
+
+- **Universal rendering (SSR) เป็นค่าเริ่มต้น** — หน้าเพจจะถูก render เป็น HTML บนเซิร์ฟเวอร์ก่อน จากนั้น Vue จะ "hydrate" HTML นั้นในเบราว์เซอร์เพื่อทำให้มันโต้ตอบได้ ผู้ใช้จะเห็นเนื้อหาทันทีแทนที่จะเจอหน้าว่างเปล่าระหว่างที่ JavaScript กำลังดาวน์โหลด และ crawler ของเสิร์ชเอนจินก็ได้ HTML จริงๆ ไปทำ index แทนที่จะเจอ \`<div id="app">\` ว่างๆ
+- **File-based routing** — ไฟล์ใน \`app/pages/\` จะกลายเป็นเส้นทาง (route) ของคุณโดยอัตโนมัติ ไม่ต้องมีไฟล์ config ของ router ให้ดูแลเอง
+- **Nitro** เอนจินเซิร์ฟเวอร์ของ Nuxt เอง — มันขับเคลื่อนทั้ง SSR rendering และ backend ที่เป็นออปชัน (\`server/api/\`) และสร้างผลลัพธ์ที่รันได้บน Node server, แพลตฟอร์ม serverless ส่วนใหญ่ หรือ edge จาก codebase เดียวกัน
+- **Auto-imports** — component, composable และฟังก์ชัน utility ต่างๆ พร้อมใช้งานในทุกไฟล์โดยไม่ต้องมีบรรทัด \`import\` ชัดเจน เพียงแค่ดูจากตำแหน่งที่มันอยู่ในโปรเจกต์
+- **ระบบนิเวศของ module** — ฟีเจอร์อย่างการผสาน Tailwind CSS, state management (Pinia) หรือ i18n ถูกเพิ่มเข้ามาด้วยการเขียนแค่บรรทัดเดียวใน \`nuxt.config.ts\` แทนที่จะต้องต่อ build configuration ด้วยมือ
+
+ทั้งหมดนี้ไม่ใช่เวทมนตร์ที่ Nuxt สร้างขึ้นมาจากความว่างเปล่า — ภายใต้ผิวของมันยังคงเป็น Vue, Vite และ Vue Router ที่ถูกกำหนดค่าและเชื่อมต่อเข้าด้วยกันด้วยค่าเริ่มต้นที่สมเหตุสมผล ส่วนที่เหลือของคอร์สนี้จะครอบคลุมส่วนประกอบเหล่านั้นตามลำดับที่คุณจะเจอมันจริงๆ เมื่อสร้างอะไรสักอย่างขึ้นมาจริงจัง`,
       },
       {
         slug: "project-structure",
         titleEn: "Project Structure & app.vue",
+        titleTh: "โครงสร้างโปรเจกต์และ app.vue",
         order: 2,
         contentEn: `A fresh Nuxt project has a predictable shape, and Nuxt uses the *location* of a file to decide what it does — there's very little explicit registration.
 
@@ -1818,10 +2316,42 @@ Newer Nuxt projects (Nuxt 4's default layout) nest almost everything application
 \`\`\`
 
 \`<NuxtPage />\` is where the currently matched route's page component renders; \`<NuxtLayout>\` wraps it in whichever layout applies (the next lesson covers layouts). Anything else you put in \`app.vue\` — a header, a footer, global CSS — renders on every single page, since every page renders inside this one root component.`,
+        contentTh: `โปรเจกต์ Nuxt ใหม่แกะกล่องจะมีรูปร่างที่คาดเดาได้ และ Nuxt ใช้ *ตำแหน่งที่ตั้ง* ของไฟล์ในการตัดสินใจว่ามันทำหน้าที่อะไร — แทบไม่มีการลงทะเบียนอย่างชัดเจนเลย
+
+\`\`\`
+my-app/
+├── app/
+│   ├── pages/         # file-based routes
+│   ├── components/    # auto-imported Vue components
+│   ├── composables/   # auto-imported composable functions
+│   ├── layouts/       # page layout wrappers
+│   ├── middleware/    # route guards, run before navigation
+│   ├── plugins/       # code that runs once on app init
+│   ├── utils/         # auto-imported plain helper functions
+│   └── app.vue        # the app's root component
+├── server/             # Nitro backend — API routes, server middleware
+├── public/             # static files served as-is (favicon, robots.txt)
+└── nuxt.config.ts      # the project's central configuration file
+\`\`\`
+
+โปรเจกต์ Nuxt รุ่นใหม่ๆ (โครงสร้างเริ่มต้นของ Nuxt 4) จะเนสต์แทบทุกอย่างที่เกี่ยวกับฝั่งแอปพลิเคชันไว้ใต้ \`app/\` — pages, components, composables, layouts และอื่นๆ ทั้งหมดอยู่ในนั้น ในขณะที่ \`server/\` และ \`public/\` ยังคงอยู่ที่ root ของโปรเจกต์เคียงข้างกับ \`nuxt.config.ts\` นี่คือการเปลี่ยนแปลงจาก Nuxt 3 ที่โฟลเดอร์เดียวกันเหล่านี้ (\`pages/\`, \`components/\`, \`composables/\`...) เคยอยู่ที่ root ของโปรเจกต์โดยตรง Nuxt 4 จัดกลุ่มมันไว้ใต้ \`app/\` โดยเฉพาะ เพื่อไม่ให้ root ของ repo เป็นส่วนผสมแบบแบนราบระหว่างโค้ดฝั่งหน้าบ้าน โค้ดฝั่งหลังบ้าน และ config
+
+\`app.vue\` คือ root component เดียวของแอปพลิเคชัน — ทุกอย่างที่เหลือ render อยู่ข้างในนี้ แบบง่ายที่สุดก็แค่:
+
+\`\`\`vue
+<template>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+</template>
+\`\`\`
+
+\`<NuxtPage />\` คือจุดที่ page component ของ route ที่จับคู่ได้ในปัจจุบันจะ render; \`<NuxtLayout>\` จะห่อมันไว้ด้วย layout ที่เกี่ยวข้อง (บทเรียนถัดไปจะพูดถึง layout) อะไรก็ตามที่คุณใส่เพิ่มใน \`app.vue\` — header, footer, CSS ระดับ global — จะ render บนทุกหน้า เพราะทุกหน้า render อยู่ภายใน root component เดียวนี้`,
       },
       {
         slug: "file-based-routing",
         titleEn: "File-Based Routing",
+        titleTh: "File-Based Routing",
         order: 3,
         contentEn: `Every \`.vue\` file under \`app/pages/\` becomes a route automatically, named after its path relative to that folder — there's no router file to hand-maintain. \`app/pages/index.vue\` is \`/\`, \`app/pages/about.vue\` is \`/about\`, and \`app/pages/settings/profile.vue\` is \`/settings/profile\`.
 
@@ -1839,10 +2369,27 @@ Nesting works two ways. A plain subfolder (\`app/pages/settings/profile.vue\`) j
 Navigate declaratively with \`<NuxtLink to="/courses">Courses</NuxtLink>\` — it renders a real \`<a>\` tag and uses Vue Router's client-side navigation instead of a full page reload. For navigation triggered from code (after a form submits, inside a composable), use \`await navigateTo('/courses')\` rather than manipulating \`window.location\` — it goes through the same router and respects any navigation middleware in place (the subject of the next lesson).
 
 A page can declare metadata about itself with \`definePageMeta()\` at the top of its \`<script setup>\` block — which layout it uses, whether it requires auth, custom route matching options — read by Nuxt at build time before the page's own code runs.`,
+        contentTh: `ทุกไฟล์ \`.vue\` ภายใต้ \`app/pages/\` จะกลายเป็น route โดยอัตโนมัติ โดยตั้งชื่อตาม path ของมันเทียบกับโฟลเดอร์นั้น — ไม่มีไฟล์ router ให้ดูแลเอง \`app/pages/index.vue\` คือ \`/\`, \`app/pages/about.vue\` คือ \`/about\`, และ \`app/pages/settings/profile.vue\` คือ \`/settings/profile\`
+
+วงเล็บเหลี่ยมใช้ระบุ segment แบบ dynamic \`app/pages/courses/[id].vue\` จะจับคู่กับ \`/courses/อะไรก็ได้\` และภายในหน้านั้น \`useRoute().params.id\` จะให้ค่าที่จับคู่ได้มา วงเล็บเหลี่ยมคู่ทำให้ segment เป็นออปชัน — \`app/pages/[[slug]].vue\` จับคู่ได้ทั้ง \`/\` และ \`/อะไรก็ได้\` ส่วน catch-all ใช้จุดสามจุด: \`app/pages/[...slug].vue\` จับคู่กับ path ทุกความลึกที่อยู่ใต้มัน (\`/a\`, \`/a/b\`, \`/a/b/c\`) โดยทุก segment ที่จับได้จะถูกรวบรวมไว้ใน \`params.slug\` เป็น array
+
+\`\`\`
+app/pages/index.vue              →  /
+app/pages/about.vue               →  /about
+app/pages/courses/[id].vue        →  /courses/:id
+app/pages/courses/[...slug].vue   →  /courses/* (catch-all)
+\`\`\`
+
+การเนสต์ทำงานได้สองแบบ ซับโฟลเดอร์ธรรมดา (\`app/pages/settings/profile.vue\`) แค่สร้าง path ที่ยาวขึ้น เหมือนกับ file-based router ทั่วไป *Nested layout ภายใน route* เป็นคนละเรื่องกัน — ถ้ามีทั้ง \`app/pages/parent.vue\` และ \`app/pages/parent/child.vue\` การเข้า \`/parent/child\` จะ render \`child.vue\` *ภายใน* \`parent.vue\` ตรงจุดที่ \`parent.vue\` วาง \`<NuxtPage />\` ของตัวเองไว้ — ความสัมพันธ์แบบ parent/child เดียวกันกับที่ \`<NuxtLayout>\` และ \`<NuxtPage>\` มีใน \`app.vue\` เพียงแต่ลึกลงไปอีกหนึ่งชั้น
+
+Navigate แบบ declarative ด้วย \`<NuxtLink to="/courses">Courses</NuxtLink>\` — มันจะ render เป็นแท็ก \`<a>\` จริงๆ และใช้การ navigate แบบฝั่ง client ของ Vue Router แทนการโหลดหน้าใหม่ทั้งหมด สำหรับการ navigate ที่ถูกเรียกจากโค้ด (หลัง form ถูก submit, ภายใน composable) ให้ใช้ \`await navigateTo('/courses')\` แทนการไปจัดการ \`window.location\` เอง — มันจะผ่าน router ตัวเดียวกันและเคารพ navigation middleware ที่มีอยู่ (หัวข้อของบทเรียนถัดไป)
+
+หน้าหนึ่งสามารถประกาศ metadata เกี่ยวกับตัวเองได้ด้วย \`definePageMeta()\` ที่ด้านบนของบล็อก \`<script setup>\` — ว่าใช้ layout ไหน ต้องมีการยืนยันตัวตนหรือไม่ ตัวเลือกการจับคู่ route แบบกำหนดเอง — ซึ่ง Nuxt จะอ่านตอน build time ก่อนที่โค้ดของหน้านั้นจะรันจริง`,
       },
       {
         slug: "layouts-and-middleware",
         titleEn: "Layouts & Route Middleware",
+        titleTh: "Layouts และ Route Middleware",
         order: 4,
         contentEn: `A layout is a wrapper component — a persistent header, sidebar, or footer — shared across multiple pages, so individual pages only need to contain what's actually unique to them. Layouts live in \`app/layouts/\`; \`app/layouts/default.vue\` is used automatically for any page that doesn't specify another one.
 
@@ -1878,10 +2425,45 @@ export default defineNuxtRouteMiddleware((to) => {
 \`\`\`
 
 A page opts in with \`definePageMeta({ middleware: 'auth' })\`. Naming a middleware file with a \`.global.ts\` suffix (\`app/middleware/analytics.global.ts\`) instead runs it on *every* route automatically, with no per-page opt-in needed — useful for things like analytics or a maintenance-mode check that should apply everywhere, but easy to overuse for things that should really be scoped to a few pages.`,
+        contentTh: `Layout คือ wrapper component — header, sidebar หรือ footer ที่คงอยู่ถาวร — ใช้ร่วมกันในหลายหน้า เพื่อให้แต่ละหน้าต้องมีแค่สิ่งที่เป็นของตัวเองจริงๆ เท่านั้น Layout อยู่ใน \`app/layouts/\`; \`app/layouts/default.vue\` จะถูกใช้โดยอัตโนมัติสำหรับหน้าใดก็ตามที่ไม่ได้ระบุ layout อื่นไว้
+
+\`\`\`vue
+<!-- app/layouts/default.vue -->
+<template>
+  <div>
+    <SiteHeader />
+    <slot />
+    <SiteFooter />
+  </div>
+</template>
+\`\`\`
+
+\`<slot />\` คือจุดที่เนื้อหาของหน้าปัจจุบันจะ render หน้าหนึ่งสามารถเลือกใช้ layout อื่น — หรือใช้ \`false\` เพื่อ render โดยไม่มี layout เลย — ด้วย \`definePageMeta\`:
+
+\`\`\`vue
+<script setup lang="ts">
+definePageMeta({ layout: 'dashboard' })
+</script>
+\`\`\`
+
+Route middleware จะรัน *ก่อน* ที่การ navigate จะเสร็จสมบูรณ์ ทำให้มันเป็นที่ที่เหมาะสำหรับ guard: ตรวจสอบการยืนยันตัวตน, redirect หรือบล็อก route ทั้งหมด Named middleware อยู่ใน \`app/middleware/\` เป็นไฟล์ที่ export \`defineNuxtRouteMiddleware\`:
+
+\`\`\`ts
+// app/middleware/auth.ts
+export default defineNuxtRouteMiddleware((to) => {
+  const { user } = useAuth()
+  if (!user.value) {
+    return navigateTo('/login')
+  }
+})
+\`\`\`
+
+หน้าหนึ่งเลือกใช้มันด้วย \`definePageMeta({ middleware: 'auth' })\` การตั้งชื่อไฟล์ middleware ด้วยส่วนท้าย \`.global.ts\` (\`app/middleware/analytics.global.ts\`) จะทำให้มันรันบน *ทุก* route โดยอัตโนมัติ โดยไม่ต้องเลือกใช้ทีละหน้า — มีประโยชน์สำหรับอะไรอย่าง analytics หรือการตรวจสอบโหมดปิดปรับปรุงที่ควรใช้กับทุกหน้า แต่ก็ใช้เกินความจำเป็นได้ง่ายกับสิ่งที่ควรจำกัดขอบเขตไว้แค่บางหน้าเท่านั้น`,
       },
       {
         slug: "data-fetching",
         titleEn: "Data Fetching: useFetch & useAsyncData",
+        titleTh: "Data Fetching: useFetch และ useAsyncData",
         order: 5,
         contentEn: `Fetching data naively in a component's setup code causes a real problem under SSR: the request runs once on the server to render the initial HTML, then runs *again* in the browser during hydration, because the client has no idea the server already did the work. That's a wasted request at best, and a source of hydration mismatches (server HTML built from one response, client state built from a second, slightly different one) at worst.
 
@@ -1904,10 +2486,32 @@ const { data } = await useAsyncData('dashboard', () =>
 Both return the same shape: \`data\` (a ref holding the result), \`status\` (\`'idle' | 'pending' | 'success' | 'error'\`), \`error\`, and a \`refresh()\`/\`execute()\` function to re-run the fetch on demand. Useful options on either one: \`key\` to control payload/cache identity explicitly, \`server: false\` to skip the server-side fetch entirely (client-only data), \`lazy: true\` (or the \`useLazyFetch\`/\`useLazyAsyncData\` shorthand) to let navigation complete without waiting on the fetch, and \`watch: [someRef]\` to automatically re-run when a reactive value changes.
 
 Reach for plain \`$fetch\` instead — the underlying HTTP client both composables use — when there's no SSR concern to begin with: a button click, a form submission, anything that only ever happens after the page has already loaded in the browser.`,
+        contentTh: `การ fetch ข้อมูลแบบตรงไปตรงมาใน setup code ของ component ก่อให้เกิดปัญหาจริงภายใต้ SSR: request จะรันครั้งหนึ่งบนเซิร์ฟเวอร์เพื่อ render HTML เริ่มต้น แล้วรัน *อีกครั้ง* ในเบราว์เซอร์ระหว่าง hydration เพราะฝั่ง client ไม่รู้เลยว่าเซิร์ฟเวอร์ทำงานนี้ไปแล้ว อย่างดีที่สุดก็เสีย request ไปฟรีๆ อย่างแย่ที่สุดก็เป็นต้นตอของ hydration mismatch (HTML จากเซิร์ฟเวอร์สร้างจาก response หนึ่ง แต่ state ฝั่ง client สร้างจาก response ที่สอง ซึ่งต่างกันเล็กน้อย)
+
+\`useFetch\` และ \`useAsyncData\` มีไว้เพื่อแก้ปัญหานี้โดยเฉพาะ เมื่อเซิร์ฟเวอร์ fetch ข้อมูลเพื่อ render หน้าเพจ มันจะ serialize ผลลัพธ์ลงใน payload ของหน้านั้น ฝั่ง client จะอ่าน payload นี้ตอน hydration แทนที่จะ fetch ซ้ำ การเรียก composable ตัวเดียวกันจะสร้าง network request แค่หนึ่งครั้งต่อการ navigate ไม่ใช่สองครั้ง
+
+\`\`\`vue
+<script setup lang="ts">
+// useFetch: a thin, URL-based wrapper — good for "just call this endpoint"
+const { data: course, status, error } = await useFetch(\`/api/courses/\${id}\`)
+
+// useAsyncData: same SSR/payload behavior, but you supply the async logic
+// yourself — for anything beyond a single URL (SDK calls, multiple requests,
+// custom transforms before the result is cached).
+const { data } = await useAsyncData('dashboard', () =>
+  Promise.all([$fetch('/api/courses'), $fetch('/api/progress')])
+)
+</script>
+\`\`\`
+
+ทั้งสองตัวคืนค่ารูปแบบเดียวกัน: \`data\` (ref ที่เก็บผลลัพธ์), \`status\` (\`'idle' | 'pending' | 'success' | 'error'\`), \`error\` และฟังก์ชัน \`refresh()\`/\`execute()\` สำหรับสั่ง fetch ใหม่ตามต้องการ ออปชันที่มีประโยชน์ของทั้งสองตัว: \`key\` เพื่อควบคุม identity ของ payload/cache อย่างชัดเจน, \`server: false\` เพื่อข้ามการ fetch ฝั่งเซิร์ฟเวอร์ไปเลย (ข้อมูลแบบ client-only), \`lazy: true\` (หรือใช้ตัวย่อ \`useLazyFetch\`/\`useLazyAsyncData\`) เพื่อให้การ navigate เสร็จสิ้นได้โดยไม่ต้องรอ fetch และ \`watch: [someRef]\` เพื่อสั่ง fetch ใหม่โดยอัตโนมัติเมื่อค่า reactive เปลี่ยนแปลง
+
+ให้ใช้ \`$fetch\` ธรรมดาแทน — HTTP client ที่ composable ทั้งสองตัวใช้อยู่เบื้องหลัง — เมื่อไม่มีประเด็นเรื่อง SSR ให้ต้องกังวลตั้งแต่แรก: การคลิกปุ่ม, การ submit form, อะไรก็ตามที่เกิดขึ้นหลังจากหน้าเพจโหลดเสร็จในเบราว์เซอร์แล้วเท่านั้น`,
       },
       {
         slug: "auto-imports-and-composables",
         titleEn: "Auto-Imports & Composables",
+        titleTh: "Auto-Imports และ Composables",
         order: 6,
         contentEn: `Nuxt auto-imports based on where a file lives, not on any registration step. A component in \`app/components/CourseCard.vue\` can be used in any page or component as \`<CourseCard />\` with no \`import\` statement; a function exported from \`app/composables/useAuth.ts\` is callable as \`useAuth()\` anywhere, again with no import. This is why Nuxt code looks like it's using globals — they're not globals, they're just resolved automatically from the file tree at build time, and your editor's TypeScript tooling still knows exactly where each one is defined.
 
@@ -1930,10 +2534,32 @@ const cart = useState<string[]>('cart', () => [])
 \`\`\`
 
 For state that needs more structure than a single ref — actions, getters, multiple related pieces of state — Nuxt projects commonly reach for Pinia (added via the \`@pinia/nuxt\` module) instead of hand-rolling it with \`useState\`, but the underlying SSR-safety concern \`useState\` addresses is the same one Pinia's Nuxt integration handles for you.`,
+        contentTh: `Nuxt ทำ auto-import ตามตำแหน่งที่ไฟล์นั้นอยู่ ไม่ใช่จากขั้นตอนการลงทะเบียนใดๆ component ใน \`app/components/CourseCard.vue\` สามารถใช้ได้ในทุกหน้าหรือ component เป็น \`<CourseCard />\` โดยไม่ต้องมีคำสั่ง \`import\`; ฟังก์ชันที่ export จาก \`app/composables/useAuth.ts\` เรียกใช้ได้เป็น \`useAuth()\` ได้ทุกที่ ก็ไม่ต้อง import เช่นกัน นี่คือเหตุผลที่โค้ด Nuxt ดูเหมือนใช้ global — จริงๆ แล้วมันไม่ใช่ global แต่ถูก resolve โดยอัตโนมัติจาก file tree ตอน build time และ TypeScript tooling ในเอดิเตอร์ของคุณก็ยังรู้แน่ชัดว่าแต่ละตัวถูกประกาศไว้ที่ไหน
+
+Composable คือฟังก์ชันที่ใช้ Composition API ของ Vue (\`ref\`, \`computed\`, lifecycle hook) เพื่อรวบรวม logic แบบมี state ที่ใช้ซ้ำได้ — เทียบเท่ากับ custom hook ในโลกของ Vue Nuxt จะ auto-import ทุกอย่างที่ export จาก \`app/composables/\`:
+
+\`\`\`ts
+// app/composables/useCounter.ts
+export function useCounter() {
+  const count = ref(0)
+  function increment() { count.value++ }
+  return { count, increment }
+}
+\`\`\`
+
+มี composable เฉพาะของ Nuxt ตัวหนึ่งที่ควรพูดถึงแยกต่างหาก: \`useState\` บนฝั่งเซิร์ฟเวอร์ \`ref\` ธรรมดาระดับ module เป็นกับดัก — Nitro สามารถ (และมักจะ) จัดการหลาย request พร้อมกันในโปรเซสเดียวกันได้ ดังนั้น state ที่เก็บไว้นอก scope ของ request ตัวเองจะรั่วไหลข้ามไปยัง request ของผู้ใช้คนอื่นที่ไม่เกี่ยวข้องกัน \`useState(key, initFn)\` คือ shared state ที่ปลอดภัยสำหรับ SSR ถูกจำกัด scope อย่างถูกต้องต่อ request บนเซิร์ฟเวอร์ และคงอยู่อย่างถูกต้องผ่าน payload ไปยัง client นี่คือเหตุผลที่มัน — ไม่ใช่ \`ref\` เปล่าๆ ที่ระดับบนสุด — เป็นวิธีที่ Nuxt แนะนำให้แชร์ reactive state ข้าม component โดยไม่ต้องใช้ state-management library
+
+\`\`\`ts
+// Shared, SSR-safe — every component calling useState('cart') gets the same ref
+const cart = useState<string[]>('cart', () => [])
+\`\`\`
+
+สำหรับ state ที่ต้องการโครงสร้างมากกว่า ref เดียว — action, getter, ข้อมูล state ที่เกี่ยวข้องกันหลายส่วน — โปรเจกต์ Nuxt มักจะหันไปใช้ Pinia (เพิ่มผ่าน module \`@pinia/nuxt\`) แทนที่จะเขียนเองด้วย \`useState\` แต่ประเด็นเรื่องความปลอดภัยของ SSR ที่ \`useState\` แก้ไขอยู่ก็เป็นประเด็นเดียวกับที่การผสาน Pinia เข้ากับ Nuxt จัดการให้คุณ`,
       },
       {
         slug: "server-routes-with-nitro",
         titleEn: "Server Routes with Nitro",
+        titleTh: "Server Routes กับ Nitro",
         order: 7,
         contentEn: `Nitro is the engine that renders your pages on the server — and it can also serve as your application's backend. Any file under \`server/api/\` becomes an HTTP endpoint, with the file's path becoming the route and an optional suffix on the filename selecting the HTTP method.
 
@@ -1962,10 +2588,38 @@ export default defineEventHandler(async (event) => {
 \`server/routes/\` works the same way but without the automatic \`/api\` prefix — useful for things like a webhook URL or a non-API endpoint. \`server/middleware/\` holds handlers that run on *every* incoming request before its route handler, for logging, auth-token verification, or similar cross-cutting concerns — a server middleware should inspect or annotate the request rather than send its own response, and let the matched route handler produce the actual reply.
 
 Because Nitro serves both your pages and your \`/api\` routes from the same process on the same origin, calling \`useFetch('/api/courses')\` from a page needs no CORS configuration and no separate base URL in development — it's a same-origin request by construction. That stops being true the moment your API is deployed as a genuinely separate service (as this platform's own API, mindspace-api, is — a standalone Express server, not Nitro routes) — at that point the frontend needs an explicit base URL and the API needs CORS configured for the frontend's origin, exactly the tradeoff \`server/api/\` exists to let you skip for projects that don't need a separately deployable backend.`,
+        contentTh: `Nitro คือเอนจินที่ render หน้าเพจของคุณบนเซิร์ฟเวอร์ — และมันยังทำหน้าที่เป็น backend ของแอปพลิเคชันคุณได้ด้วย ไฟล์ใดก็ตามภายใต้ \`server/api/\` จะกลายเป็น HTTP endpoint โดย path ของไฟล์จะกลายเป็น route และส่วนต่อท้ายชื่อไฟล์ที่เป็นออปชันจะเลือก HTTP method
+
+\`\`\`ts
+// server/api/hello.get.ts  →  GET /api/hello
+export default defineEventHandler((event) => {
+  return { message: 'Hello World' }
+})
+
+// server/api/courses/[id].get.ts  →  GET /api/courses/:id
+export default defineEventHandler((event) => {
+  const id = getRouterParam(event, 'id')
+  return { id }
+})
+
+// server/api/courses.post.ts  →  POST /api/courses
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event)
+  // ...create the course...
+  return { created: true }
+})
+\`\`\`
+
+\`defineEventHandler\` ห่อ request handler ไว้; \`event\` เก็บข้อมูลของ request และ helper จาก H3 (ไลบรารี HTTP ที่ Nitro สร้างขึ้นบนพื้นฐานของมัน) อ่านค่าออกมาจากมัน — \`getRouterParam\` สำหรับ dynamic path segment, \`getQuery\` สำหรับ query string, \`readBody\` สำหรับ body แบบ JSON/form ที่ถูก parse แล้ว ไฟล์ที่ไม่มีส่วนต่อท้ายบอก method (\`server/api/hello.ts\`) จะจับคู่กับทุก HTTP method
+
+\`server/routes/\` ทำงานแบบเดียวกันแต่ไม่มี prefix \`/api\` อัตโนมัติ — มีประโยชน์สำหรับสิ่งอย่าง webhook URL หรือ endpoint ที่ไม่ใช่ API \`server/middleware/\` เก็บ handler ที่รันบน *ทุก* request ขาเข้าก่อน route handler ของมัน สำหรับ logging, การยืนยัน auth-token หรือประเด็นแบบ cross-cutting อื่นๆ ที่คล้ายกัน — server middleware ควรตรวจสอบหรือ annotate request มากกว่าจะส่ง response ของตัวเอง แล้วปล่อยให้ route handler ที่จับคู่ได้เป็นผู้สร้างคำตอบจริงๆ
+
+เพราะ Nitro ให้บริการทั้งหน้าเพจของคุณและ route \`/api\` จากโปรเซสเดียวกันบน origin เดียวกัน การเรียก \`useFetch('/api/courses')\` จากหน้าเพจไม่ต้องตั้งค่า CORS และไม่ต้องมี base URL แยกต่างหากตอน development เลย — มันเป็น same-origin request โดยธรรมชาติ สิ่งนี้จะไม่จริงอีกต่อไปทันทีที่ API ของคุณถูก deploy เป็น service แยกต่างหากจริงๆ (เหมือนที่ API ของแพลตฟอร์มนี้เอง คือ mindspace-api เป็น — Express server แบบ standalone ไม่ใช่ Nitro routes) — ณ จุดนั้น frontend จำเป็นต้องมี base URL ที่ชัดเจน และ API ต้องตั้งค่า CORS สำหรับ origin ของ frontend ซึ่งเป็น tradeoff ที่ \`server/api/\` มีไว้ให้คุณข้ามได้พอดีสำหรับโปรเจกต์ที่ไม่ต้องการ backend ที่ deploy แยกต่างหาก`,
       },
       {
         slug: "rendering-modes",
         titleEn: "Rendering Modes: SSR, SPA, SSG & Hybrid",
+        titleTh: "Rendering Modes: SSR, SPA, SSG และ Hybrid",
         order: 8,
         contentEn: `Nuxt supports several rendering strategies, and — unusually for a framework — lets you mix them per route in the same app rather than forcing one choice for the whole project.
 
@@ -1995,10 +2649,39 @@ export default defineNuxtConfig({
 | Hybrid (\`routeRules\`) | Mixed, per route | Depends on the mix | Real apps with both kinds of route |
 
 The practical default is: leave SSR on everywhere until a specific route gives you a reason not to (an admin panel with no SEO value, a page whose content truly never changes), then carve out an exception for that route with \`routeRules\` instead of dropping SSR for the whole app.`,
+        contentTh: `Nuxt รองรับกลยุทธ์การ render หลายแบบ และ — ซึ่งไม่ค่อยเจอในเฟรมเวิร์กทั่วไป — ให้คุณผสมมันได้ต่อ route ในแอปเดียวกัน แทนที่จะบังคับให้เลือกแบบเดียวสำหรับทั้งโปรเจกต์
+
+**Universal rendering (SSR)** เป็นค่าเริ่มต้น: แต่ละ request จะ render HTML เต็มรูปแบบบนเซิร์ฟเวอร์ ส่งไปยังเบราว์เซอร์ แล้ว Vue จะ hydrate มันให้กลายเป็นแอปที่โต้ตอบได้ เนื้อหามองเห็นได้ทันทีและ crawler ของเสิร์ชเอนจินสามารถทำ index ได้ โดยแลกกับการที่ต้องมีโปรเซสเซิร์ฟเวอร์รันอยู่
+
+**Client-side rendering (SPA)** ส่ง HTML shell ที่แทบว่างเปล่าไป แล้วให้เบราว์เซอร์ทำ render ทั้งหมดหลังจากดาวน์โหลด JavaScript bundle เสร็จ — ตั้งค่าแบบ global ด้วย \`ssr: false\` ใน \`nuxt.config.ts\` มันเข้าใจง่ายกว่า (ไม่ต้องกังวลเรื่องความแตกต่างของ code path ระหว่างเซิร์ฟเวอร์กับ client) และ deploy ไปยัง static hosting ธรรมดาได้ แต่ผู้ใช้จะเห็นหน้าว่างเปล่านานขึ้น และ crawler ต้องรัน JavaScript เพื่อจะเห็นเนื้อหาใดๆ เลย — เป็นต้นทุนที่แท้จริงสำหรับอะไรก็ตามที่ต้องการให้ถูก index แต่ไม่ใช่ปัญหาสำหรับอะไรอย่าง dashboard ภายในที่ไม่จำเป็นต้องถูก index
+
+**Static site generation (SSG)** — \`nuxt generate\` — จะ prerender ทุก route เป็นไฟล์ HTML แบบ static ตอน build time ดังนั้นจึงไม่ต้องมีเซิร์ฟเวอร์ตอน runtime เลย มีแค่ไฟล์บน CDN
+
+**Hybrid rendering** ใช้กฎที่ต่างกันกับแต่ละ route ด้วย \`routeRules\` ใน \`nuxt.config.ts\` ทำให้แอปเดียวใช้กลยุทธ์ที่เหมาะสมต่อ route แทนที่จะใช้กลยุทธ์เดียวกับทุกอย่าง:
+
+\`\`\`ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/': { prerender: true },        // static at build time — rarely changes
+    '/blog/**': { swr: 3600 },       // serve cached, regenerate in the background hourly
+    '/dashboard/**': { ssr: false }, // client-only — behind a login, no SEO need
+  }
+})
+\`\`\`
+
+| Mode | Renders | Needs a server? | Best for |
+| --- | --- | --- | --- |
+| SSR (default) | Per-request, on the server | Yes | Content that changes often and needs SEO |
+| SPA (\`ssr: false\`) | In the browser only | No | Logged-in apps, dashboards, tools |
+| SSG (\`nuxt generate\`) | Once, at build time | No | Content that rarely changes (marketing, docs) |
+| Hybrid (\`routeRules\`) | Mixed, per route | Depends on the mix | Real apps with both kinds of route |
+
+ค่าเริ่มต้นที่ใช้ได้จริงคือ: เปิด SSR ไว้ทุกที่จนกว่า route ใดจะมีเหตุผลให้ไม่ทำแบบนั้น (admin panel ที่ไม่มีคุณค่าด้าน SEO, หน้าที่เนื้อหาไม่เคยเปลี่ยนแปลงจริงๆ) แล้วค่อยแยก exception ให้ route นั้นด้วย \`routeRules\` แทนที่จะปิด SSR สำหรับทั้งแอป`,
       },
       {
         slug: "configuration-and-modules",
         titleEn: "Configuration & Modules",
+        titleTh: "Configuration และ Modules",
         order: 9,
         contentEn: `\`nuxt.config.ts\`, at the project root, is the single place project-wide behavior gets configured — built with the \`defineNuxtConfig\` helper, which is auto-imported and mainly exists to give the config object accurate TypeScript types.
 
@@ -2027,10 +2710,38 @@ export default defineNuxtConfig({
 \`runtimeConfig\` is where environment-specific values live, and it draws a hard line between two kinds of values. Anything under \`public\` is bundled into the client build and readable from browser code — safe only for values that were never secret to begin with, like an API's public base URL. Anything at the top level *outside* \`public\` stays server-only and is stripped from what ships to the browser — the right place for API keys, database URLs, anything that would be a real problem to leak. Both halves can be overridden per-environment with matching env vars at runtime, without touching the config file: \`NUXT_API_SECRET\` overrides the private \`apiSecret\`, and \`NUXT_PUBLIC_API_BASE\` overrides \`public.apiBase\` — the naming convention mirrors the config's own nesting. This platform's frontend uses exactly this pattern: its \`public.apiBase\` is what every page's \`useFetch\` calls resolve against, overridden per deploy target through that same \`NUXT_PUBLIC_API_BASE\` environment variable rather than a hardcoded URL.
 
 \`modules\` is how Nuxt is extended — each entry is a package that hooks into the build process to add functionality: \`@pinia/nuxt\` adds Pinia store auto-imports, \`@nuxtjs/tailwindcss\` wires up Tailwind's build step, \`@nuxtjs/i18n\` adds internationalization routing. Adding a module is normally just installing the package and adding its name to this array — the module itself handles whatever config wiring it needs, which is the whole point: complex build-tool integration reduced to a one-line, documented decision.`,
+        contentTh: `\`nuxt.config.ts\` ที่ root ของโปรเจกต์ คือที่เดียวที่ใช้กำหนดค่าพฤติกรรมของทั้งโปรเจกต์ — สร้างขึ้นด้วย helper \`defineNuxtConfig\` ซึ่งถูก auto-import มาให้ และมีไว้หลักๆ เพื่อให้ config object มี TypeScript type ที่ถูกต้อง
+
+\`\`\`ts
+export default defineNuxtConfig({
+  modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss'],
+  css: ['~/assets/main.css'],
+  app: {
+    head: {
+      title: 'My App',
+      meta: [{ name: 'description', content: 'A Nuxt app' }]
+    }
+  },
+  routeRules: {
+    '/admin/**': { ssr: false }
+  },
+  runtimeConfig: {
+    apiSecret: '',           // server-only — never sent to the browser
+    public: {
+      apiBase: 'http://localhost:8080'  // exposed to client code too
+    }
+  }
+})
+\`\`\`
+
+\`runtimeConfig\` คือที่ที่ค่าเฉพาะของแต่ละ environment อยู่ และมันขีดเส้นแบ่งชัดเจนระหว่างค่าสองประเภท อะไรก็ตามภายใต้ \`public\` จะถูก bundle เข้าไปใน client build และอ่านได้จากโค้ดฝั่งเบราว์เซอร์ — ปลอดภัยเฉพาะสำหรับค่าที่ไม่เคยเป็นความลับตั้งแต่แรกอยู่แล้ว เช่น public base URL ของ API อะไรก็ตามที่ระดับบนสุด *นอก* \`public\` จะอยู่ฝั่งเซิร์ฟเวอร์เท่านั้นและถูกตัดออกจากสิ่งที่ส่งไปยังเบราว์เซอร์ — เป็นที่ที่เหมาะสำหรับ API key, database URL, อะไรก็ตามที่จะเป็นปัญหาใหญ่ถ้ารั่วไหล ทั้งสองส่วนสามารถ override ได้ต่อ environment ด้วย env var ที่ตรงกันตอน runtime โดยไม่ต้องแตะไฟล์ config เลย: \`NUXT_API_SECRET\` จะ override \`apiSecret\` ที่เป็นส่วนตัว และ \`NUXT_PUBLIC_API_BASE\` จะ override \`public.apiBase\` — รูปแบบการตั้งชื่อสะท้อนโครงสร้างการเนสต์ของ config เอง ฟรอนต์เอนด์ของแพลตฟอร์มนี้ใช้ pattern นี้เป๊ะๆ: \`public.apiBase\` ของมันคือสิ่งที่การเรียก \`useFetch\` ของทุกหน้า resolve ไปหา โดยถูก override ต่อ deploy target ผ่าน environment variable \`NUXT_PUBLIC_API_BASE\` ตัวเดียวกันนี้แทนที่จะ hardcode URL ไว้
+
+\`modules\` คือวิธีที่ Nuxt ถูกขยายความสามารถ — แต่ละรายการคือ package ที่ hook เข้ากับ build process เพื่อเพิ่มฟังก์ชันการทำงาน: \`@pinia/nuxt\` เพิ่ม auto-import สำหรับ Pinia store, \`@nuxtjs/tailwindcss\` ต่อ build step ของ Tailwind ให้, \`@nuxtjs/i18n\` เพิ่มการทำ routing สำหรับ internationalization การเพิ่ม module ปกติแล้วก็แค่ install package แล้วเพิ่มชื่อมันเข้าไปใน array นี้ — ตัว module เองจะจัดการเรื่องการต่อ config ที่มันต้องการทั้งหมด ซึ่งนั่นคือประเด็นสำคัญ: การผสาน build-tool ที่ซับซ้อนถูกลดทอนลงเหลือแค่การตัดสินใจบรรทัดเดียวที่มีเอกสารรองรับ`,
       },
       {
         slug: "seo-meta-and-deployment",
         titleEn: "SEO, Meta Tags & Deployment",
+        titleTh: "SEO, Meta Tags และ Deployment",
         order: 10,
         contentEn: `Because SSR sends real HTML to the browser (and to crawlers) on first load, Nuxt pages can set their own \`<title>\` and meta tags per-route, and that content is what search engines and link-preview cards actually see — unlike a pure SPA, where a crawler that doesn't execute JavaScript sees only whatever static shell \`index.html\` contains.
 
@@ -2049,10 +2760,28 @@ useSeoMeta({
 For anything \`useSeoMeta\` doesn't cover directly — a \`<link rel="canonical">\`, a custom \`<script type="application/ld+json">\` block, arbitrary \`<head>\` content — \`useHead\` takes the same kind of object with full control over every tag. Both are reactive: passing a \`computed\` or a ref's \`.value\` means the tags update automatically if the underlying data (say, a course title loaded via \`useFetch\`) changes. Site-wide defaults that every page should inherit unless it overrides them belong in \`nuxt.config.ts\` under \`app.head\`, rather than repeated in every page.
 
 Deployment is where Nitro's output format pays off: \`nuxt build\` produces a \`.output/\` directory whose shape adapts to a \`preset\` — the default Node.js server preset runs anywhere \`node .output/server/index.mjs\` can run, but the same source code can target Vercel, Netlify, Cloudflare Workers, AWS Lambda, or plain static hosting (for a prerendered/SSG build) by changing the preset, with no application code changes required. This platform's own API isn't Nuxt/Nitro — it's a separate Express service — but the frontend, mindspace-web, is exactly this kind of Nuxt app, and is deployed as a standard Node server build with its \`NUXT_PUBLIC_API_BASE\` runtime config pointed at that API's deployed URL, the same public/private split from the previous lesson doing the actual environment-to-environment wiring.`,
+        contentTh: `เพราะ SSR ส่ง HTML จริงไปยังเบราว์เซอร์ (และไปยัง crawler) ตั้งแต่การโหลดครั้งแรก หน้าเพจของ Nuxt จึงตั้งค่า \`<title>\` และ meta tag ของตัวเองได้ต่อ route และเนื้อหานั้นคือสิ่งที่เสิร์ชเอนจินและการ์ด link-preview เห็นจริงๆ — ต่างจาก SPA แท้ๆ ที่ crawler ซึ่งไม่รัน JavaScript จะเห็นแค่ static shell ของ \`index.html\` เท่านั้น
+
+\`useSeoMeta\` คือ composable สำหรับกรณีทั่วไป — title, description, ฟิลด์ Open Graph และ Twitter card — ในรูปแบบ reactive property ธรรมดาๆ โดยไม่ต้องรู้ชื่อ tag ที่อยู่เบื้องหลัง:
+
+\`\`\`vue
+<script setup lang="ts">
+useSeoMeta({
+  title: 'TypeScript for JS Programmers',
+  description: 'A fast on-ramp to TypeScript for developers who already know JavaScript.',
+  ogImage: '/og/typescript-course.png'
+})
+</script>
+\`\`\`
+
+สำหรับอะไรก็ตามที่ \`useSeoMeta\` ไม่ได้ครอบคลุมโดยตรง — \`<link rel="canonical">\`, บล็อก \`<script type="application/ld+json">\` แบบกำหนดเอง, เนื้อหา \`<head>\` ใดๆ — \`useHead\` รับ object แบบเดียวกันแต่ควบคุม tag ได้เต็มรูปแบบทุกตัว ทั้งสองตัวเป็น reactive: การส่ง \`computed\` หรือค่า \`.value\` ของ ref เข้าไปหมายความว่า tag จะอัปเดตอัตโนมัติถ้าข้อมูลที่อยู่เบื้องหลัง (เช่น course title ที่โหลดผ่าน \`useFetch\`) เปลี่ยนแปลง ค่าเริ่มต้นระดับทั้งไซต์ที่ทุกหน้าควรสืบทอด เว้นแต่จะ override มัน ควรอยู่ใน \`nuxt.config.ts\` ภายใต้ \`app.head\` แทนที่จะเขียนซ้ำในทุกหน้า
+
+Deployment คือจุดที่รูปแบบผลลัพธ์ของ Nitro ให้ผลตอบแทน: \`nuxt build\` จะสร้างไดเรกทอรี \`.output/\` ที่รูปร่างของมันปรับตาม \`preset\` — preset เริ่มต้นแบบ Node.js server รันได้ทุกที่ที่ \`node .output/server/index.mjs\` รันได้ แต่ source code เดียวกันนี้สามารถเล็งไปที่ Vercel, Netlify, Cloudflare Workers, AWS Lambda หรือ static hosting ธรรมดา (สำหรับ build แบบ prerendered/SSG) ได้ด้วยการเปลี่ยน preset โดยไม่ต้องแก้โค้ดแอปพลิเคชันเลย API ของแพลตฟอร์มนี้เองไม่ใช่ Nuxt/Nitro — มันเป็น Express service แยกต่างหาก — แต่ frontend คือ mindspace-web นั้นเป็นแอป Nuxt แบบนี้เป๊ะๆ และถูก deploy เป็น Node server build มาตรฐาน โดยมี runtime config \`NUXT_PUBLIC_API_BASE\` ชี้ไปยัง URL ที่ deploy ของ API นั้น เป็นการแบ่ง public/private แบบเดียวกับบทเรียนก่อนหน้าที่ทำหน้าที่เชื่อมต่อจาก environment หนึ่งไปยังอีก environment หนึ่งจริงๆ`,
       },
       {
         slug: "project-bookmarks-api",
         titleEn: "Project: A Bookmarks API with server/api",
+        titleTh: "Project: สร้าง Bookmarks API ด้วย server/api",
         order: 11,
         contentEn: `The last few lessons covered routing, data fetching, and server routes separately — this one and the next put them together by building one small, real feature end to end: a bookmarks list with an API (this lesson) and the UI that talks to it (the next lesson).
 
@@ -2109,10 +2838,66 @@ export default defineEventHandler((event) => {
 \`\`\`
 
 Three routes, three files, no router configuration written by hand anywhere — \`GET /api/bookmarks\`, \`POST /api/bookmarks\`, and \`DELETE /api/bookmarks/:id\` all exist purely because of where these files live and how they're named. The next lesson builds the page that calls them.`,
+        contentTh: `บทเรียนไม่กี่บทที่ผ่านมาครอบคลุมเรื่อง routing, data fetching และ server routes แยกกัน — บทนี้กับบทถัดไปจะเอาทั้งหมดมารวมกันโดยสร้างฟีเจอร์เล็กๆ ที่ใช้งานได้จริงแบบ end to end หนึ่งอย่าง: รายการ bookmark พร้อม API (บทนี้) และ UI ที่คุยกับมัน (บทถัดไป)
+
+เริ่มจาก storage ก่อน จงใจทำให้เรียบง่ายเพื่อให้บทเรียนยังคงเน้นเรื่อง Nuxt ไม่ใช่เรื่องฐานข้อมูล: array แบบ in-memory ใน server-only utility ที่ seed ไว้สักสองสามแถว
+
+\`\`\`ts
+// server/utils/bookmarks.ts
+export interface Bookmark { id: string; title: string; url: string }
+
+export const bookmarks: Bookmark[] = [
+  { id: '1', title: 'Nuxt Docs', url: 'https://nuxt.com' }
+]
+\`\`\`
+
+อะไรก็ตามภายใต้ \`server/utils/\` จะถูก auto-import เข้าไปในไฟล์ server อื่นๆ แบบเดียวกับที่ \`app/utils/\` ถูก auto-import เข้าไปในแอป — ดังนั้นทุก route \`server/api/\` ด้านล่างจึงใช้ \`bookmarks\` ได้โดยไม่ต้อง import ชัดเจน storage นี้จงใจไม่ให้คงทน: มันรีเซ็ตทุกครั้งที่เซิร์ฟเวอร์ restart และไม่ปลอดภัยที่จะแชร์ข้ามหลาย instance ของเซิร์ฟเวอร์ นั่นเป็น tradeoff ที่โอเคสำหรับการเรียนรู้ส่วน routing และ request-handling แบบแยกเดี่ยว โปรเจกต์จริงจะเปลี่ยนไฟล์นี้เป็น repository ที่มีฐานข้อมูลจริงหนุนหลัง เป็นแนวคิดแบบ layered เดียวกับที่ mindspace-api เองก็ใช้ โดยไม่ต้องเปลี่ยนโค้ดของ route ด้านล่างนี้แม้แต่บรรทัดเดียว
+
+**List และ create** ทั้งสองอยู่ที่ \`server/api/bookmarks.ts\` — ไฟล์เดียว สอง method เลือกด้วยส่วนต่อท้ายชื่อไฟล์:
+
+\`\`\`ts
+// server/api/bookmarks.get.ts
+export default defineEventHandler(() => bookmarks)
+
+// server/api/bookmarks.post.ts
+export default defineEventHandler(async (event) => {
+  const body = await readBody<{ title?: string; url?: string }>(event)
+
+  if (!body.title || !body.url) {
+    throw createError({ statusCode: 400, statusMessage: 'title and url are required' })
+  }
+
+  const bookmark = { id: crypto.randomUUID(), title: body.title, url: body.url }
+  bookmarks.push(bookmark)
+  return bookmark
+})
+\`\`\`
+
+\`createError\` คือวิธีของ H3 ในการเปลี่ยนความล้มเหลวให้เป็น HTTP error response ที่ถูกต้อง — การ \`throw\` มันจะหยุด handler และส่ง status code กับข้อความที่กำหนดกลับไปยัง client แทนที่จะเป็น 500 ทั่วไปที่ exception ที่ไม่ถูกจับจะสร้างขึ้น นี่คือวิธีที่ถูกต้องในการส่งสัญญาณว่า "ผู้เรียกทำอะไรผิดพลาด" (400) ซึ่งต่างจากบั๊กของเซิร์ฟเวอร์ที่ไม่คาดคิด
+
+**Delete by id** ใช้ไฟล์ route แบบ dynamic ตาม pattern \`[id].vue\` จาก file-based routing เพียงแต่ลึกลงไปหนึ่งชั้นใน \`server/api/\`:
+
+\`\`\`ts
+// server/api/bookmarks/[id].delete.ts
+export default defineEventHandler((event) => {
+  const id = getRouterParam(event, 'id')
+  const index = bookmarks.findIndex((b) => b.id === id)
+
+  if (index === -1) {
+    throw createError({ statusCode: 404, statusMessage: 'Bookmark not found' })
+  }
+
+  bookmarks.splice(index, 1)
+  return { deleted: true }
+})
+\`\`\`
+
+สาม route สามไฟล์ ไม่มีการเขียน router configuration ด้วยมือที่ไหนเลย — \`GET /api/bookmarks\`, \`POST /api/bookmarks\` และ \`DELETE /api/bookmarks/:id\` มีอยู่ได้ก็เพราะตำแหน่งที่ไฟล์เหล่านี้อยู่และวิธีตั้งชื่อมันล้วนๆ บทเรียนถัดไปจะสร้างหน้าเพจที่เรียกใช้มัน`,
       },
       {
         slug: "project-bookmarks-ui",
         titleEn: "Project: The Bookmarks UI",
+        titleTh: "Project: สร้าง UI ของ Bookmarks",
         order: 12,
         contentEn: `With the API in place, the page is a matter of connecting the composables from earlier lessons to it: \`useFetch\` for the initial list (server-rendered, no double-fetch), and plain \`$fetch\` for the two mutations, since creating and deleting only ever happen after a user click — exactly the "event-based interaction" case where \`$fetch\` was the right tool, not \`useFetch\`.
 
@@ -2167,10 +2952,64 @@ async function removeBookmark(id: string) {
 The \`required\` attributes give free client-side validation before a request is even sent; the server-side check in the previous lesson's \`POST\` handler is what actually protects the data, since client-side validation alone can always be bypassed by anyone calling the API directly. Both layers matter, and they're not redundant — one is for user experience, the other is the real guarantee.
 
 This page would typically live inside a layout (from the layouts lesson) and be reached via a \`<NuxtLink to="/bookmarks">\` somewhere in the site's navigation — nothing about it needs to be a special case once it's just another route under \`app/pages/\`.`,
+        contentTh: `เมื่อมี API พร้อมแล้ว หน้าเพจก็เป็นแค่เรื่องของการเชื่อม composable จากบทเรียนก่อนหน้าเข้ากับมัน: \`useFetch\` สำหรับรายการเริ่มต้น (render บนเซิร์ฟเวอร์ ไม่ fetch ซ้ำสอง) และ \`$fetch\` ธรรมดาสำหรับสอง mutation เพราะการสร้างและลบเกิดขึ้นหลังจากผู้ใช้คลิกเท่านั้น — เป็นกรณี "event-based interaction" แบบเป๊ะๆ ที่ \`$fetch\` เป็นเครื่องมือที่ถูกต้อง ไม่ใช่ \`useFetch\`
+
+\`\`\`vue
+<!-- app/pages/bookmarks/index.vue -->
+<script setup lang="ts">
+const { data: bookmarks, refresh } = await useFetch('/api/bookmarks')
+
+const title = ref('')
+const url = ref('')
+const submitting = ref(false)
+
+async function addBookmark() {
+  submitting.value = true
+  try {
+    await $fetch('/api/bookmarks', {
+      method: 'POST',
+      body: { title: title.value, url: url.value }
+    })
+    title.value = ''
+    url.value = ''
+    await refresh()
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function removeBookmark(id: string) {
+  await $fetch(\`/api/bookmarks/\${id}\`, { method: 'DELETE' })
+  await refresh()
+}
+</script>
+
+<template>
+  <form @submit.prevent="addBookmark">
+    <input v-model="title" placeholder="Title" required>
+    <input v-model="url" placeholder="https://..." required>
+    <button type="submit" :disabled="submitting">Add</button>
+  </form>
+
+  <ul>
+    <li v-for="bookmark in bookmarks" :key="bookmark.id">
+      <a :href="bookmark.url" target="_blank">{{ bookmark.title }}</a>
+      <button @click="removeBookmark(bookmark.id)">Delete</button>
+    </li>
+  </ul>
+</template>
+\`\`\`
+
+\`refresh()\` — ที่ \`useFetch\` คืนมาพร้อมกับ \`data\` — จะรัน request เดิมซ้ำและอัปเดต \`bookmarks\` ในที่เดิม นี่คือเหตุผลที่รายการสะท้อน bookmark ที่ถูกสร้างหรือลบทันทีหลัง mutation โดยไม่ต้องโหลดหน้าใหม่ทั้งหมดหรือจัดการ array ด้วยมือเลย การเรียกมันอย่างชัดเจนหลังแต่ละ mutation แทนที่จะพยายามซิงก์รายการในเครื่องด้วยมือ (push เข้า \`bookmarks.value\` หลังสร้าง, splice ออกหลังลบ) ทำให้รายการของหน้าเพจเป็นภาพสะท้อนที่ตรงกับสิ่งที่เซิร์ฟเวอร์มีอยู่จริงเสมอ — คุ้มค่ากับ round-trip พิเศษอีกหนึ่งครั้งสำหรับฟีเจอร์ขนาดนี้ เพราะสำเนาในเครื่องที่จัดการด้วยมือจะคลาดเคลื่อนทันทีที่ mutation สองครั้งเกิดขึ้นใกล้กันหรือ request ล้มเหลวกลางคัน
+
+attribute \`required\` ให้ client-side validation ฟรีๆ ก่อนที่ request จะถูกส่งออกไปด้วยซ้ำ ส่วนการตรวจสอบฝั่งเซิร์ฟเวอร์ใน handler \`POST\` ของบทเรียนก่อนหน้าคือสิ่งที่ปกป้องข้อมูลจริงๆ เพราะ client-side validation เพียงอย่างเดียวสามารถถูกข้ามได้เสมอโดยใครก็ตามที่เรียก API โดยตรง ทั้งสองชั้นสำคัญทั้งคู่ และไม่ได้ซ้ำซ้อนกัน — ชั้นหนึ่งเพื่อประสบการณ์ผู้ใช้ อีกชั้นคือการรับประกันที่แท้จริง
+
+หน้าเพจนี้โดยทั่วไปจะอยู่ภายใน layout (จากบทเรียนเรื่อง layout) และเข้าถึงได้ผ่าน \`<NuxtLink to="/bookmarks">\` ที่ไหนสักแห่งใน navigation ของไซต์ — ไม่มีอะไรเกี่ยวกับมันที่ต้องเป็นกรณีพิเศษเลย เมื่อมันก็แค่ route อีกอันหนึ่งภายใต้ \`app/pages/\``,
       },
       {
         slug: "project-loading-errors-and-next-steps",
         titleEn: "Project: Loading States, Errors & Where to Go Next",
+        titleTh: "Project: Loading State, Error และก้าวต่อไป",
         order: 13,
         contentEn: `Two things the bookmarks page glossed over: what the user sees while a request is in flight, and what happens when one fails. Both are answered by state \`useFetch\` already gives back — \`status\` and \`error\` — rather than anything that needs to be built by hand.
 
@@ -2197,6 +3036,31 @@ Because the initial \`useFetch\` is \`await\`ed, this particular \`pending\` bra
 - **Validation.** The \`POST\` handler checks that \`title\` and \`url\` exist, but not that \`url\` is actually a valid URL, or that \`title\` isn't absurdly long. A library like Zod, given a schema, would replace that hand-written \`if\` with something that validates the whole shape at once and produces a specific error message per field.
 
 None of these are Nuxt-specific gaps — they're the same concerns any backend has, which is really the point: \`server/api/\` gives a small project a backend without a second codebase to run and deploy, but everything you'd want from a "real" API is still something you build on top of it, the same way this course's earlier lessons on rendering modes, SEO, and deployment are things you'd layer onto this same small project as it grows into something worth shipping.`,
+        contentTh: `สองสิ่งที่หน้า bookmarks ข้ามไป: ผู้ใช้เห็นอะไรระหว่างที่ request กำลังทำงาน และเกิดอะไรขึ้นเมื่อมันล้มเหลว ทั้งสองอย่างตอบได้ด้วย state ที่ \`useFetch\` คืนมาให้อยู่แล้ว — \`status\` และ \`error\` — ไม่ต้องสร้างอะไรขึ้นมาเองเพิ่ม
+
+\`\`\`vue
+<script setup lang="ts">
+const { data: bookmarks, status, error, refresh } = await useFetch('/api/bookmarks')
+</script>
+
+<template>
+  <p v-if="status === 'pending'">Loading bookmarks…</p>
+  <p v-else-if="error">Couldn't load bookmarks: {{ error.statusMessage }}</p>
+  <ul v-else>
+    <li v-for="bookmark in bookmarks" :key="bookmark.id">{{ bookmark.title }}</li>
+  </ul>
+</template>
+\`\`\`
+
+เพราะ \`useFetch\` เริ่มต้นถูก \`await\` ไว้ branch \`pending\` นี้จึงไม่ได้แสดงจริงๆ ในการโหลดครั้งแรก — หน้าเพจจะไม่ render เสร็จจนกว่าข้อมูล (หรือ error) จะถูก resolve แล้วบนเซิร์ฟเวอร์ มันจะมีผลก็ต่อเมื่อ \`refresh()\` รันในภายหลังฝั่ง client หรือถ้า pattern เดียวกันถูกใช้ซ้ำกับ \`lazy: true\` ที่หน้าเพจ render ก่อนที่ fetch จะ resolve อย่างไรก็ตาม กรณี \`error\` มีผลทันที: handler \`POST\` และ \`DELETE\` จากสองบทเรียนที่แล้ว \`throw createError(...)\` เมื่อ input ไม่ถูกต้องหรือไม่มี id และ status code กับข้อความนั้นคือสิ่งที่ปรากฏใน \`error.value\` ที่นี่พอดี — เส้นทางจัดการ error เดียวกันนี้ให้บริการทั้ง request ที่ผิดรูปแบบและ request ที่ล้มเหลวจริงๆ โดยไม่ต้องมี try/catch แยกต่างหากฝั่งที่อ่านข้อมูลเลย
+
+**จุดที่โปรเจกต์นี้ไม่สมบูรณ์โดยเจตนา** และการปิดช่องว่างนั้นจะต้องทำอะไรบ้างจริงๆ:
+
+- **Storage** array แบบ in-memory รีเซ็ตทุกครั้งที่ restart และไม่ปลอดภัยข้ามหลาย instance ของเซิร์ฟเวอร์ การเปลี่ยนมันเป็นฐานข้อมูลจริงหมายถึงการแทนที่ \`server/utils/bookmarks.ts\` ด้วยการเรียก database client หรือ ORM — route handler ทั้งสามตัวไม่ต้องเปลี่ยนเลย เพราะมันคุยกับ export ของไฟล์นั้นไฟล์เดียวเท่านั้น
+- **Auth** ไม่มีอะไรตรวจสอบว่าใครเป็นคนส่ง request เวอร์ชันจริงจะเพิ่ม handler \`server/middleware/\` (จากบทเรียน layouts & middleware) ที่ตรวจสอบ session และปฏิเสธ request ที่ไม่ได้ยืนยันตัวตนก่อนที่มันจะไปถึง handler \`server/api/bookmarks*\` ใดๆ
+- **Validation** handler \`POST\` ตรวจแค่ว่า \`title\` และ \`url\` มีอยู่ แต่ไม่ตรวจว่า \`url\` เป็น URL ที่ถูกต้องจริงๆ หรือ \`title\` ไม่ยาวเกินไป ไลบรารีอย่าง Zod เมื่อกำหนด schema ให้ จะแทนที่ \`if\` ที่เขียนด้วยมือนั้นด้วยสิ่งที่ validate ทั้งรูปร่างพร้อมกันและสร้างข้อความ error เฉพาะต่อฟิลด์ได้
+
+ไม่มีข้อไหนเลยที่เป็นช่องว่างเฉพาะของ Nuxt — มันเป็นประเด็นเดียวกับที่ backend ไหนๆ ก็มี ซึ่งนั่นคือประเด็นสำคัญจริงๆ: \`server/api/\` ให้ backend กับโปรเจกต์เล็กๆ โดยไม่ต้องมี codebase ที่สองให้รันและ deploy แต่ทุกอย่างที่คุณอยากได้จาก API "จริงจัง" ก็ยังเป็นสิ่งที่คุณต้องสร้างเพิ่มบนมัน เหมือนกับที่บทเรียนก่อนหน้าของคอร์สนี้เรื่อง rendering mode, SEO และ deployment ก็เป็นสิ่งที่คุณจะเพิ่มเข้ามาบนโปรเจกต์เล็กๆ ชิ้นเดียวกันนี้เมื่อมันเติบโตขึ้นเป็นอะไรที่คุ้มค่าจะ ship จริงๆ`,
       },
     ],
   },
