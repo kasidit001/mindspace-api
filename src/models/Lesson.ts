@@ -9,6 +9,20 @@ import { Course } from "./Course";
 // constraint in 20260920030000-add-content-type-to-lessons.cjs.
 export type LessonContentType = "article" | "video" | "advlab" | "ctf";
 
+// One "Code Lab" exercise. A lesson can carry several (see labs below) —
+// each with its own starter code, test script, and an optional hint the
+// learner can reveal at a cost (see mindspace-web's progress store /
+// dashboard "Total points": revealing a hint deducts real, disclosed
+// points from that same derived score, not a fabricated currency).
+export interface LessonLab {
+  id: string;
+  title: string;
+  instructions: string;
+  starterCode: string;
+  testCode: string;
+  hint: string | null;
+}
+
 export class Lesson extends Model<InferAttributes<Lesson>, InferCreationAttributes<Lesson>> {
   declare id: CreationOptional<string>;
   declare courseId: ForeignKey<Course["id"]>;
@@ -22,13 +36,9 @@ export class Lesson extends Model<InferAttributes<Lesson>, InferCreationAttribut
   declare contentEn: string;
   declare contentTh: string | null;
   declare contentType: CreationOptional<LessonContentType>;
-  // The pilot "Code Lab" exercise: starterCode is shown in an in-browser
-  // editor, testCode runs against it in a sandboxed Web Worker (see
-  // mindspace-web's CodeLab.vue) to gate "Mark as Read" behind actually
-  // solving something. Both null on the (currently overwhelming majority
-  // of) lessons that have no lab yet.
-  declare labStarterCode: string | null;
-  declare labTestCode: string | null;
+  // Code Lab exercises (see LessonLab above) — null/empty on the
+  // (currently overwhelming majority of) lessons that have none yet.
+  declare labs: LessonLab[] | null;
   declare order: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -76,15 +86,9 @@ Lesson.init(
       defaultValue: "article",
       field: "content_type",
     },
-    labStarterCode: {
-      type: DataTypes.TEXT,
+    labs: {
+      type: DataTypes.JSONB,
       allowNull: true,
-      field: "lab_starter_code",
-    },
-    labTestCode: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      field: "lab_test_code",
     },
     order: {
       type: DataTypes.INTEGER,

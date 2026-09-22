@@ -1,14 +1,14 @@
 'use strict';
 
 /**
- * Adds lessons.lab_starter_code / lessons.lab_test_code — the pilot "Code
- * Lab" exercise a lesson can optionally carry: starter code shown in an
- * in-browser editor, and a test script that runs against it in a sandboxed
- * Web Worker (see mindspace-web's CodeLab.vue / useCodeLab.ts) to gate the
- * "Mark as Read" button behind actually solving something, not just
- * clicking a button. Both are nullable — most lessons still have no lab
- * (nothing but self-reported reading, same as before) until more get
- * authored past this pilot course.
+ * Adds lessons.labs — the "Code Lab" exercises a lesson can optionally
+ * carry, as a JSON array (a lesson can have more than one exercise, each
+ * with its own starter code, test script, and hint). Each element shape:
+ * { id, title, instructions, starterCode, testCode, hint }. Rendered and
+ * run entirely client-side (see mindspace-web's CodeLab.vue / runCodeLab.ts
+ * — a sandboxed Web Worker, no server execution) to gate the "Mark as Read"
+ * button behind actually solving something. Nullable/empty — most lessons
+ * still have no lab (nothing but self-reported reading, same as before).
  *
  * `lessons` predates migration tracking (created via sync()) — see
  * src/db/README.md and 20260920030000-add-content-type-to-lessons.cjs for
@@ -18,18 +18,13 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('lessons', 'lab_starter_code', {
-      type: Sequelize.TEXT,
-      allowNull: true,
-    });
-    await queryInterface.addColumn('lessons', 'lab_test_code', {
-      type: Sequelize.TEXT,
+    await queryInterface.addColumn('lessons', 'labs', {
+      type: Sequelize.JSONB,
       allowNull: true,
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('lessons', 'lab_test_code');
-    await queryInterface.removeColumn('lessons', 'lab_starter_code');
+    await queryInterface.removeColumn('lessons', 'labs');
   },
 };

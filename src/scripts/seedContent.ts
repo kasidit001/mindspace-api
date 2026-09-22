@@ -8,14 +8,23 @@ export interface SeedLesson {
   /** Thai translation. Optional — lessons without one fall back to English (see Lesson model). */
   contentTh?: string;
   /**
-   * Pilot "Code Lab" exercise (see mindspace-web's CodeLab.vue). Both must
-   * be set together or not at all — labStarterCode is the editor's initial
-   * content, labTestCode is appended after the learner's code and run in a
-   * sandboxed Web Worker; it calls the injected `check(actual, expected,
-   * label)` for each assertion. Most lessons have neither.
+   * Code Lab exercises (see mindspace-web's CodeLab.vue) — a lesson can
+   * carry several. Each `testCode` runs after the learner's `starterCode`
+   * in a sandboxed Web Worker; it calls the injected `check(actual,
+   * expected, label)` for each assertion. `hint`, if set, costs real
+   * points to reveal (see mindspace-web's progress store) — not shown for
+   * free. Most lessons have no labs at all.
    */
-  labStarterCode?: string;
-  labTestCode?: string;
+  labs?: SeedLab[];
+}
+
+export interface SeedLab {
+  id: string;
+  title: string;
+  instructions: string;
+  starterCode: string;
+  testCode: string;
+  hint?: string;
 }
 
 export interface SeedCourse {
@@ -90,13 +99,33 @@ void ใช้อธิบายฟังก์ชันที่ไม่ retur
 ## สรุป
 
 ชนิดข้อมูลพื้นฐานของ TypeScript สะท้อนมาจาก primitive ของ JavaScript พร้อมด้วยไวยากรณ์ array/tuple สำหรับข้อมูลที่มีโครงสร้าง และคู่ any/unknown สำหรับจัดการค่าที่ไม่รู้ชนิดข้อมูลล่วงหน้า ส่วน void และ never ใช้อธิบายฟังก์ชันที่ไม่ return ค่าที่มีความหมาย หรือไม่มีทาง return เลย และด้วย type inference ของ TypeScript เอง ทำให้คุณแทบไม่ต้องกำกับชนิดข้อมูลให้ตัวแปร local ทุกตัวด้วยมือ`,
-        labStarterCode: `function sumPositive(nums: number[]): number {
-  // TODO: return the sum of only the positive numbers in \`nums\`
+        labs: [
+          {
+            id: "sum-positive",
+            title: "Sum the Positive Numbers",
+            instructions: "Complete `sumPositive` so it adds up only the positive numbers in the array.",
+            starterCode: `function sumPositive(nums: number[]): number {
+  // TODO: implement this
   return 0;
 }`,
-        labTestCode: `check(sumPositive([1, -2, 3, 4, -5]), 8, "sums only the positive numbers");
+            testCode: `check(sumPositive([1, -2, 3, 4, -5]), 8, "sums only the positive numbers");
 check(sumPositive([-1, -2, -3]), 0, "returns 0 when there are no positive numbers");
 check(sumPositive([]), 0, "returns 0 for an empty array");`,
+            hint: "Try `.filter()` to keep only the positive numbers, then `.reduce()` to add them up.",
+          },
+          {
+            id: "format-tuple",
+            title: "Format a Tuple",
+            instructions: "Complete `firstAndLast` so it turns a `[string, number]` tuple into a single `\"first-last\"` string.",
+            starterCode: `function firstAndLast(pair: [string, number]): string {
+  // TODO: implement this
+  return "";
+}`,
+            testCode: `check(firstAndLast(["x", 1]), "x-1", "joins the tuple elements with a dash");
+check(firstAndLast(["hello", 42]), "hello-42", "works with different values");`,
+            hint: "Template literals: `${pair[0]}-${pair[1]}`.",
+          },
+        ],
       },
       {
         slug: "interfaces-and-type-aliases",
@@ -125,18 +154,26 @@ property ที่เป็น readonly (readonly id: string) จะป้อง
 ## สรุป
 
 Interface และ type alias ต่างก็ใช้อธิบายรูปร่างของอ็อบเจกต์ผ่าน structural typing ของ TypeScript ได้เหมือนกัน แต่ interface รองรับ declaration merging และ extends สำหรับการสืบทอด ส่วน type alias เท่านั้นที่สามารถแสดง union, tuple และรูปร่างอื่นที่ไม่ใช่อ็อบเจกต์ได้ผ่าน intersection property ที่เป็น readonly ช่วยเสริมด้วยการป้องกันไม่ให้กำหนดค่าใหม่หลังจากสร้างอ็อบเจกต์แล้ว`,
-        labStarterCode: `interface User {
+        labs: [
+          {
+            id: "describe-user",
+            title: "Describe a User",
+            instructions: "Complete `describeUser` so it returns just the name, or `\"Name (age)\"` when age is present.",
+            starterCode: `interface User {
   id: string;
   name: string;
   age?: number;
 }
 
 function describeUser(user: User): string {
-  // TODO: return "Name (age)" if age is present, otherwise just "Name"
+  // TODO: implement this
   return "";
 }`,
-        labTestCode: `check(describeUser({ id: "1", name: "Ada" }), "Ada", "no age -> just the name");
+            testCode: `check(describeUser({ id: "1", name: "Ada" }), "Ada", "no age -> just the name");
 check(describeUser({ id: "2", name: "Grace", age: 30 }), "Grace (30)", "with age -> name and age in parens");`,
+            hint: "Check whether `user.age !== undefined` before deciding which string to build.",
+          },
+        ],
       },
       {
         slug: "functions",
@@ -165,12 +202,20 @@ Overload ช่วยให้ฟังก์ชันหนึ่งมี call
 ## สรุป
 
 พารามิเตอร์และค่า return ของฟังก์ชันสามารถกำกับชนิดข้อมูลได้อย่างชัดเจน หรือปล่อยให้ TypeScript อนุมานให้ก็ได้ โดยพารามิเตอร์แบบ optional และแบบมีค่าเริ่มต้นครอบคลุมกรณีทั่วไปที่ค่าอาจถูกส่งเข้ามาหรือไม่ก็ได้ function type แบบแยกเดี่ยวช่วยให้ callback และ higher-order function ปลอดภัยด้านชนิดข้อมูล ส่วน overload ใช้จัดการกรณีที่พบไม่บ่อยนักซึ่งพฤติกรรมของฟังก์ชันเปลี่ยนแปลงไปจริงๆ ตามรูปร่างของ input`,
-        labStarterCode: `function apply(op: (a: number, b: number) => number, a: number, b: number): number {
-  // TODO: call \`op\` with \`a\` and \`b\`, and return the result
+        labs: [
+          {
+            id: "apply-callback",
+            title: "Apply a Callback",
+            instructions: "Complete `apply` so it calls the given `op` callback with `a` and `b` and returns the result.",
+            starterCode: `function apply(op: (a: number, b: number) => number, a: number, b: number): number {
+  // TODO: implement this
   return 0;
 }`,
-        labTestCode: `check(apply((a, b) => a + b, 2, 3), 5, "works with an addition callback");
+            testCode: `check(apply((a, b) => a + b, 2, 3), 5, "works with an addition callback");
 check(apply((a, b) => a * b, 4, 5), 20, "works with a multiplication callback");`,
+            hint: "Just call `op(a, b)` and return what it gives back.",
+          },
+        ],
       },
       {
         slug: "generics",
@@ -199,13 +244,21 @@ Default type parameter (function wrap<T = string>(value: T)) ช่วยให�
 ## สรุป
 
 Generics ช่วยให้คุณเขียนฟังก์ชัน, interface และคลาสที่นำกลับมาใช้ใหม่ได้ โดยยังคงรักษาข้อมูลชนิดข้อมูลไว้กับ input ที่หลากหลาย แทนที่จะต้องพึ่งพา any Constraint ใช้จำกัดว่า type parameter เป็นอะไรได้บ้าง ส่วน default type parameter ช่วยให้ผู้เรียกใช้ละ generic argument ได้เมื่อมีค่าเริ่มต้นที่สมเหตุสมผล — นี่คือวิธีที่ชนิดข้อมูลในตัวอย่างอย่าง Array, Promise และ Map ถูกนิยามขึ้นมาจริงๆ`,
-        labStarterCode: `function firstOrDefault<T>(items: T[], fallback: T): T {
-  // TODO: return items[0] if the array is non-empty, otherwise return \`fallback\`
+        labs: [
+          {
+            id: "first-or-default",
+            title: "First or Default",
+            instructions: "Complete the generic function `firstOrDefault` so it returns the array's first element, or `fallback` when the array is empty.",
+            starterCode: `function firstOrDefault<T>(items: T[], fallback: T): T {
+  // TODO: implement this
   return fallback;
 }`,
-        labTestCode: `check(firstOrDefault([1, 2, 3], 0), 1, "returns the first element when the array is non-empty");
+            testCode: `check(firstOrDefault([1, 2, 3], 0), 1, "returns the first element when the array is non-empty");
 check(firstOrDefault([], 0), 0, "returns the fallback when the array is empty");
 check(firstOrDefault(["a", "b"], "z"), "a", "works with strings too, not just numbers");`,
+            hint: "Check `items.length > 0` before returning `items[0]`.",
+          },
+        ],
       },
       {
         slug: "union-types-and-narrowing",
@@ -234,16 +287,24 @@ Type predicate (function isString(x: unknown): x is string { return typeof x ===
 ## สรุป
 
 Union type ทำให้ค่าหนึ่งๆ เป็นได้หนึ่งในหลายชนิดข้อมูล และการ narrow — ผ่านการตรวจสอบด้วย typeof, instanceof หรือ control-flow pattern อื่นๆ — ทำให้ TypeScript มองว่าค่านั้นเป็นชนิดข้อมูลที่เจาะจงมากขึ้นภายใน branch นั้น Discriminated union ที่มี field แบบ literal ร่วมกันทำให้การ narrow ครอบคลุมทุกกรณีและตรวจสอบได้โดยคอมไพเลอร์ ส่วน type predicate ช่วยให้คุณห่อหุ้มการตรวจสอบเพื่อ narrow ไว้เป็น type guard ที่นำกลับมาใช้ใหม่ได้และ TypeScript จดจำได้`,
-        labStarterCode: `type Shape =
+        labs: [
+          {
+            id: "shape-area",
+            title: "Compute a Shape's Area",
+            instructions: "Complete `area` so it returns the right formula depending on whether `shape` is a circle or a square.",
+            starterCode: `type Shape =
   | { kind: "circle"; radius: number }
   | { kind: "square"; side: number };
 
 function area(shape: Shape): number {
-  // TODO: return the area — Math.PI * radius^2 for a circle, side^2 for a square
+  // TODO: implement this
   return 0;
 }`,
-        labTestCode: `check(area({ kind: "circle", radius: 2 }), Math.PI * 4, "computes a circle's area");
+            testCode: `check(area({ kind: "circle", radius: 2 }), Math.PI * 4, "computes a circle's area");
 check(area({ kind: "square", side: 3 }), 9, "computes a square's area");`,
+            hint: "Switch on `shape.kind` — TypeScript narrows the type inside each branch.",
+          },
+        ],
       },
     ],
   },
@@ -2884,8 +2945,12 @@ Navigate แบบ declarative ด้วย \`<NuxtLink to="/courses">Courses</N
 ## สรุป
 
 Route มาจากไฟล์ใน \`app/pages/\` โดยตรง: ไฟล์ธรรมดาแมปไปเป็น path แบบ static, \`[id].vue\` จับ segment แบบ dynamic, \`[[slug]].vue\` ทำให้มันเป็นออปชัน และ \`[...slug].vue\` จับทุกอย่างที่อยู่ใต้มันเป็น array \`<NuxtLink>\` และ \`navigateTo()\` จัดการ navigation ผ่าน router ตัวเดียวกัน และ \`definePageMeta()\` คือจุดที่หน้าเพจประกาศสิ่งต่างๆ เช่น layout หรือ middleware ของตัวเอง`,
-        labStarterCode: `function pagePathToRoute(pagePath: string): string {
-  // TODO: convert a file path under \`pages/\` into the route it maps to.
+        labs: [
+          {
+            id: "page-path-to-route",
+            title: "Convert a File Path to a Route",
+            instructions: "Complete `pagePathToRoute` so it mirrors Nuxt's own file-based routing rules — see the examples in the code.",
+            starterCode: `function pagePathToRoute(pagePath: string): string {
   // Examples:
   //   "index.vue"                -> "/"
   //   "about.vue"                 -> "/about"
@@ -2893,10 +2958,13 @@ Route มาจากไฟล์ใน \`app/pages/\` โดยตรง: ไ�
   //   "courses/[id].vue"          -> "/courses/:id"
   return "";
 }`,
-        labTestCode: `check(pagePathToRoute("index.vue"), "/", '"index.vue" is the root route');
+            testCode: `check(pagePathToRoute("index.vue"), "/", '"index.vue" is the root route');
 check(pagePathToRoute("about.vue"), "/about", "a plain file becomes a path segment");
 check(pagePathToRoute("settings/profile.vue"), "/settings/profile", "folders build a longer path");
 check(pagePathToRoute("courses/[id].vue"), "/courses/:id", "a [param] segment becomes :param");`,
+            hint: "Strip `.vue`, split on `/`, then handle the `index` and `[param]` cases.",
+          },
+        ],
       },
       {
         slug: "layouts-and-middleware",
@@ -3091,17 +3159,21 @@ const cart = useState<string[]>('cart', () => [])
 ## สรุป
 
 Nuxt ทำ auto-import ของ component, composable และ utility โดยดูจากตำแหน่งที่ไฟล์อยู่ล้วนๆ — \`app/components/\`, \`app/composables/\`, \`app/utils/\` — ไม่ต้องมี \`import\` ที่ไหนเลย \`useState\` คือวิธีแชร์ reactive state ข้าม component แบบปลอดภัยสำหรับ SSR เพราะ \`ref\` เปล่าๆ ระดับ module อาจรั่วไหลข้าม request ที่เกิดพร้อมกันบนเซิร์ฟเวอร์ได้ Pinia คือขั้นถัดไปตามปกติเมื่อ state ต้องการโครงสร้างมากกว่า ref เดียว`,
-        labStarterCode: `function useCounter(start: number = 0) {
-  // TODO: return an object { value, increment, decrement } that tracks a
-  // running count starting at \`start\` — no external library, just plain
-  // state on the returned object (increment/decrement can use \`this\`).
+        labs: [
+          {
+            id: "counter-composable",
+            title: "Build a Counter Composable",
+            instructions: "Complete `useCounter` so it returns an object exposing a running `value`, plus `increment`/`decrement` methods.",
+            starterCode: `function useCounter(start: number = 0) {
+  // TODO: implement this — no external library, just plain state on the
+  // returned object (increment/decrement can use \`this\`).
   return {
     value: start,
     increment() {},
     decrement() {}
   };
 }`,
-        labTestCode: `const counter = useCounter();
+            testCode: `const counter = useCounter();
 check(counter.value, 0, "starts at 0 by default");
 counter.increment();
 counter.increment();
@@ -3111,6 +3183,31 @@ check(counter.value, 1, "decrement() decreases the value");
 
 const counter2 = useCounter(10);
 check(counter2.value, 10, "accepts a custom starting value");`,
+            hint: "`increment()` and `decrement()` can just do `this.value++`/`this.value--`.",
+          },
+          {
+            id: "toggle-composable",
+            title: "Build a Toggle Composable",
+            instructions: "Complete `useToggle` so `toggle()` flips `value` between `true` and `false`.",
+            starterCode: `function useToggle(initial: boolean = false) {
+  // TODO: implement this
+  return {
+    value: initial,
+    toggle() {}
+  };
+}`,
+            testCode: `const t = useToggle();
+check(t.value, false, "starts false by default");
+t.toggle();
+check(t.value, true, "toggle() flips it to true");
+t.toggle();
+check(t.value, false, "toggle() flips it back to false");
+
+const t2 = useToggle(true);
+check(t2.value, true, "accepts a custom starting value");`,
+            hint: "`toggle()` should do `this.value = !this.value`.",
+          },
+        ],
       },
       {
         slug: "server-routes-with-nitro",
@@ -3179,24 +3276,31 @@ export default defineEventHandler(async (event) => {
 ## สรุป
 
 Nitro เปลี่ยนไฟล์ใดก็ตามภายใต้ \`server/api/\` ให้เป็น HTTP endpoint โดย path ของไฟล์และส่วนต่อท้ายบอก method ที่เป็นออปชัน (\`.get.ts\`, \`.post.ts\`) เป็นตัวกำหนด route และ HTTP method ส่วน helper ของ H3 อย่าง \`getRouterParam\`, \`getQuery\` และ \`readBody\` ใช้อ่าน request ที่เข้ามา เพราะหน้าเพจกับ route \`/api\` ใช้ origin เดียวกัน การเรียกมันจาก \`useFetch\` จึงไม่ต้องตั้งค่า CORS เลย — ความสะดวกนี้จะหายไปทันทีที่ backend ถูก deploy เป็น service แยกต่างหากจริงๆ อย่างที่ mindspace-api เป็น`,
-        labStarterCode: `interface Handler {
+        labs: [
+          {
+            id: "dispatch-by-method",
+            title: "Dispatch by HTTP Method",
+            instructions: "Complete `dispatch` so it finds the handler matching `method` and runs it, or returns `\"404\"` if none match.",
+            starterCode: `interface Handler {
   method: "GET" | "POST" | "DELETE";
   run: () => string;
 }
 
 function dispatch(method: string, handlers: Handler[]): string {
-  // TODO: find the handler whose \`method\` matches and return its run()
-  // result. Return "404" if nothing matches — this is the same idea as
-  // server/api/bookmarks.get.ts vs .post.ts picking a handler by filename.
+  // TODO: implement this — the same idea as server/api/bookmarks.get.ts
+  // vs .post.ts picking a handler by filename.
   return "404";
 }`,
-        labTestCode: `const handlers: { method: "GET" | "POST" | "DELETE"; run: () => string }[] = [
+            testCode: `const handlers: { method: "GET" | "POST" | "DELETE"; run: () => string }[] = [
   { method: "GET", run: () => "list" },
   { method: "POST", run: () => "created" }
 ];
 check(dispatch("GET", handlers), "list", "dispatches to the GET handler");
 check(dispatch("POST", handlers), "created", "dispatches to the POST handler");
 check(dispatch("DELETE", handlers), "404", "returns 404 when no handler matches the method");`,
+            hint: "Use `.find()` to locate the handler whose `method` matches.",
+          },
+        ],
       },
       {
         slug: "rendering-modes",
@@ -3507,11 +3611,15 @@ export default defineEventHandler((event) => {
 ## สรุป
 
 บทเรียนนี้สร้าง backend จริงสำหรับฟีเจอร์ bookmarks ได้ล้วนๆ จากตำแหน่งไฟล์: \`server/api/bookmarks.get.ts\` กับ \`.post.ts\` สำหรับ list และ create, \`server/api/bookmarks/[id].delete.ts\` สำหรับ delete หนุนหลังด้วย in-memory store แบบง่ายใน \`server/utils/\` โดย \`createError\` เปลี่ยน input ที่ผิดพลาดให้เป็น response 400/404 ที่ถูกต้อง แทนที่จะเป็น server error ทั่วไป บทเรียนถัดไปจะสร้างหน้าเพจที่เรียกใช้ทั้งสาม route นี้`,
-        labStarterCode: `interface Bookmark { id: string; title: string; url: string }
+        labs: [
+          {
+            id: "bookmark-handlers",
+            title: "Implement the Bookmark Handlers",
+            instructions: "Complete `addBookmark` (validate input, then append immutably) and `removeBookmark` (filter out the matching id) — the same logic the lesson's server/api/bookmarks* routes use.",
+            starterCode: `interface Bookmark { id: string; title: string; url: string }
 
 function addBookmark(bookmarks: Bookmark[], input: { title?: string; url?: string }): Bookmark[] {
-  // TODO: if title or url is missing, throw new Error("title and url are required")
-  // — the same check the server/api/bookmarks.post.ts handler makes.
+  // TODO: if title or url is missing, throw new Error("title and url are required").
   // Otherwise return a NEW array with a new bookmark appended (any unique id
   // is fine, e.g. String(bookmarks.length + 1)). Don't mutate \`bookmarks\`.
   return bookmarks;
@@ -3522,7 +3630,7 @@ function removeBookmark(bookmarks: Bookmark[], id: string): Bookmark[] {
   // Don't mutate \`bookmarks\`.
   return bookmarks;
 }`,
-        labTestCode: `const seed: Bookmark[] = [{ id: "1", title: "Nuxt Docs", url: "https://nuxt.com" }];
+            testCode: `const seed: Bookmark[] = [{ id: "1", title: "Nuxt Docs", url: "https://nuxt.com" }];
 
 const afterAdd = addBookmark(seed, { title: "Vue", url: "https://vuejs.org" });
 check(afterAdd.length, 2, "adds a new bookmark to the list");
@@ -3539,6 +3647,9 @@ check(threw, true, "throws when url is missing");
 const afterRemove = removeBookmark(seed, "1");
 check(afterRemove.length, 0, "removes the bookmark with the matching id");
 check(seed.length, 1, "removeBookmark does not mutate the original array either");`,
+            hint: "addBookmark should throw before doing anything else if a field is missing; both functions should return a new array — try `.filter()` and `[...bookmarks, newOne]`.",
+          },
+        ],
       },
       {
         slug: "project-bookmarks-ui",
@@ -3659,16 +3770,22 @@ attribute \`required\` ให้ client-side validation ฟรีๆ ก่อ�
 ## สรุป
 
 หน้า bookmarks เชื่อม \`useFetch\` สำหรับรายการเริ่มต้นที่ render บนเซิร์ฟเวอร์เข้ากับ \`$fetch\` ธรรมดาสำหรับ mutation สร้างและลบที่เกิดจากการคลิก โดยเรียก \`refresh()\` หลังแต่ละครั้งเพื่อให้รายการสะท้อนสิ่งที่เซิร์ฟเวอร์มีอยู่จริงเสมอ แทนที่จะเป็นสำเนาในเครื่องที่ดูแลเอง มันยังแสดงให้เห็นว่าทำไม client-side validation ด้วย \`required\` กับการตรวจสอบฝั่งเซิร์ฟเวอร์ถึงไม่ได้ซ้ำซ้อนกัน — อย่างหนึ่งเพื่อ UX อีกอย่างคือการรับประกันที่แท้จริง`,
-        labStarterCode: `function canSubmit(title: string, url: string): boolean {
-  // TODO: return true only if both \`title\` and \`url\` are non-empty once
-  // whitespace is trimmed off — the same guard the form's submit button
-  // needs beyond the \`required\` attribute alone.
+        labs: [
+          {
+            id: "can-submit",
+            title: "Validate Before Submitting",
+            instructions: "Complete `canSubmit` so it only allows submission when both `title` and `url` have real (non-whitespace) content.",
+            starterCode: `function canSubmit(title: string, url: string): boolean {
+  // TODO: implement this
   return false;
 }`,
-        labTestCode: `check(canSubmit("Nuxt", "https://nuxt.com"), true, "true when both fields have content");
+            testCode: `check(canSubmit("Nuxt", "https://nuxt.com"), true, "true when both fields have content");
 check(canSubmit("", "https://nuxt.com"), false, "false when title is empty");
 check(canSubmit("Nuxt", "   "), false, "false when url is only whitespace");
 check(canSubmit("  Nuxt  ", "https://nuxt.com"), true, "trims whitespace before checking");`,
+            hint: "`.trim().length > 0` on both `title` and `url`.",
+          },
+        ],
       },
       {
         slug: "project-loading-errors-and-next-steps",
