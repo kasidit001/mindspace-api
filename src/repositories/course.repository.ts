@@ -50,6 +50,13 @@ export function findAllWithLessons() {
         ],
       },
     ],
-    order: [["createdAt", "ASC"]],
+    // Without an explicit order on the association, Postgres/Sequelize
+    // returns each course's lessons in whatever order the join happens to
+    // produce — not lesson order — which is what made the lesson sidebar
+    // (CourseSidebarLessons.vue) list them out of sequence.
+    order: [
+      ["createdAt", "ASC"],
+      [{ model: Lesson, as: "lessons" }, "order", "ASC"],
+    ],
   });
 }
