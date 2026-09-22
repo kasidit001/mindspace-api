@@ -45,7 +45,7 @@ Model → Database`, strictly in that order — a layer only calls the one direc
   repository. Calls repositories, never touches Sequelize/raw SQL directly.
 - `src/repositories/*.repository.ts` — the only layer that touches Sequelize models or raw
   SQL. One file per aggregate (`user`, `course`, `lesson`, `note`, `progress`,
-  `lessonEmbedding`, `search`, `stats`). Returns already-camelCased data, hiding
+  `lessonEmbedding`, `search`, `stats`, `tag`). Returns already-camelCased data, hiding
   column-naming/SQL details from everything above it.
 - `src/middlewares/auth.middleware.ts` — `requireAuth`/`optionalAuth` sit *between* route and
   controller (Express middleware, not one of the layers above), populating `req.user`.
@@ -71,11 +71,23 @@ Model → Database`, strictly in that order — a layer only calls the one direc
 - Associations: `Course.hasMany(Lesson)`, `Lesson.hasMany(LessonEmbedding)`,
   `Lesson.hasMany(Progress)`, `Lesson.hasMany(Note)` (nullable `lessonId` — a saved chat
   answer may not be tied to one lesson), `Role.hasMany(User)`, `User.hasMany(Progress)`,
-  `User.hasMany(Note)`. `Progress` is unique on `(userId, lessonId)`, not `lessonId` alone —
-  it used to be global/single-user; see auth below for when that changed. None of the models
+  `User.hasMany(Note)`, `Course.belongsToMany(Tag, through: CourseTag)` (curated labels —
+  see Tagging below). `Progress` is unique on `(userId, lessonId)`, not `lessonId` alone —
+  it used to be global/single-user; see auth below for when that changed. Most models don't
   declare typed association properties (no `NonAttribute<...>` fields) — accessing e.g.
   `user.role` after an `include` works at runtime but isn't typechecked; this is a
-  pre-existing gap across every model, not specific to one.
+  pre-existing gap across most models, except `Course.tags`, which is typed.
+
+**Tagging**: `Tag` (`name`, unique `slug`) and the `CourseTag` join model (`src/models/
+Tag.ts`/`CourseTag.ts`) give courses real, curated, queryable labels — distinct from
+`~/utils/courseTech.ts`'s frontend-only title-regex tech guess, which exists purely for
+display/filtering heuristics and isn't backed by any table. `src/services/tag.service.ts`'s
+`findOrCreateByName` is idempotent (safe to call every seed run); `seedContent.ts` doesn't
+carry tags itself — they're assigned per course slug in `src/scripts/seed.ts`'s
+`COURSE_TAGS` map, so adding a new course means adding its tags there too.
+`findAllWithLessons()` includes `tags` on every course in `GET /api/courses` automatically
+(no controller/interface changes needed — same pass-through as every other included
+association).
 
 **RAG chat flow** (the core feature): `src/services/embedding.service.ts` chunks lesson
 content on paragraph boundaries, embeds it via `OpenAIEmbeddings` pointed at OpenRouter, and

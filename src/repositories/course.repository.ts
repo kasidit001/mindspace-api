@@ -1,6 +1,6 @@
 import { QueryTypes } from "sequelize";
 import sequelize from "../config/database";
-import { Course, Lesson } from "../models";
+import { Course, Lesson, Tag } from "../models";
 import type { FeaturedCourseRow } from "../interfaces/course.interface";
 
 /** Course overview + lesson counts, for the landing-page hero. Top 6, oldest first. */
@@ -49,6 +49,7 @@ export function findAllWithLessons() {
           ],
         ],
       },
+      { model: Tag, as: "tags", attributes: ["id", "name", "slug"], through: { attributes: [] } },
     ],
     // Without an explicit order on the association, Postgres/Sequelize
     // returns each course's lessons in whatever order the join happens to

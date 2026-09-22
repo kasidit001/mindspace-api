@@ -1,8 +1,24 @@
 import { connectDB } from "../config/database";
 import { syncModels, Course, Lesson } from "../models";
 import { embedAndStoreLesson } from "../services/embedding.service";
+import * as tagService from "../services/tag.service";
 import { seedCourses } from "./seedContent";
 import sequelize from "../config/database";
+
+// Curated, not guessed — real tags per course, by slug. Distinct from the
+// title-regex tech-detection heuristic in getDashboard.usecase.ts's
+// getCourseTech(), which exists only for that endpoint's display purposes;
+// this is the actual queryable Tag data (see src/models/Tag.ts).
+const COURSE_TAGS: Record<string, string[]> = {
+  "typescript-for-js-programmers": ["TypeScript", "JavaScript"],
+  "typescript-tooling": ["TypeScript"],
+  "typescript-oop": ["TypeScript"],
+  "docker-for-beginners": ["Docker"],
+  "react-ui-patterns": ["React", "JavaScript"],
+  "go-microservices": ["Go"],
+  "claude-agent-skills": ["Claude", "AI Agents"],
+  "nuxt-for-vue-developers": ["Nuxt", "Vue"],
+};
 
 async function main() {
   await connectDB();
@@ -32,6 +48,11 @@ async function main() {
     });
 
     console.log(`[seed] Course: ${course.title}`);
+
+    for (const tagName of COURSE_TAGS[courseSeed.slug] ?? []) {
+      const tag = await tagService.findOrCreateByName(tagName);
+      await tagService.attachToCourse(course.id, tag.id);
+    }
 
     for (const lessonSeed of courseSeed.lessons) {
       const [lesson] = await Lesson.findOrCreate({

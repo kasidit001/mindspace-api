@@ -1,5 +1,15 @@
-import { DataTypes, Model, type CreationOptional, type InferAttributes, type InferCreationAttributes } from "sequelize";
+import {
+  DataTypes,
+  Model,
+  type BelongsToManyAddAssociationMixin,
+  type BelongsToManyGetAssociationsMixin,
+  type CreationOptional,
+  type InferAttributes,
+  type InferCreationAttributes,
+  type NonAttribute,
+} from "sequelize";
 import sequelize from "../config/database";
+import type { Tag } from "./Tag";
 
 export class Course extends Model<InferAttributes<Course>, InferCreationAttributes<Course>> {
   declare id: CreationOptional<string>;
@@ -11,6 +21,13 @@ export class Course extends Model<InferAttributes<Course>, InferCreationAttribut
   declare descriptionTh: string | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+
+  // Mixins for the Course.belongsToMany(Tag, { as: "tags" }) association declared
+  // at the bottom of Tag.ts — typed here (unlike every other association in this
+  // codebase, see CLAUDE.md's note on that pre-existing gap) since this one's new.
+  declare tags?: NonAttribute<Tag[]>;
+  declare addTag: BelongsToManyAddAssociationMixin<Tag, string>;
+  declare getTags: BelongsToManyGetAssociationsMixin<Tag>;
 }
 
 Course.init(
