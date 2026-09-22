@@ -952,9 +952,19 @@ const acc = new Bank(1234);
 console.log(acc.pin);
 \`\`\`
 
+Why bother, when JavaScript has no such restriction at runtime? Because \`private\` is a promise to the rest of your codebase: "nothing outside this class depends on this field's shape." That promise is what lets you freely rename, restructure, or delete \`pin\` later — the compiler will flag every place inside \`Bank\` that needs updating, and guarantee nothing *outside* \`Bank\` could have been relying on it, since it was never reachable. A \`public\` field carries no such guarantee — anything, anywhere, could already depend on it.
+
+\`private\` also combines with the parameter-property shorthand from the earlier lesson:
+
+\`\`\`ts
+class Bank {
+  constructor(private pin: number) {} // declares + assigns + makes private, in one line
+}
+\`\`\`
+
 ## Conclusion
 
-\`public\` is TypeScript's implicit default — accessible from anywhere unless stated otherwise — while \`private\` locks a member to only the class that declares it, blocking access from both outside instances and child classes.`,
+\`public\` is TypeScript's implicit default — accessible from anywhere unless stated otherwise — while \`private\` locks a member to only the class that declares it, blocking access from both outside instances and child classes. That restriction is what makes a private field safe to refactor later: nothing outside the class could have depended on it.`,
         contentTh: `\`public\` คือ modifier ค่าเริ่มต้น — property และเมธอดสามารถเข้าถึงได้จากทุกที่ ถ้าไม่ระบุ modifier ใดๆ TypeScript จะถือว่าเป็น \`public\` โดยอัตโนมัติ
 
 \`\`\`ts
@@ -989,9 +999,19 @@ const acc = new Bank(1234);
 console.log(acc.pin);
 \`\`\`
 
+แล้วทำไมต้องใช้ ในเมื่อ JavaScript ไม่มีข้อจำกัดแบบนี้ตอน runtime เลย? เพราะ \`private\` คือคำสัญญาต่อโค้ดส่วนอื่นในระบบ: "ไม่มีอะไรภายนอกคลาสนี้พึ่งพารูปร่างของ field นี้อยู่" คำสัญญานี้แหละที่ทำให้คุณ rename, ปรับโครงสร้าง หรือลบ \`pin\` ในภายหลังได้อย่างอิสระ — compiler จะแจ้งทุกจุด*ภายใน* \`Bank\` ที่ต้องแก้ไข และรับประกันว่าไม่มีอะไร*ภายนอก* \`Bank\` พึ่งพามันอยู่ เพราะมันไม่เคยเข้าถึงได้จากภายนอกตั้งแต่แรก ส่วน \`public\` field ไม่มีการรับประกันแบบนี้เลย — อะไรก็ตาม ที่ไหนก็ตาม อาจพึ่งพามันอยู่แล้วก็ได้
+
+\`private\` ยังใช้ร่วมกับทางลัด parameter property จากบทเรียนก่อนหน้าได้ด้วย:
+
+\`\`\`ts
+class Bank {
+  constructor(private pin: number) {} // declares + assigns + makes private, in one line
+}
+\`\`\`
+
 ## สรุป
 
-\`public\` คือค่าเริ่มต้นโดยนัยของ TypeScript — เข้าถึงได้จากทุกที่ถ้าไม่ระบุเป็นอย่างอื่น ส่วน \`private\` จะจำกัดให้เข้าถึงได้เฉพาะภายในคลาสที่ประกาศเท่านั้น บล็อกทั้งการเข้าถึงจาก instance ภายนอกและจาก child class`,
+\`public\` คือค่าเริ่มต้นโดยนัยของ TypeScript — เข้าถึงได้จากทุกที่ถ้าไม่ระบุเป็นอย่างอื่น ส่วน \`private\` จะจำกัดให้เข้าถึงได้เฉพาะภายในคลาสที่ประกาศเท่านั้น บล็อกทั้งการเข้าถึงจาก instance ภายนอกและจาก child class ข้อจำกัดนี้เองที่ทำให้ private field ปลอดภัยต่อการ refactor ในภายหลัง เพราะไม่มีอะไรภายนอกคลาสพึ่งพามันอยู่ได้`,
       },
       {
         slug: "protected-modifier",
@@ -1136,16 +1156,86 @@ class System {
 
 **Data hiding** is restricting direct access to some of an object's components, usually using the \`private\` modifier. The goal is to prevent outside code from putting the object into an invalid state.
 
+Here's the problem encapsulation solves. Without it, any field is a public field, and public fields can be set to anything:
+
+\`\`\`ts
+class BankAccount {
+  balance: number = 0; // public by default — no protection
+}
+
+const acc = new BankAccount();
+acc.balance = -500; // ✅ compiles fine, but a negative balance is nonsense
+\`\`\`
+
+TypeScript has no complaint here — \`balance\` is a \`number\`, and \`-500\` is a valid \`number\`. Nothing in the type system captures the *business rule* that a balance shouldn't go negative. Encapsulation fixes this by hiding the field and forcing every write through a method that can enforce the rule:
+
+\`\`\`ts
+class BankAccount {
+  private balance: number = 0;
+
+  deposit(amount: number) {
+    if (amount <= 0) throw new Error('Deposit must be positive');
+    this.balance += amount;
+  }
+
+  withdraw(amount: number) {
+    if (amount > this.balance) throw new Error('Insufficient funds');
+    this.balance -= amount;
+  }
+}
+
+const acc = new BankAccount();
+acc.balance = -500; // ❌ compile error: 'balance' is private
+acc.withdraw(100); // throws — enforces the rule at runtime too
+\`\`\`
+
+Now the class itself is the only code that can touch \`balance\` directly, so every mutation is guaranteed to go through \`deposit\`/\`withdraw\` and their validation. The next lesson (Getters & Setters) covers the pattern for still allowing controlled *reads* of a private field.
+
 ## Conclusion
 
-Encapsulation bundles an object's data and the methods that operate on it into one class, and data hiding — usually enforced with \`private\` — is the practical technique that keeps outside code from pushing that object into an invalid state.`,
+Encapsulation bundles an object's data and the methods that operate on it into one class, and data hiding — usually enforced with \`private\` — is the practical technique that keeps outside code from pushing that object into an invalid state, by routing every mutation through methods that can validate it.`,
         contentTh: `Encapsulation คือ "โล่ป้องกัน" ของ OOP: การรวมข้อมูล (property) และเมธอดที่ทำงานกับข้อมูลนั้นเข้าไว้เป็นหน่วยเดียวกัน (คลาส)
 
 **Data hiding** คือการจำกัดการเข้าถึงโดยตรงต่อบางส่วนขององค์ประกอบของอ็อบเจกต์ โดยมักใช้ modifier \`private\` เป้าหมายคือป้องกันไม่ให้โค้ดภายนอกทำให้อ็อบเจกต์ตกอยู่ในสถานะที่ไม่ถูกต้อง (invalid state)
 
+นี่คือปัญหาที่ encapsulation แก้ให้ ถ้าไม่มีมัน field ใดๆ ก็จะเป็น public field และ public field สามารถถูกกำหนดเป็นค่าอะไรก็ได้:
+
+\`\`\`ts
+class BankAccount {
+  balance: number = 0; // public by default — no protection
+}
+
+const acc = new BankAccount();
+acc.balance = -500; // ✅ compiles fine, but a negative balance is nonsense
+\`\`\`
+
+TypeScript ไม่บ่นอะไรเลยตรงนี้ — \`balance\` เป็นชนิด \`number\` และ \`-500\` ก็เป็นค่า \`number\` ที่ถูกต้อง ไม่มีอะไรใน type system ที่จับ *กฎทางธุรกิจ* ได้ว่ายอดเงินไม่ควรติดลบ encapsulation แก้ปัญหานี้ด้วยการซ่อน field และบังคับให้การเขียนทุกครั้งต้องผ่านเมธอดที่บังคับใช้กฎได้:
+
+\`\`\`ts
+class BankAccount {
+  private balance: number = 0;
+
+  deposit(amount: number) {
+    if (amount <= 0) throw new Error('Deposit must be positive');
+    this.balance += amount;
+  }
+
+  withdraw(amount: number) {
+    if (amount > this.balance) throw new Error('Insufficient funds');
+    this.balance -= amount;
+  }
+}
+
+const acc = new BankAccount();
+acc.balance = -500; // ❌ compile error: 'balance' is private
+acc.withdraw(100); // throws — enforces the rule at runtime too
+\`\`\`
+
+ตอนนี้ตัวคลาสเองเท่านั้นที่แตะ \`balance\` โดยตรงได้ ทุกการเปลี่ยนแปลงจึงต้องผ่าน \`deposit\`/\`withdraw\` และ validation ของมันเสมอ บทเรียนถัดไป (Getters & Setters) จะพูดถึงรูปแบบที่ยังอนุญาตให้ *อ่าน* private field ได้แบบมีการควบคุม
+
 ## สรุป
 
-encapsulation คือการรวมข้อมูลของอ็อบเจกต์และเมธอดที่ทำงานกับข้อมูลนั้นไว้เป็นคลาสเดียว ส่วน data hiding — ที่มักบังคับใช้ด้วย \`private\` — คือเทคนิคที่ใช้จริงในการป้องกันไม่ให้โค้ดภายนอกทำให้อ็อบเจกต์ตกอยู่ในสถานะที่ไม่ถูกต้อง`,
+encapsulation คือการรวมข้อมูลของอ็อบเจกต์และเมธอดที่ทำงานกับข้อมูลนั้นไว้เป็นคลาสเดียว ส่วน data hiding — ที่มักบังคับใช้ด้วย \`private\` — คือเทคนิคที่ใช้จริงในการป้องกันไม่ให้โค้ดภายนอกทำให้อ็อบเจกต์ตกอยู่ในสถานะที่ไม่ถูกต้อง ด้วยการบังคับให้ทุกการเปลี่ยนแปลงต้องผ่านเมธอดที่ตรวจสอบความถูกต้องได้`,
       },
       {
         slug: "getters-and-setters",
@@ -1295,9 +1385,33 @@ graph TD
     Animal["Animal<br/>Base Class"] -- extends --> Dog["Dog<br/>Derived Class"]
 \`\`\`
 
+\`\`\`ts
+class Animal {
+  constructor(public name: string) {}
+
+  move(distance: number) {
+    console.log(\`\${this.name} moved \${distance}m.\`);
+  }
+}
+
+class Dog extends Animal {
+  bark() {
+    console.log(\`\${this.name} says: Woof!\`);
+  }
+}
+
+const rex = new Dog('Rex');
+rex.move(10); // inherited from Animal — "Rex moved 10m."
+rex.bark(); // defined on Dog — "Rex says: Woof!"
+\`\`\`
+
+\`Dog\` never redefines \`name\` or \`move()\` — it gets both for free from \`Animal\` just by extending it, and adds only what's actually new (\`bark()\`). A child class can also **override** an inherited method by redeclaring it with the same name and a compatible signature; the next few lessons (starting with \`super()\`) cover how overriding interacts with the parent's own implementation.
+
+**Interview trap — inheritance vs composition:** inheritance models an "is-a" relationship (a \`Dog\` *is an* \`Animal\`). If the relationship is really "has-a" (a \`Car\` *has a* \`Engine\`), prefer composition — giving \`Car\` an \`Engine\` property — over forcing an inheritance chain that doesn't actually fit.
+
 ## Conclusion
 
-Inheritance via \`extends\` lets a child class reuse a parent class's properties and methods instead of duplicating them, keeping code D.R.Y — with the caveat that TypeScript only allows a single parent class per \`extends\`.`,
+Inheritance via \`extends\` lets a child class reuse a parent class's properties and methods instead of duplicating them, keeping code D.R.Y — with the caveat that TypeScript only allows a single parent class per \`extends\`, and that a true "has-a" relationship is usually better modeled with composition than inheritance.`,
         contentTh: `Inheritance (การสืบทอด) คือกลไกที่คลาสใหม่ (child/derived) สืบทอด property และเมธอดจากคลาสที่มีอยู่แล้ว (parent/base) มันส่งเสริมหลักการ D.R.Y (Don't Repeat Yourself) และสร้างขึ้นด้วยคีย์เวิร์ด \`extends\` TypeScript รองรับ single inheritance เท่านั้น — มี parent class ได้สูงสุดแค่ 1 ตัว
 
 \`\`\`mermaid
@@ -1305,9 +1419,33 @@ graph TD
     Animal["Animal<br/>Base Class"] -- extends --> Dog["Dog<br/>Derived Class"]
 \`\`\`
 
+\`\`\`ts
+class Animal {
+  constructor(public name: string) {}
+
+  move(distance: number) {
+    console.log(\`\${this.name} moved \${distance}m.\`);
+  }
+}
+
+class Dog extends Animal {
+  bark() {
+    console.log(\`\${this.name} says: Woof!\`);
+  }
+}
+
+const rex = new Dog('Rex');
+rex.move(10); // inherited from Animal — "Rex moved 10m."
+rex.bark(); // defined on Dog — "Rex says: Woof!"
+\`\`\`
+
+\`Dog\` ไม่ต้องประกาศ \`name\` หรือ \`move()\` ใหม่เลย — ได้ทั้งสองอย่างมาฟรีจากการ extend \`Animal\` และเพิ่มแค่สิ่งที่ใหม่จริงๆ (\`bark()\`) child class ยังสามารถ **override** เมธอดที่สืบทอดมาได้ ด้วยการประกาศเมธอดชื่อเดียวกันซ้ำโดยมี signature ที่เข้ากันได้ — บทเรียนถัดๆ ไป (เริ่มจาก \`super()\`) จะพูดถึงว่าการ override ทำงานร่วมกับ implementation เดิมของ parent อย่างไร
+
+**กับดักสัมภาษณ์ — inheritance กับ composition:** inheritance จำลองความสัมพันธ์แบบ "is-a" (\`Dog\` *เป็น* \`Animal\`) ถ้าความสัมพันธ์จริงๆ เป็น "has-a" (\`Car\` *มี* \`Engine\`) ควรใช้ composition แทน — ให้ \`Car\` มี property เป็น \`Engine\` — แทนที่จะฝืนใช้ inheritance ในความสัมพันธ์ที่ไม่เหมาะกับมัน
+
 ## สรุป
 
-inheritance ผ่าน \`extends\` ทำให้ child class นำ property และเมธอดของ parent class มาใช้ซ้ำได้โดยไม่ต้องเขียนซ้ำ ช่วยรักษาหลักการ D.R.Y ไว้ — โดยมีข้อแม้ว่า TypeScript อนุญาตให้มี parent class ได้แค่ 1 ตัวต่อการ \`extends\` เท่านั้น`,
+inheritance ผ่าน \`extends\` ทำให้ child class นำ property และเมธอดของ parent class มาใช้ซ้ำได้โดยไม่ต้องเขียนซ้ำ ช่วยรักษาหลักการ D.R.Y ไว้ — โดยมีข้อแม้ว่า TypeScript อนุญาตให้มี parent class ได้แค่ 1 ตัวต่อการ \`extends\` เท่านั้น และความสัมพันธ์แบบ "has-a" จริงๆ มักเหมาะกับ composition มากกว่า inheritance`,
       },
       {
         slug: "the-super-keyword",
@@ -1333,9 +1471,32 @@ class Dog extends Animal {
 }
 \`\`\`
 
+Forget the \`super(name)\` call and TypeScript refuses to compile: \`"Constructors for derived classes must contain a 'super' call."\` This isn't a style rule — the parent's fields genuinely don't exist in memory until its constructor has run, so \`this\` is unsafe to touch before that.
+
+\`super\` isn't only for constructors, though — it's also how a child class reaches a method it has **overridden**, instead of losing access to the parent's version entirely:
+
+\`\`\`ts
+class Animal {
+  describe(): string {
+    return 'An animal';
+  }
+}
+
+class Dog extends Animal {
+  describe(): string {
+    // Reuse the parent's implementation, then extend it
+    return \`\${super.describe()} (specifically, a dog)\`;
+  }
+}
+
+new Dog().describe(); // "An animal (specifically, a dog)"
+\`\`\`
+
+Without \`super.describe()\`, \`Dog\`'s override would have to fully reimplement whatever \`Animal.describe()\` did — \`super\` lets it build on top of the parent's logic instead of duplicating it.
+
 ## Conclusion
 
-Whenever a child class defines its own constructor, \`super()\` must run first to execute the parent's constructor and initialize its properties — only after that call is it safe to use \`this\` inside the child.`,
+Whenever a child class defines its own constructor, \`super()\` must run first to execute the parent's constructor and initialize its properties — only after that call is it safe to use \`this\` inside the child. The same \`super\` keyword also lets an overriding method call the parent's version of itself (\`super.methodName()\`), so an override can extend the parent's behavior instead of fully replacing it.`,
         contentTh: `ถ้า child class มี constructor ของตัวเอง จะ**ต้อง**เรียก \`super()\` ก่อนใช้ \`this\` เสมอ \`super()\` คือการรัน constructor ของ parent class เพื่อให้แน่ใจว่า property ของ parent ถูกกำหนดค่าก่อน
 
 \`\`\`ts
@@ -1355,9 +1516,32 @@ class Dog extends Animal {
 }
 \`\`\`
 
+ถ้าลืมเรียก \`super(name)\` TypeScript จะไม่ยอม compile ให้ พร้อม error: \`"Constructors for derived classes must contain a 'super' call."\` นี่ไม่ใช่แค่กฎเรื่องสไตล์การเขียนโค้ด — เพราะ field ของ parent จะยังไม่มีอยู่จริงในหน่วยความจำจนกว่า constructor ของมันจะรันเสร็จ ดังนั้นการใช้ \`this\` ก่อนหน้านั้นจึงไม่ปลอดภัย
+
+\`super\` ไม่ได้ใช้แค่กับ constructor เท่านั้น — มันยังเป็นวิธีที่ child class เข้าถึงเมธอดที่ตัวเอง**override**ไปแล้วได้ด้วย แทนที่จะเสียการเข้าถึง implementation เดิมของ parent ไปเลย:
+
+\`\`\`ts
+class Animal {
+  describe(): string {
+    return 'An animal';
+  }
+}
+
+class Dog extends Animal {
+  describe(): string {
+    // Reuse the parent's implementation, then extend it
+    return \`\${super.describe()} (specifically, a dog)\`;
+  }
+}
+
+new Dog().describe(); // "An animal (specifically, a dog)"
+\`\`\`
+
+ถ้าไม่มี \`super.describe()\` การ override ของ \`Dog\` ก็ต้องเขียน implementation ของ \`Animal.describe()\` ซ้ำใหม่ทั้งหมด — \`super\` ทำให้มันต่อยอดจาก logic เดิมของ parent ได้ แทนที่จะต้องเขียนซ้ำ
+
 ## สรุป
 
-เมื่อใดก็ตามที่ child class มี constructor ของตัวเอง \`super()\` ต้องถูกเรียกก่อนเสมอ เพื่อรัน constructor ของ parent และกำหนดค่าเริ่มต้นให้ property ของมัน หลังจากเรียกแล้วเท่านั้นจึงจะปลอดภัยที่จะใช้ \`this\` ภายใน child`,
+เมื่อใดก็ตามที่ child class มี constructor ของตัวเอง \`super()\` ต้องถูกเรียกก่อนเสมอ เพื่อรัน constructor ของ parent และกำหนดค่าเริ่มต้นให้ property ของมัน หลังจากเรียกแล้วเท่านั้นจึงจะปลอดภัยที่จะใช้ \`this\` ภายใน child คีย์เวิร์ด \`super\` ตัวเดียวกันนี้ยังใช้ให้เมธอดที่ override เรียก version เดิมของ parent ได้ (\`super.methodName()\`) ทำให้การ override ต่อยอดจากพฤติกรรมเดิมของ parent ได้ แทนที่จะต้องแทนที่มันทั้งหมด`,
       },
       {
         slug: "polymorphism-overriding",
