@@ -2884,6 +2884,19 @@ Navigate แบบ declarative ด้วย \`<NuxtLink to="/courses">Courses</N
 ## สรุป
 
 Route มาจากไฟล์ใน \`app/pages/\` โดยตรง: ไฟล์ธรรมดาแมปไปเป็น path แบบ static, \`[id].vue\` จับ segment แบบ dynamic, \`[[slug]].vue\` ทำให้มันเป็นออปชัน และ \`[...slug].vue\` จับทุกอย่างที่อยู่ใต้มันเป็น array \`<NuxtLink>\` และ \`navigateTo()\` จัดการ navigation ผ่าน router ตัวเดียวกัน และ \`definePageMeta()\` คือจุดที่หน้าเพจประกาศสิ่งต่างๆ เช่น layout หรือ middleware ของตัวเอง`,
+        labStarterCode: `function pagePathToRoute(pagePath: string): string {
+  // TODO: convert a file path under \`pages/\` into the route it maps to.
+  // Examples:
+  //   "index.vue"                -> "/"
+  //   "about.vue"                 -> "/about"
+  //   "settings/profile.vue"      -> "/settings/profile"
+  //   "courses/[id].vue"          -> "/courses/:id"
+  return "";
+}`,
+        labTestCode: `check(pagePathToRoute("index.vue"), "/", '"index.vue" is the root route');
+check(pagePathToRoute("about.vue"), "/about", "a plain file becomes a path segment");
+check(pagePathToRoute("settings/profile.vue"), "/settings/profile", "folders build a longer path");
+check(pagePathToRoute("courses/[id].vue"), "/courses/:id", "a [param] segment becomes :param");`,
       },
       {
         slug: "layouts-and-middleware",
@@ -3078,6 +3091,26 @@ const cart = useState<string[]>('cart', () => [])
 ## สรุป
 
 Nuxt ทำ auto-import ของ component, composable และ utility โดยดูจากตำแหน่งที่ไฟล์อยู่ล้วนๆ — \`app/components/\`, \`app/composables/\`, \`app/utils/\` — ไม่ต้องมี \`import\` ที่ไหนเลย \`useState\` คือวิธีแชร์ reactive state ข้าม component แบบปลอดภัยสำหรับ SSR เพราะ \`ref\` เปล่าๆ ระดับ module อาจรั่วไหลข้าม request ที่เกิดพร้อมกันบนเซิร์ฟเวอร์ได้ Pinia คือขั้นถัดไปตามปกติเมื่อ state ต้องการโครงสร้างมากกว่า ref เดียว`,
+        labStarterCode: `function useCounter(start: number = 0) {
+  // TODO: return an object { value, increment, decrement } that tracks a
+  // running count starting at \`start\` — no external library, just plain
+  // state on the returned object (increment/decrement can use \`this\`).
+  return {
+    value: start,
+    increment() {},
+    decrement() {}
+  };
+}`,
+        labTestCode: `const counter = useCounter();
+check(counter.value, 0, "starts at 0 by default");
+counter.increment();
+counter.increment();
+check(counter.value, 2, "increment() increases the value");
+counter.decrement();
+check(counter.value, 1, "decrement() decreases the value");
+
+const counter2 = useCounter(10);
+check(counter2.value, 10, "accepts a custom starting value");`,
       },
       {
         slug: "server-routes-with-nitro",
@@ -3146,6 +3179,24 @@ export default defineEventHandler(async (event) => {
 ## สรุป
 
 Nitro เปลี่ยนไฟล์ใดก็ตามภายใต้ \`server/api/\` ให้เป็น HTTP endpoint โดย path ของไฟล์และส่วนต่อท้ายบอก method ที่เป็นออปชัน (\`.get.ts\`, \`.post.ts\`) เป็นตัวกำหนด route และ HTTP method ส่วน helper ของ H3 อย่าง \`getRouterParam\`, \`getQuery\` และ \`readBody\` ใช้อ่าน request ที่เข้ามา เพราะหน้าเพจกับ route \`/api\` ใช้ origin เดียวกัน การเรียกมันจาก \`useFetch\` จึงไม่ต้องตั้งค่า CORS เลย — ความสะดวกนี้จะหายไปทันทีที่ backend ถูก deploy เป็น service แยกต่างหากจริงๆ อย่างที่ mindspace-api เป็น`,
+        labStarterCode: `interface Handler {
+  method: "GET" | "POST" | "DELETE";
+  run: () => string;
+}
+
+function dispatch(method: string, handlers: Handler[]): string {
+  // TODO: find the handler whose \`method\` matches and return its run()
+  // result. Return "404" if nothing matches — this is the same idea as
+  // server/api/bookmarks.get.ts vs .post.ts picking a handler by filename.
+  return "404";
+}`,
+        labTestCode: `const handlers: { method: "GET" | "POST" | "DELETE"; run: () => string }[] = [
+  { method: "GET", run: () => "list" },
+  { method: "POST", run: () => "created" }
+];
+check(dispatch("GET", handlers), "list", "dispatches to the GET handler");
+check(dispatch("POST", handlers), "created", "dispatches to the POST handler");
+check(dispatch("DELETE", handlers), "404", "returns 404 when no handler matches the method");`,
       },
       {
         slug: "rendering-modes",
@@ -3456,6 +3507,38 @@ export default defineEventHandler((event) => {
 ## สรุป
 
 บทเรียนนี้สร้าง backend จริงสำหรับฟีเจอร์ bookmarks ได้ล้วนๆ จากตำแหน่งไฟล์: \`server/api/bookmarks.get.ts\` กับ \`.post.ts\` สำหรับ list และ create, \`server/api/bookmarks/[id].delete.ts\` สำหรับ delete หนุนหลังด้วย in-memory store แบบง่ายใน \`server/utils/\` โดย \`createError\` เปลี่ยน input ที่ผิดพลาดให้เป็น response 400/404 ที่ถูกต้อง แทนที่จะเป็น server error ทั่วไป บทเรียนถัดไปจะสร้างหน้าเพจที่เรียกใช้ทั้งสาม route นี้`,
+        labStarterCode: `interface Bookmark { id: string; title: string; url: string }
+
+function addBookmark(bookmarks: Bookmark[], input: { title?: string; url?: string }): Bookmark[] {
+  // TODO: if title or url is missing, throw new Error("title and url are required")
+  // — the same check the server/api/bookmarks.post.ts handler makes.
+  // Otherwise return a NEW array with a new bookmark appended (any unique id
+  // is fine, e.g. String(bookmarks.length + 1)). Don't mutate \`bookmarks\`.
+  return bookmarks;
+}
+
+function removeBookmark(bookmarks: Bookmark[], id: string): Bookmark[] {
+  // TODO: return a NEW array without the bookmark whose id matches \`id\`.
+  // Don't mutate \`bookmarks\`.
+  return bookmarks;
+}`,
+        labTestCode: `const seed: Bookmark[] = [{ id: "1", title: "Nuxt Docs", url: "https://nuxt.com" }];
+
+const afterAdd = addBookmark(seed, { title: "Vue", url: "https://vuejs.org" });
+check(afterAdd.length, 2, "adds a new bookmark to the list");
+check(seed.length, 1, "does not mutate the original array");
+
+let threw = false;
+try {
+  addBookmark(seed, { title: "No URL" });
+} catch {
+  threw = true;
+}
+check(threw, true, "throws when url is missing");
+
+const afterRemove = removeBookmark(seed, "1");
+check(afterRemove.length, 0, "removes the bookmark with the matching id");
+check(seed.length, 1, "removeBookmark does not mutate the original array either");`,
       },
       {
         slug: "project-bookmarks-ui",
@@ -3576,6 +3659,16 @@ attribute \`required\` ให้ client-side validation ฟรีๆ ก่อ�
 ## สรุป
 
 หน้า bookmarks เชื่อม \`useFetch\` สำหรับรายการเริ่มต้นที่ render บนเซิร์ฟเวอร์เข้ากับ \`$fetch\` ธรรมดาสำหรับ mutation สร้างและลบที่เกิดจากการคลิก โดยเรียก \`refresh()\` หลังแต่ละครั้งเพื่อให้รายการสะท้อนสิ่งที่เซิร์ฟเวอร์มีอยู่จริงเสมอ แทนที่จะเป็นสำเนาในเครื่องที่ดูแลเอง มันยังแสดงให้เห็นว่าทำไม client-side validation ด้วย \`required\` กับการตรวจสอบฝั่งเซิร์ฟเวอร์ถึงไม่ได้ซ้ำซ้อนกัน — อย่างหนึ่งเพื่อ UX อีกอย่างคือการรับประกันที่แท้จริง`,
+        labStarterCode: `function canSubmit(title: string, url: string): boolean {
+  // TODO: return true only if both \`title\` and \`url\` are non-empty once
+  // whitespace is trimmed off — the same guard the form's submit button
+  // needs beyond the \`required\` attribute alone.
+  return false;
+}`,
+        labTestCode: `check(canSubmit("Nuxt", "https://nuxt.com"), true, "true when both fields have content");
+check(canSubmit("", "https://nuxt.com"), false, "false when title is empty");
+check(canSubmit("Nuxt", "   "), false, "false when url is only whitespace");
+check(canSubmit("  Nuxt  ", "https://nuxt.com"), true, "trims whitespace before checking");`,
       },
       {
         slug: "project-loading-errors-and-next-steps",
