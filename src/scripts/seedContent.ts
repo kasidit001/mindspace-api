@@ -7,6 +7,15 @@ export interface SeedLesson {
   contentEn: string;
   /** Thai translation. Optional — lessons without one fall back to English (see Lesson model). */
   contentTh?: string;
+  /**
+   * Pilot "Code Lab" exercise (see mindspace-web's CodeLab.vue). Both must
+   * be set together or not at all — labStarterCode is the editor's initial
+   * content, labTestCode is appended after the learner's code and run in a
+   * sandboxed Web Worker; it calls the injected `check(actual, expected,
+   * label)` for each assertion. Most lessons have neither.
+   */
+  labStarterCode?: string;
+  labTestCode?: string;
 }
 
 export interface SeedCourse {
@@ -81,6 +90,13 @@ void ใช้อธิบายฟังก์ชันที่ไม่ retur
 ## สรุป
 
 ชนิดข้อมูลพื้นฐานของ TypeScript สะท้อนมาจาก primitive ของ JavaScript พร้อมด้วยไวยากรณ์ array/tuple สำหรับข้อมูลที่มีโครงสร้าง และคู่ any/unknown สำหรับจัดการค่าที่ไม่รู้ชนิดข้อมูลล่วงหน้า ส่วน void และ never ใช้อธิบายฟังก์ชันที่ไม่ return ค่าที่มีความหมาย หรือไม่มีทาง return เลย และด้วย type inference ของ TypeScript เอง ทำให้คุณแทบไม่ต้องกำกับชนิดข้อมูลให้ตัวแปร local ทุกตัวด้วยมือ`,
+        labStarterCode: `function sumPositive(nums: number[]): number {
+  // TODO: return the sum of only the positive numbers in \`nums\`
+  return 0;
+}`,
+        labTestCode: `check(sumPositive([1, -2, 3, 4, -5]), 8, "sums only the positive numbers");
+check(sumPositive([-1, -2, -3]), 0, "returns 0 when there are no positive numbers");
+check(sumPositive([]), 0, "returns 0 for an empty array");`,
       },
       {
         slug: "interfaces-and-type-aliases",
@@ -109,6 +125,18 @@ property ที่เป็น readonly (readonly id: string) จะป้อง
 ## สรุป
 
 Interface และ type alias ต่างก็ใช้อธิบายรูปร่างของอ็อบเจกต์ผ่าน structural typing ของ TypeScript ได้เหมือนกัน แต่ interface รองรับ declaration merging และ extends สำหรับการสืบทอด ส่วน type alias เท่านั้นที่สามารถแสดง union, tuple และรูปร่างอื่นที่ไม่ใช่อ็อบเจกต์ได้ผ่าน intersection property ที่เป็น readonly ช่วยเสริมด้วยการป้องกันไม่ให้กำหนดค่าใหม่หลังจากสร้างอ็อบเจกต์แล้ว`,
+        labStarterCode: `interface User {
+  id: string;
+  name: string;
+  age?: number;
+}
+
+function describeUser(user: User): string {
+  // TODO: return "Name (age)" if age is present, otherwise just "Name"
+  return "";
+}`,
+        labTestCode: `check(describeUser({ id: "1", name: "Ada" }), "Ada", "no age -> just the name");
+check(describeUser({ id: "2", name: "Grace", age: 30 }), "Grace (30)", "with age -> name and age in parens");`,
       },
       {
         slug: "functions",
@@ -137,6 +165,12 @@ Overload ช่วยให้ฟังก์ชันหนึ่งมี call
 ## สรุป
 
 พารามิเตอร์และค่า return ของฟังก์ชันสามารถกำกับชนิดข้อมูลได้อย่างชัดเจน หรือปล่อยให้ TypeScript อนุมานให้ก็ได้ โดยพารามิเตอร์แบบ optional และแบบมีค่าเริ่มต้นครอบคลุมกรณีทั่วไปที่ค่าอาจถูกส่งเข้ามาหรือไม่ก็ได้ function type แบบแยกเดี่ยวช่วยให้ callback และ higher-order function ปลอดภัยด้านชนิดข้อมูล ส่วน overload ใช้จัดการกรณีที่พบไม่บ่อยนักซึ่งพฤติกรรมของฟังก์ชันเปลี่ยนแปลงไปจริงๆ ตามรูปร่างของ input`,
+        labStarterCode: `function apply(op: (a: number, b: number) => number, a: number, b: number): number {
+  // TODO: call \`op\` with \`a\` and \`b\`, and return the result
+  return 0;
+}`,
+        labTestCode: `check(apply((a, b) => a + b, 2, 3), 5, "works with an addition callback");
+check(apply((a, b) => a * b, 4, 5), 20, "works with a multiplication callback");`,
       },
       {
         slug: "generics",
@@ -165,6 +199,13 @@ Default type parameter (function wrap<T = string>(value: T)) ช่วยให�
 ## สรุป
 
 Generics ช่วยให้คุณเขียนฟังก์ชัน, interface และคลาสที่นำกลับมาใช้ใหม่ได้ โดยยังคงรักษาข้อมูลชนิดข้อมูลไว้กับ input ที่หลากหลาย แทนที่จะต้องพึ่งพา any Constraint ใช้จำกัดว่า type parameter เป็นอะไรได้บ้าง ส่วน default type parameter ช่วยให้ผู้เรียกใช้ละ generic argument ได้เมื่อมีค่าเริ่มต้นที่สมเหตุสมผล — นี่คือวิธีที่ชนิดข้อมูลในตัวอย่างอย่าง Array, Promise และ Map ถูกนิยามขึ้นมาจริงๆ`,
+        labStarterCode: `function firstOrDefault<T>(items: T[], fallback: T): T {
+  // TODO: return items[0] if the array is non-empty, otherwise return \`fallback\`
+  return fallback;
+}`,
+        labTestCode: `check(firstOrDefault([1, 2, 3], 0), 1, "returns the first element when the array is non-empty");
+check(firstOrDefault([], 0), 0, "returns the fallback when the array is empty");
+check(firstOrDefault(["a", "b"], "z"), "a", "works with strings too, not just numbers");`,
       },
       {
         slug: "union-types-and-narrowing",
@@ -193,6 +234,16 @@ Type predicate (function isString(x: unknown): x is string { return typeof x ===
 ## สรุป
 
 Union type ทำให้ค่าหนึ่งๆ เป็นได้หนึ่งในหลายชนิดข้อมูล และการ narrow — ผ่านการตรวจสอบด้วย typeof, instanceof หรือ control-flow pattern อื่นๆ — ทำให้ TypeScript มองว่าค่านั้นเป็นชนิดข้อมูลที่เจาะจงมากขึ้นภายใน branch นั้น Discriminated union ที่มี field แบบ literal ร่วมกันทำให้การ narrow ครอบคลุมทุกกรณีและตรวจสอบได้โดยคอมไพเลอร์ ส่วน type predicate ช่วยให้คุณห่อหุ้มการตรวจสอบเพื่อ narrow ไว้เป็น type guard ที่นำกลับมาใช้ใหม่ได้และ TypeScript จดจำได้`,
+        labStarterCode: `type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; side: number };
+
+function area(shape: Shape): number {
+  // TODO: return the area — Math.PI * radius^2 for a circle, side^2 for a square
+  return 0;
+}`,
+        labTestCode: `check(area({ kind: "circle", radius: 2 }), Math.PI * 4, "computes a circle's area");
+check(area({ kind: "square", side: 3 }), 9, "computes a square's area");`,
       },
     ],
   },

@@ -42,6 +42,8 @@ async function main() {
           titleTh: lessonSeed.titleTh ?? null,
           contentEn: lessonSeed.contentEn,
           contentTh: lessonSeed.contentTh ?? null,
+          labStarterCode: lessonSeed.labStarterCode ?? null,
+          labTestCode: lessonSeed.labTestCode ?? null,
           order: lessonSeed.order,
         },
       });
@@ -50,6 +52,8 @@ async function main() {
         titleTh: lessonSeed.titleTh ?? null,
         contentEn: lessonSeed.contentEn,
         contentTh: lessonSeed.contentTh ?? null,
+        labStarterCode: lessonSeed.labStarterCode ?? null,
+        labTestCode: lessonSeed.labTestCode ?? null,
         order: lessonSeed.order,
       });
 

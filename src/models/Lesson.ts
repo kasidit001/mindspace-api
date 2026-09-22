@@ -22,6 +22,13 @@ export class Lesson extends Model<InferAttributes<Lesson>, InferCreationAttribut
   declare contentEn: string;
   declare contentTh: string | null;
   declare contentType: CreationOptional<LessonContentType>;
+  // The pilot "Code Lab" exercise: starterCode is shown in an in-browser
+  // editor, testCode runs against it in a sandboxed Web Worker (see
+  // mindspace-web's CodeLab.vue) to gate "Mark as Read" behind actually
+  // solving something. Both null on the (currently overwhelming majority
+  // of) lessons that have no lab yet.
+  declare labStarterCode: string | null;
+  declare labTestCode: string | null;
   declare order: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -68,6 +75,16 @@ Lesson.init(
       allowNull: false,
       defaultValue: "article",
       field: "content_type",
+    },
+    labStarterCode: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "lab_starter_code",
+    },
+    labTestCode: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "lab_test_code",
     },
     order: {
       type: DataTypes.INTEGER,
