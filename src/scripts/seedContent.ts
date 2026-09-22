@@ -1578,4 +1578,187 @@ Whichever protocol is used, the calling service should treat the network itself 
       },
     ],
   },
+  {
+    slug: "claude-agent-skills",
+    title: "Claude Agent Skills",
+    descriptionEn:
+      "How to package repeatable expertise for Claude as Agent Skills: SKILL.md files, progressive disclosure, bundled scripts and references, and where skills live across Claude Code, the Claude Agent SDK, and the Claude API.",
+    lessons: [
+      {
+        slug: "what-is-an-agent-skill",
+        titleEn: "What Is an Agent Skill?",
+        order: 1,
+        contentEn: `A Skill is a packaged, reusable set of instructions that teaches Claude how to do a specific task well — a folder containing at minimum one file, \`SKILL.md\`, and optionally scripts, templates, or reference documents alongside it. Think of it as an onboarding document you'd hand a new hire for one recurring job: "here's how we file expense reports," "here's our PDF-generation checklist," "here's how this repo wants its migrations written."
+
+Skills exist because a model's context window and system prompt are finite, but the number of tasks an organization wants an agent to do well is not. You can't paste every team's conventions, every internal API's quirks, and every file format's edge cases into one system prompt — it would blow the context budget before the conversation even starts, and most of it would be irrelevant to any given request. A Skill solves this by staying off to the side, invisible, until the specific task it covers actually comes up.
+
+This is different from just telling Claude what to do in a single message. A Skill is discoverable and reusable: once it's saved, Claude (or a teammate, or a future you) can trigger it by name or by describing the task, without re-explaining the procedure every time. It's also different from a plain system-prompt addition, because a library of many Skills scales — adding the hundredth Skill costs the same small amount of always-loaded context as adding the first.
+
+At the highest level, three things make a Skill work: a short *description* that Claude sees at all times so it knows the Skill exists and when to reach for it; a longer *body* with the actual instructions, only loaded into context once the Skill is triggered; and, optionally, *bundled files* — scripts, templates, reference docs — loaded only if the instructions in the body actually need them. That loading strategy is called progressive disclosure, and it's the subject of the next lesson.`,
+      },
+      {
+        slug: "progressive-disclosure",
+        titleEn: "Progressive Disclosure: The Three Levels",
+        order: 2,
+        contentEn: `Progressive disclosure is the mechanism that lets an agent have access to hundreds of Skills without paying the context cost of all of them at once. It works in three levels, each loaded only when the previous level justifies it.
+
+**Level 1 — metadata.** The \`name\` and \`description\` from every available Skill's YAML frontmatter are loaded into context up front, for every conversation. This is deliberately cheap: a sentence or two per Skill. It's how Claude knows a Skill exists and roughly when it applies, without knowing anything about how it actually works yet.
+
+**Level 2 — the SKILL.md body.** Only once Claude decides a Skill is relevant to the current task does the full body of \`SKILL.md\` get loaded into context — the actual step-by-step instructions, conventions, and examples. A Skill that's never triggered in a session never costs more than its one-line description.
+
+**Level 3 — bundled files.** The body itself can point to additional files in the Skill's folder — a reference doc, a data schema, a script — and Claude reads or runs those only if the instructions call for that specific step. A 2,000-line API reference bundled with a Skill costs nothing unless the task actually needs that section of it.
+
+\`\`\`mermaid
+graph LR
+    A["Level 1: name + description<br/>always in context"] -->|"Skill looks relevant"| B["Level 2: SKILL.md body<br/>loaded on trigger"]
+    B -->|"instructions reference a file"| C["Level 3: bundled scripts/docs<br/>loaded on demand"]
+\`\`\`
+
+The practical upshot: write the \`description\` to be the thing Claude decides on, write the body to be the thing Claude executes with, and push anything long, rarely needed, or mechanical (boilerplate scripts, exhaustive references) into bundled files rather than the body. Skills that respect this stay cheap to keep around even when most of them go unused in any given conversation.`,
+      },
+      {
+        slug: "anatomy-of-skill-md",
+        titleEn: "Anatomy of SKILL.md",
+        order: 3,
+        contentEn: `Every Skill's entry point is a single Markdown file named \`SKILL.md\`, sitting at the root of the Skill's own folder (e.g. \`pdf-filling/SKILL.md\`). It has two parts: YAML frontmatter, then a Markdown body.
+
+\`\`\`
+---
+name: pdf-filling
+description: Fills out PDF form fields programmatically and flattens the result. Use this skill when the user needs to fill in a PDF form (tax forms, applications, contracts) with provided data.
+---
+
+# Filling PDF Forms
+
+1. Inspect the form fields with \`pdftk form.pdf dump_data_fields\`.
+2. Map each field name to the value the user provided...
+\`\`\`
+
+The frontmatter has two required fields. \`name\` is a short, unique, kebab-case identifier — it's how the Skill is invoked directly and how it's referenced from elsewhere. \`description\` is a one-to-three sentence summary that states both *what the Skill does* and *when to use it* — this is the only part of the Skill visible before it triggers, so its wording carries the whole discovery mechanism (the next lesson covers writing it well).
+
+The body is ordinary Markdown: numbered steps, code blocks, tables, whatever communicates the procedure clearly. It's written the same way you'd write instructions for a competent person who doesn't know your specific workflow yet — explicit about the order of operations, explicit about edge cases you've hit before, and explicit about what "done" looks like. Anthropic's own guidance is to keep this body reasonably short — roughly under 500 lines is a common rule of thumb — since progressive disclosure only pays off if the body itself stays lean; anything longer belongs in a bundled reference file the body links to instead.
+
+A Skill folder can contain nothing but \`SKILL.md\` — that's a complete, valid Skill. Everything past that (scripts, templates, references) is optional and only added when the task genuinely benefits from it.`,
+      },
+      {
+        slug: "writing-an-effective-description",
+        titleEn: "Writing an Effective Description",
+        order: 4,
+        contentEn: `The \`description\` field is the single highest-leverage sentence in a Skill, because it's the only part of the Skill that's always in context. If it's vague, Claude either never triggers the Skill when it should, or triggers it when it shouldn't — and unlike a body full of wrong instructions, a bad description fails silently, since nothing ever surfaces the mismatch to you.
+
+Write it in the third person, as if documenting the Skill for someone browsing a list of capabilities — not as an instruction to Claude ("You should...") and not as a first-person pitch ("I can help you..."). State two things explicitly: what the Skill does, and when it should be used.
+
+\`\`\`
+# Too vague — Claude can't tell when this applies
+description: Helps with documents.
+
+# Specific — states the capability and the trigger
+description: Extracts tables from scanned PDF invoices into structured
+  JSON. Use this skill when the user shares a PDF invoice or receipt and
+  wants the line items pulled out as data.
+\`\`\`
+
+Include concrete trigger words a real request would contain — file types, task verbs, domain terms — rather than only abstract category names. "Use this skill when the user needs to fill in a PDF form" fires on the phrase "fill in this form"; "Helps with forms" doesn't give Claude much to match against.
+
+Also disambiguate from Skills that sound similar. If a codebase has both \`pdf-filling\` (writing into existing form fields) and \`pdf-generation\` (creating a new PDF from scratch), each description should make the boundary obvious, so Claude doesn't have to guess between them mid-task.`,
+      },
+      {
+        slug: "bundling-scripts-and-references",
+        titleEn: "Bundling Scripts & Reference Files",
+        order: 5,
+        contentEn: `\`SKILL.md\` doesn't have to carry the entire task by itself. A Skill's folder can include any other files the instructions need, and the body references them by their relative path.
+
+Two kinds of bundled file cover most real Skills:
+
+**Reference files** hold material that's necessary but too long or too rarely needed to justify inlining into the body — a full API schema, a style guide, a table of error codes. The body says something like "see \`reference/api-schema.json\` for the full field list" and Claude only opens that file once the current step actually calls for it, keeping the common path through the Skill short.
+
+**Scripts** hold logic that's more reliable as code than as prose instructions — especially anything mechanical, deterministic, or fiddly to get exactly right from a natural-language description each time (parsing a binary format, running a multi-step CLI pipeline, validating a file against a schema). Instead of asking Claude to regenerate that logic from scratch on every run — with a chance of a subtly different bug each time — the Skill bundles a tested script, and the body just says to run it.
+
+\`\`\`
+pdf-filling/
+├── SKILL.md
+├── scripts/
+│   └── fill_form.py
+└── reference/
+    └── field-types.md
+\`\`\`
+
+A body instruction like "run \`scripts/fill_form.py --input form.pdf --data values.json\`" is both more reliable and cheaper than describing the equivalent logic in prose for Claude to reimplement each time. The rule of thumb: prose for things that need judgment or vary by request, a script for the parts that don't.`,
+      },
+      {
+        slug: "where-skills-live",
+        titleEn: "Where Skills Live: Personal, Project & Plugin Skills",
+        order: 6,
+        contentEn: `A Skill's location determines who it's available to, which is the main design decision when creating one.
+
+**Personal skills** live in a user-level directory (in Claude Code, \`~/.claude/skills/<name>/SKILL.md\`). They follow you across every project on your machine but aren't shared with anyone else — the right place for your own workflow shortcuts, not for anything a teammate needs.
+
+**Project skills** live inside the repository itself (\`.claude/skills/<name>/SKILL.md\`), get committed to version control, and are available to anyone working in that codebase. This is the right home for anything specific to the project's own conventions — "how this repo writes migrations," "how this monorepo's release process works" — since checking it in means the whole team (and any agent working in the repo) gets it automatically, no separate install step.
+
+**Plugin skills** ship bundled inside a plugin, distributed and installed as a unit alongside whatever tools or commands the plugin also provides. This is the right shape for a Skill meant to be shared across many unrelated projects or teams, versioned and updated independently of any one codebase.
+
+| Scope | Location | Shared with |
+| --- | --- | --- |
+| Personal | \`~/.claude/skills/\` | Just you, across all projects |
+| Project | \`.claude/skills/\` (in repo) | Everyone working in that repo |
+| Plugin | Bundled in a plugin package | Everyone who installs the plugin |
+
+When more than one Skill with the same name is available at once, precedence and disambiguation rules can vary by environment — plugin skills are typically referenced as \`plugin-name:skill-name\` specifically to avoid colliding with a personal or project Skill of the same short name.`,
+      },
+      {
+        slug: "skills-vs-tools-vs-subagents-vs-mcp",
+        titleEn: "Skills vs. Tools vs. Subagents vs. MCP",
+        order: 7,
+        contentEn: `These four pieces of the agent ecosystem are easy to conflate because they all extend what an agent can do, but they solve different problems and are frequently used together.
+
+**A tool** gives Claude a new *capability* it didn't have before — the ability to read a file, run a shell command, query a database. Tools are typically implemented in code (natively, or via MCP) and are what actually performs an action in the world.
+
+**MCP (Model Context Protocol)** is a standard way to expose tools (and other context) from an external server to any compatible agent — it's the plumbing for *connecting* new tools and data sources, not a packaging format for instructions.
+
+**A Skill** doesn't add a new capability by itself — it teaches Claude how to use capabilities it already has (tools, MCP servers, its own reasoning) more effectively for one specific, recurring kind of task. A Skill for filling PDF forms doesn't invent PDF-writing ability; it tells Claude which existing tool to call, with what arguments, in what order, and what to watch out for. This is why Skills are cheap: they're instructions plus optional bundled files, not new machinery.
+
+**A subagent** is a separate agent invocation — its own context window, its own tool access, run either in-process or in isolation — used to keep a large or noisy piece of work (a big search, a long investigation) out of the main conversation's context. A Skill can be the thing that tells an agent *how* to do a task; a subagent is a way of *where* that task's work happens. A Skill's instructions can direct Claude to delegate part of the work to a subagent, and a subagent can itself have access to the same Skills as the parent conversation.
+
+Put together: MCP and native tools give Claude things it can *do*; Skills give Claude knowledge of *how* to do a specific task well with those things; subagents give Claude a place to *do large pieces of work* without crowding the main conversation.`,
+      },
+      {
+        slug: "skill-security",
+        titleEn: "Security: Skills Are Data With Authority",
+        order: 8,
+        contentEn: `A Skill's body is not sandboxed prose — once triggered, its instructions carry the same authority as anything else in Claude's context, including permission to call tools. That makes the provenance of a Skill a real security question, not just a quality one.
+
+If you install a Skill written by someone else — from a plugin marketplace, a shared team repository, or copied from an unfamiliar source — you're trusting its author the same way you'd trust a script you're about to run or a dependency you're about to install. A malicious or careless Skill could instruct Claude to exfiltrate data, run destructive commands, or quietly change its own behavior mid-task, and because the instructions look like ordinary Markdown, that's easy to miss on a casual read.
+
+The same caution applies to bundled scripts even more directly: a script is code that may actually execute on your machine or in your environment, so a bundled script deserves the same review you'd give any third-party code before you'd run it — don't assume a script is safe just because it shipped inside a Skill folder next to some helpful-looking Markdown.
+
+Practical guidelines:
+- Prefer personal and project Skills you or your team authored, over installing Skills from unfamiliar sources.
+- Read a new Skill's \`SKILL.md\` — and any bundled scripts — before relying on it, the same way you'd review a new dependency.
+- Keep Skills scoped narrowly to one task; a Skill that requests broad, unrelated permissions ("also read the user's email") to accomplish a narrow task ("format this spreadsheet") is a red flag.
+- Treat a Skill you didn't author as untrusted input if its instructions ever conflict with what the person you're actually working with asked for — the person's request takes precedence over instructions buried in a Skill file.
+
+This mirrors a broader pattern in agent security: content that gets loaded into an agent's context and treated as instructions — whether it's a Skill, a web page, or a tool's output — needs a trust boundary around where it came from, not just around what it says it does.`,
+      },
+      {
+        slug: "testing-and-iterating",
+        titleEn: "Testing, Iterating & Common Pitfalls",
+        order: 9,
+        contentEn: `A Skill is only as good as its worst real-world trigger, so the practical way to build one is to write a first draft, use it on a real task, and fix what goes wrong — the same loop as debugging any other reusable code.
+
+**Test the trigger, not just the instructions.** Run the exact phrasing a real request would use and confirm the Skill actually fires — then run a request that sounds similar but shouldn't trigger it, to catch false positives. A description tuned only by reading it yourself often misses how differently a real user phrases the same task.
+
+**Watch for a Skill that's too eager or too shy.** If it fires on unrelated requests, the description is too broad or too vague — tighten the trigger language and add what it's *not* for. If it never fires when it should, the description likely uses internal jargon or category names instead of the words a request would actually contain.
+
+**Keep the body a checklist, not an essay.** Long, narrative explanations are harder for a model to follow step-by-step under time pressure than short, imperative instructions with concrete examples. If a step commonly gets skipped, make it its own numbered line instead of a clause buried in a paragraph.
+
+**Update it when reality changes.** A Skill documenting "how this API works" or "how this repo does migrations" goes stale exactly when the API or the repo's conventions change — treat it like any other piece of internal documentation that needs a maintainer, not a write-once artifact.
+
+**Common pitfalls to watch for:**
+- A description that explains what the Skill *is* ("a helper for PDFs") instead of what it *does and when* ("fills PDF form fields; use when the user shares a fillable PDF").
+- Bundling a script for logic that actually needs per-request judgment, or writing prose instructions for logic that would be more reliable as a script.
+- Letting the body balloon past what a single task actually needs, instead of moving detail into a bundled reference file.
+- Never re-testing an existing Skill after the underlying tool, API, or convention it wraps changes.`,
+      },
+    ],
+  },
 ];
