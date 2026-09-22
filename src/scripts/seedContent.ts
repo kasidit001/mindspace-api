@@ -1761,4 +1761,295 @@ This mirrors a broader pattern in agent security: content that gets loaded into 
       },
     ],
   },
+  {
+    slug: "nuxt-for-vue-developers",
+    title: "Nuxt",
+    descriptionEn:
+      "The Vue meta-framework this platform's own frontend is built with: file-based routing, universal rendering, the Nitro server engine, auto-imports, and the module ecosystem that make it the standard way to build production Vue applications.",
+    lessons: [
+      {
+        slug: "what-is-nuxt",
+        titleEn: "What Is Nuxt?",
+        order: 1,
+        contentEn: `Nuxt is a meta-framework built on top of Vue — it takes the pieces every real Vue application eventually needs (routing, server-side rendering, a build pipeline, a place to put backend code) and provides them as conventions instead of decisions you make from scratch. This platform's own frontend, mindspace-web, is a Nuxt application.
+
+Plain Vue gives you components and reactivity; it doesn't ship a router, a way to render on the server, or an opinion about project structure. Nuxt adds all three, plus a few more:
+
+- **Universal rendering (SSR) by default** — pages render to HTML on the server first, then Vue "hydrates" that HTML in the browser to make it interactive. Users see content immediately instead of a blank page while JavaScript downloads, and search engine crawlers get real HTML to index instead of an empty \`<div id="app">\`.
+- **File-based routing** — the files in \`app/pages/\` become your routes automatically; there's no router config file to maintain by hand.
+- **Nitro**, Nuxt's own server engine — it powers both the SSR rendering and an optional backend (\`server/api/\`), and produces output that can run on a Node server, most serverless platforms, or the edge, from the same codebase.
+- **Auto-imports** — components, composables, and utility functions are available in any file without an explicit \`import\` line, based purely on where they live in the project.
+- **A module ecosystem** — features like Tailwind CSS integration, state management (Pinia), or i18n are added as one-line entries in \`nuxt.config.ts\` rather than hand-wired build configuration.
+
+None of this is magic Nuxt invents from nothing — under the hood it's still Vue, Vite, and Vue Router, configured and wired together with sensible defaults. The rest of this course covers those pieces in the order you'd actually meet them building something real.`,
+      },
+      {
+        slug: "project-structure",
+        titleEn: "Project Structure & app.vue",
+        order: 2,
+        contentEn: `A fresh Nuxt project has a predictable shape, and Nuxt uses the *location* of a file to decide what it does — there's very little explicit registration.
+
+\`\`\`
+my-app/
+├── app/
+│   ├── pages/         # file-based routes
+│   ├── components/    # auto-imported Vue components
+│   ├── composables/   # auto-imported composable functions
+│   ├── layouts/       # page layout wrappers
+│   ├── middleware/    # route guards, run before navigation
+│   ├── plugins/       # code that runs once on app init
+│   ├── utils/         # auto-imported plain helper functions
+│   └── app.vue        # the app's root component
+├── server/             # Nitro backend — API routes, server middleware
+├── public/             # static files served as-is (favicon, robots.txt)
+└── nuxt.config.ts      # the project's central configuration file
+\`\`\`
+
+Newer Nuxt projects (Nuxt 4's default layout) nest almost everything application-side under \`app/\` — pages, components, composables, layouts, and so on all live there, while \`server/\` and \`public/\` stay at the project root alongside \`nuxt.config.ts\`. This is a change from Nuxt 3, where those same folders (\`pages/\`, \`components/\`, \`composables/\`...) sat directly at the project root; Nuxt 4 groups them under \`app/\` specifically so the root of the repo isn't a flat mix of frontend code, backend code, and config.
+
+\`app.vue\` is the application's single root component — everything else renders inside it. A minimal one is just:
+
+\`\`\`vue
+<template>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+</template>
+\`\`\`
+
+\`<NuxtPage />\` is where the currently matched route's page component renders; \`<NuxtLayout>\` wraps it in whichever layout applies (the next lesson covers layouts). Anything else you put in \`app.vue\` — a header, a footer, global CSS — renders on every single page, since every page renders inside this one root component.`,
+      },
+      {
+        slug: "file-based-routing",
+        titleEn: "File-Based Routing",
+        order: 3,
+        contentEn: `Every \`.vue\` file under \`app/pages/\` becomes a route automatically, named after its path relative to that folder — there's no router file to hand-maintain. \`app/pages/index.vue\` is \`/\`, \`app/pages/about.vue\` is \`/about\`, and \`app/pages/settings/profile.vue\` is \`/settings/profile\`.
+
+Square brackets mark a dynamic segment. \`app/pages/courses/[id].vue\` matches \`/courses/anything\`, and inside that page \`useRoute().params.id\` gives you the matched value. Double brackets make a segment optional — \`app/pages/[[slug]].vue\` matches both \`/\` and \`/anything\`. A catch-all uses three dots: \`app/pages/[...slug].vue\` matches any depth of path under it (\`/a\`, \`/a/b\`, \`/a/b/c\`), with every captured segment collected into \`params.slug\` as an array.
+
+\`\`\`
+app/pages/index.vue              →  /
+app/pages/about.vue               →  /about
+app/pages/courses/[id].vue        →  /courses/:id
+app/pages/courses/[...slug].vue   →  /courses/* (catch-all)
+\`\`\`
+
+Nesting works two ways. A plain subfolder (\`app/pages/settings/profile.vue\`) just builds a longer path, same as any file-based router. *Nested layouts within a route* are different: if both \`app/pages/parent.vue\` and \`app/pages/parent/child.vue\` exist, visiting \`/parent/child\` renders \`child.vue\` *inside* \`parent.vue\`, wherever \`parent.vue\` places a \`<NuxtPage />\` of its own — the same parent/child relationship \`<NuxtLayout>\` and \`<NuxtPage>\` have in \`app.vue\`, one level down.
+
+Navigate declaratively with \`<NuxtLink to="/courses">Courses</NuxtLink>\` — it renders a real \`<a>\` tag and uses Vue Router's client-side navigation instead of a full page reload. For navigation triggered from code (after a form submits, inside a composable), use \`await navigateTo('/courses')\` rather than manipulating \`window.location\` — it goes through the same router and respects any navigation middleware in place (the subject of the next lesson).
+
+A page can declare metadata about itself with \`definePageMeta()\` at the top of its \`<script setup>\` block — which layout it uses, whether it requires auth, custom route matching options — read by Nuxt at build time before the page's own code runs.`,
+      },
+      {
+        slug: "layouts-and-middleware",
+        titleEn: "Layouts & Route Middleware",
+        order: 4,
+        contentEn: `A layout is a wrapper component — a persistent header, sidebar, or footer — shared across multiple pages, so individual pages only need to contain what's actually unique to them. Layouts live in \`app/layouts/\`; \`app/layouts/default.vue\` is used automatically for any page that doesn't specify another one.
+
+\`\`\`vue
+<!-- app/layouts/default.vue -->
+<template>
+  <div>
+    <SiteHeader />
+    <slot />
+    <SiteFooter />
+  </div>
+</template>
+\`\`\`
+
+The \`<slot />\` is where the current page's content renders. A page opts into a different layout — or into \`false\` to render with no layout at all — with \`definePageMeta\`:
+
+\`\`\`vue
+<script setup lang="ts">
+definePageMeta({ layout: 'dashboard' })
+</script>
+\`\`\`
+
+Route middleware runs *before* a navigation completes, which makes it the right place for guards: checking auth, redirecting, or blocking a route entirely. Named middleware lives in \`app/middleware/\` as a file exporting \`defineNuxtRouteMiddleware\`:
+
+\`\`\`ts
+// app/middleware/auth.ts
+export default defineNuxtRouteMiddleware((to) => {
+  const { user } = useAuth()
+  if (!user.value) {
+    return navigateTo('/login')
+  }
+})
+\`\`\`
+
+A page opts in with \`definePageMeta({ middleware: 'auth' })\`. Naming a middleware file with a \`.global.ts\` suffix (\`app/middleware/analytics.global.ts\`) instead runs it on *every* route automatically, with no per-page opt-in needed — useful for things like analytics or a maintenance-mode check that should apply everywhere, but easy to overuse for things that should really be scoped to a few pages.`,
+      },
+      {
+        slug: "data-fetching",
+        titleEn: "Data Fetching: useFetch & useAsyncData",
+        order: 5,
+        contentEn: `Fetching data naively in a component's setup code causes a real problem under SSR: the request runs once on the server to render the initial HTML, then runs *again* in the browser during hydration, because the client has no idea the server already did the work. That's a wasted request at best, and a source of hydration mismatches (server HTML built from one response, client state built from a second, slightly different one) at worst.
+
+\`useFetch\` and \`useAsyncData\` exist specifically to solve this. When the server fetches data to render a page, it serializes the result into the page's payload; the client reads that payload on hydration instead of re-fetching. The same composable call produces exactly one network request per navigation, not two.
+
+\`\`\`vue
+<script setup lang="ts">
+// useFetch: a thin, URL-based wrapper — good for "just call this endpoint"
+const { data: course, status, error } = await useFetch(\`/api/courses/\${id}\`)
+
+// useAsyncData: same SSR/payload behavior, but you supply the async logic
+// yourself — for anything beyond a single URL (SDK calls, multiple requests,
+// custom transforms before the result is cached).
+const { data } = await useAsyncData('dashboard', () =>
+  Promise.all([$fetch('/api/courses'), $fetch('/api/progress')])
+)
+</script>
+\`\`\`
+
+Both return the same shape: \`data\` (a ref holding the result), \`status\` (\`'idle' | 'pending' | 'success' | 'error'\`), \`error\`, and a \`refresh()\`/\`execute()\` function to re-run the fetch on demand. Useful options on either one: \`key\` to control payload/cache identity explicitly, \`server: false\` to skip the server-side fetch entirely (client-only data), \`lazy: true\` (or the \`useLazyFetch\`/\`useLazyAsyncData\` shorthand) to let navigation complete without waiting on the fetch, and \`watch: [someRef]\` to automatically re-run when a reactive value changes.
+
+Reach for plain \`$fetch\` instead — the underlying HTTP client both composables use — when there's no SSR concern to begin with: a button click, a form submission, anything that only ever happens after the page has already loaded in the browser.`,
+      },
+      {
+        slug: "auto-imports-and-composables",
+        titleEn: "Auto-Imports & Composables",
+        order: 6,
+        contentEn: `Nuxt auto-imports based on where a file lives, not on any registration step. A component in \`app/components/CourseCard.vue\` can be used in any page or component as \`<CourseCard />\` with no \`import\` statement; a function exported from \`app/composables/useAuth.ts\` is callable as \`useAuth()\` anywhere, again with no import. This is why Nuxt code looks like it's using globals — they're not globals, they're just resolved automatically from the file tree at build time, and your editor's TypeScript tooling still knows exactly where each one is defined.
+
+A composable is simply a function that uses Vue's Composition API (\`ref\`, \`computed\`, lifecycle hooks) to package up reusable stateful logic — the Vue equivalent of a custom hook. Nuxt auto-imports anything exported from \`app/composables/\`:
+
+\`\`\`ts
+// app/composables/useCounter.ts
+export function useCounter() {
+  const count = ref(0)
+  function increment() { count.value++ }
+  return { count, increment }
+}
+\`\`\`
+
+One Nuxt-specific composable is worth calling out on its own: \`useState\`. On the server, a plain module-level \`ref\` is a trap — Nitro can (and typically does) handle multiple requests concurrently in the same process, so state stored outside a request's own scope leaks between unrelated users' requests. \`useState(key, initFn)\` is SSR-safe shared state scoped correctly per-request on the server and persisted correctly across the payload to the client, which is why it — not a bare top-level \`ref\` — is Nuxt's recommended way to share reactive state across components without a state-management library.
+
+\`\`\`ts
+// Shared, SSR-safe — every component calling useState('cart') gets the same ref
+const cart = useState<string[]>('cart', () => [])
+\`\`\`
+
+For state that needs more structure than a single ref — actions, getters, multiple related pieces of state — Nuxt projects commonly reach for Pinia (added via the \`@pinia/nuxt\` module) instead of hand-rolling it with \`useState\`, but the underlying SSR-safety concern \`useState\` addresses is the same one Pinia's Nuxt integration handles for you.`,
+      },
+      {
+        slug: "server-routes-with-nitro",
+        titleEn: "Server Routes with Nitro",
+        order: 7,
+        contentEn: `Nitro is the engine that renders your pages on the server — and it can also serve as your application's backend. Any file under \`server/api/\` becomes an HTTP endpoint, with the file's path becoming the route and an optional suffix on the filename selecting the HTTP method.
+
+\`\`\`ts
+// server/api/hello.get.ts  →  GET /api/hello
+export default defineEventHandler((event) => {
+  return { message: 'Hello World' }
+})
+
+// server/api/courses/[id].get.ts  →  GET /api/courses/:id
+export default defineEventHandler((event) => {
+  const id = getRouterParam(event, 'id')
+  return { id }
+})
+
+// server/api/courses.post.ts  →  POST /api/courses
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event)
+  // ...create the course...
+  return { created: true }
+})
+\`\`\`
+
+\`defineEventHandler\` wraps a request handler; \`event\` carries the request, and helpers from H3 (the HTTP library Nitro is built on) read out of it — \`getRouterParam\` for dynamic path segments, \`getQuery\` for the query string, \`readBody\` for a parsed JSON/form body. A file with no method suffix (\`server/api/hello.ts\`) matches every HTTP method.
+
+\`server/routes/\` works the same way but without the automatic \`/api\` prefix — useful for things like a webhook URL or a non-API endpoint. \`server/middleware/\` holds handlers that run on *every* incoming request before its route handler, for logging, auth-token verification, or similar cross-cutting concerns — a server middleware should inspect or annotate the request rather than send its own response, and let the matched route handler produce the actual reply.
+
+Because Nitro serves both your pages and your \`/api\` routes from the same process on the same origin, calling \`useFetch('/api/courses')\` from a page needs no CORS configuration and no separate base URL in development — it's a same-origin request by construction. That stops being true the moment your API is deployed as a genuinely separate service (as this platform's own API, mindspace-api, is — a standalone Express server, not Nitro routes) — at that point the frontend needs an explicit base URL and the API needs CORS configured for the frontend's origin, exactly the tradeoff \`server/api/\` exists to let you skip for projects that don't need a separately deployable backend.`,
+      },
+      {
+        slug: "rendering-modes",
+        titleEn: "Rendering Modes: SSR, SPA, SSG & Hybrid",
+        order: 8,
+        contentEn: `Nuxt supports several rendering strategies, and — unusually for a framework — lets you mix them per route in the same app rather than forcing one choice for the whole project.
+
+**Universal rendering (SSR)** is the default: each request renders full HTML on the server, sends it to the browser, and Vue hydrates it into an interactive app. Content is visible immediately and crawlable by search engines, at the cost of needing a running server process.
+
+**Client-side rendering (SPA)** ships a near-empty HTML shell and lets the browser do all rendering after downloading the JavaScript bundle — set globally with \`ssr: false\` in \`nuxt.config.ts\`. It's simpler to reason about (no server/client code-path differences to worry about) and deployable to plain static hosting, but the user sees a blank page for longer, and a crawler has to execute JavaScript to see any content at all — a real cost for anything that needs to be indexed, and a non-issue for something like an internal dashboard that isn't.
+
+**Static site generation (SSG)** — \`nuxt generate\` — prerenders every route to a static HTML file at build time, so there's no server needed at runtime at all, just files on a CDN.
+
+**Hybrid rendering** applies different rules to different routes with \`routeRules\` in \`nuxt.config.ts\`, so one app can use the right strategy per route instead of one strategy for everything:
+
+\`\`\`ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/': { prerender: true },        // static at build time — rarely changes
+    '/blog/**': { swr: 3600 },       // serve cached, regenerate in the background hourly
+    '/dashboard/**': { ssr: false }, // client-only — behind a login, no SEO need
+  }
+})
+\`\`\`
+
+| Mode | Renders | Needs a server? | Best for |
+| --- | --- | --- | --- |
+| SSR (default) | Per-request, on the server | Yes | Content that changes often and needs SEO |
+| SPA (\`ssr: false\`) | In the browser only | No | Logged-in apps, dashboards, tools |
+| SSG (\`nuxt generate\`) | Once, at build time | No | Content that rarely changes (marketing, docs) |
+| Hybrid (\`routeRules\`) | Mixed, per route | Depends on the mix | Real apps with both kinds of route |
+
+The practical default is: leave SSR on everywhere until a specific route gives you a reason not to (an admin panel with no SEO value, a page whose content truly never changes), then carve out an exception for that route with \`routeRules\` instead of dropping SSR for the whole app.`,
+      },
+      {
+        slug: "configuration-and-modules",
+        titleEn: "Configuration & Modules",
+        order: 9,
+        contentEn: `\`nuxt.config.ts\`, at the project root, is the single place project-wide behavior gets configured — built with the \`defineNuxtConfig\` helper, which is auto-imported and mainly exists to give the config object accurate TypeScript types.
+
+\`\`\`ts
+export default defineNuxtConfig({
+  modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss'],
+  css: ['~/assets/main.css'],
+  app: {
+    head: {
+      title: 'My App',
+      meta: [{ name: 'description', content: 'A Nuxt app' }]
+    }
+  },
+  routeRules: {
+    '/admin/**': { ssr: false }
+  },
+  runtimeConfig: {
+    apiSecret: '',           // server-only — never sent to the browser
+    public: {
+      apiBase: 'http://localhost:8080'  // exposed to client code too
+    }
+  }
+})
+\`\`\`
+
+\`runtimeConfig\` is where environment-specific values live, and it draws a hard line between two kinds of values. Anything under \`public\` is bundled into the client build and readable from browser code — safe only for values that were never secret to begin with, like an API's public base URL. Anything at the top level *outside* \`public\` stays server-only and is stripped from what ships to the browser — the right place for API keys, database URLs, anything that would be a real problem to leak. Both halves can be overridden per-environment with matching env vars at runtime, without touching the config file: \`NUXT_API_SECRET\` overrides the private \`apiSecret\`, and \`NUXT_PUBLIC_API_BASE\` overrides \`public.apiBase\` — the naming convention mirrors the config's own nesting. This platform's frontend uses exactly this pattern: its \`public.apiBase\` is what every page's \`useFetch\` calls resolve against, overridden per deploy target through that same \`NUXT_PUBLIC_API_BASE\` environment variable rather than a hardcoded URL.
+
+\`modules\` is how Nuxt is extended — each entry is a package that hooks into the build process to add functionality: \`@pinia/nuxt\` adds Pinia store auto-imports, \`@nuxtjs/tailwindcss\` wires up Tailwind's build step, \`@nuxtjs/i18n\` adds internationalization routing. Adding a module is normally just installing the package and adding its name to this array — the module itself handles whatever config wiring it needs, which is the whole point: complex build-tool integration reduced to a one-line, documented decision.`,
+      },
+      {
+        slug: "seo-meta-and-deployment",
+        titleEn: "SEO, Meta Tags & Deployment",
+        order: 10,
+        contentEn: `Because SSR sends real HTML to the browser (and to crawlers) on first load, Nuxt pages can set their own \`<title>\` and meta tags per-route, and that content is what search engines and link-preview cards actually see — unlike a pure SPA, where a crawler that doesn't execute JavaScript sees only whatever static shell \`index.html\` contains.
+
+\`useSeoMeta\` is the composable for the common case — title, description, Open Graph and Twitter card fields — as plain reactive properties, with no need to know the underlying tag names:
+
+\`\`\`vue
+<script setup lang="ts">
+useSeoMeta({
+  title: 'TypeScript for JS Programmers',
+  description: 'A fast on-ramp to TypeScript for developers who already know JavaScript.',
+  ogImage: '/og/typescript-course.png'
+})
+</script>
+\`\`\`
+
+For anything \`useSeoMeta\` doesn't cover directly — a \`<link rel="canonical">\`, a custom \`<script type="application/ld+json">\` block, arbitrary \`<head>\` content — \`useHead\` takes the same kind of object with full control over every tag. Both are reactive: passing a \`computed\` or a ref's \`.value\` means the tags update automatically if the underlying data (say, a course title loaded via \`useFetch\`) changes. Site-wide defaults that every page should inherit unless it overrides them belong in \`nuxt.config.ts\` under \`app.head\`, rather than repeated in every page.
+
+Deployment is where Nitro's output format pays off: \`nuxt build\` produces a \`.output/\` directory whose shape adapts to a \`preset\` — the default Node.js server preset runs anywhere \`node .output/server/index.mjs\` can run, but the same source code can target Vercel, Netlify, Cloudflare Workers, AWS Lambda, or plain static hosting (for a prerendered/SSG build) by changing the preset, with no application code changes required. This platform's own API isn't Nuxt/Nitro — it's a separate Express service — but the frontend, mindspace-web, is exactly this kind of Nuxt app, and is deployed as a standard Node server build with its \`NUXT_PUBLIC_API_BASE\` runtime config pointed at that API's deployed URL, the same public/private split from the previous lesson doing the actual environment-to-environment wiring.`,
+      },
+    ],
+  },
 ];
