@@ -7,7 +7,6 @@
  * rather than assigned to an arbitrary user.
  */
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.sequelize.query(`DELETE FROM user_progress;`);

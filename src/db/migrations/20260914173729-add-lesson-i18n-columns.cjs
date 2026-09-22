@@ -11,7 +11,6 @@
  * real schema change made against it, per src/db/README.md.
  */
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn('lessons', 'title_en', { type: Sequelize.STRING });

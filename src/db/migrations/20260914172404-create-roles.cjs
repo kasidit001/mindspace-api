@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   // Mirrors src/models/Role.ts. This table already exists in dev DBs created
   // via sequelize.sync() before migrations were introduced — see the note in

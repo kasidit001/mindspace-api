@@ -17,7 +17,6 @@
 
 const ALLOWED_VALUES = ['article', 'video', 'advlab', 'ctf'];
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn('lessons', 'content_type', {

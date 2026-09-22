@@ -10,11 +10,11 @@ bun install                 # install deps
 bun run dev                 # start API with hot reload (bun --watch index.ts), http://localhost:8080
 bun run seed                 # seed courses/lessons from src/scripts/seedContent.ts, and embed them
                               # (embedding step needs OPENAI_API_KEY; skipped with a warning if unset)
-bun run migrate               # apply pending sequelize-cli migrations (src/db/migrations)
+bun run migrate               # apply pending migrations (src/db/migrations, via src/db/migrate.ts —
+                                # not sequelize-cli, see src/db/README.md for why)
 bun run migrate:status        # list applied/pending migrations
-bun run migrate:undo          # roll back the most recent migration
-bun run migrate:generate -- <name>   # scaffold a new migration — see src/db/README.md,
-                                       # generated .js file must be renamed to .cjs by hand
+bun run migrate:undo          # roll back the most recently applied migration
+bun run migrate:generate -- <name>   # scaffold a new migration — see src/db/README.md
 ```
 
 No test suite exists yet (`bun test` is Bun's runner if one is added).
@@ -62,11 +62,12 @@ Model → Database`, strictly in that order — a layer only calls the one direc
   tables via `sequelize.sync()`. It also runs `ensureVectorColumn()` — raw SQL to add the
   `lesson_embeddings.embedding VECTOR(1536)` column and its HNSW index, because Sequelize 6
   has no native pgvector type — and `ensureRoles()`, which seeds the fixed `roles` rows.
-- `src/db/` holds a **separate** `sequelize-cli` migration track (see `src/db/README.md`)
-  for schema changes going forward. `roles`, `users`, and the `user_id` columns on
-  `user_progress`/`notes` are migration-tracked; the original tables (`courses`, `lessons`,
-  `lesson_embeddings`, and the rest of `user_progress`/`notes`) still rely solely on `sync()`
-  and have no migration files for their base schema.
+- `src/db/` holds a **separate** migration track (see `src/db/README.md`) for schema changes
+  going forward, run via `src/db/migrate.ts` — a small custom runner, not `sequelize-cli`.
+  `roles`, `users`, and the `user_id` columns on `user_progress`/`notes` are migration-tracked;
+  the original tables (`courses`, `lessons`, `lesson_embeddings`, and the rest of
+  `user_progress`/`notes`) still rely solely on `sync()` and have no migration files for their
+  base schema.
 - Associations: `Course.hasMany(Lesson)`, `Lesson.hasMany(LessonEmbedding)`,
   `Lesson.hasMany(Progress)`, `Lesson.hasMany(Note)` (nullable `lessonId` — a saved chat
   answer may not be tied to one lesson), `Role.hasMany(User)`, `User.hasMany(Progress)`,

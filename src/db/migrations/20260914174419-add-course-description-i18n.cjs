@@ -7,7 +7,6 @@
  * as proper nouns, unlike lesson titles/content.
  */
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn('courses', 'description_en', { type: Sequelize.TEXT });
