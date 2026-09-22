@@ -2050,6 +2050,154 @@ For anything \`useSeoMeta\` doesn't cover directly — a \`<link rel="canonical"
 
 Deployment is where Nitro's output format pays off: \`nuxt build\` produces a \`.output/\` directory whose shape adapts to a \`preset\` — the default Node.js server preset runs anywhere \`node .output/server/index.mjs\` can run, but the same source code can target Vercel, Netlify, Cloudflare Workers, AWS Lambda, or plain static hosting (for a prerendered/SSG build) by changing the preset, with no application code changes required. This platform's own API isn't Nuxt/Nitro — it's a separate Express service — but the frontend, mindspace-web, is exactly this kind of Nuxt app, and is deployed as a standard Node server build with its \`NUXT_PUBLIC_API_BASE\` runtime config pointed at that API's deployed URL, the same public/private split from the previous lesson doing the actual environment-to-environment wiring.`,
       },
+      {
+        slug: "project-bookmarks-api",
+        titleEn: "Project: A Bookmarks API with server/api",
+        order: 11,
+        contentEn: `The last few lessons covered routing, data fetching, and server routes separately — this one and the next put them together by building one small, real feature end to end: a bookmarks list with an API (this lesson) and the UI that talks to it (the next lesson).
+
+Storage first, kept deliberately simple so the lesson stays about Nuxt, not about a database: an in-memory array in a server-only utility, seeded with a couple of rows.
+
+\`\`\`ts
+// server/utils/bookmarks.ts
+export interface Bookmark { id: string; title: string; url: string }
+
+export const bookmarks: Bookmark[] = [
+  { id: '1', title: 'Nuxt Docs', url: 'https://nuxt.com' }
+]
+\`\`\`
+
+Anything under \`server/utils/\` auto-imports into other server files the same way \`app/utils/\` auto-imports into the app — so every \`server/api/\` route below can use \`bookmarks\` with no explicit import. This storage is intentionally not durable: it resets on every server restart and wouldn't be safe shared across multiple server instances. That's a fine tradeoff for learning the routing and request-handling pieces in isolation; a real project would swap this file for a repository backed by an actual database, the same layered idea mindspace-api itself uses, without changing a single line of the routes below.
+
+**List and create**, both on \`server/api/bookmarks.ts\` — one file, two methods, selected by filename suffix:
+
+\`\`\`ts
+// server/api/bookmarks.get.ts
+export default defineEventHandler(() => bookmarks)
+
+// server/api/bookmarks.post.ts
+export default defineEventHandler(async (event) => {
+  const body = await readBody<{ title?: string; url?: string }>(event)
+
+  if (!body.title || !body.url) {
+    throw createError({ statusCode: 400, statusMessage: 'title and url are required' })
+  }
+
+  const bookmark = { id: crypto.randomUUID(), title: body.title, url: body.url }
+  bookmarks.push(bookmark)
+  return bookmark
+})
+\`\`\`
+
+\`createError\` is H3's way of turning a failure into a proper HTTP error response — \`throw\`ing it stops the handler and sends the given status code and message back to the client, instead of the generic 500 an uncaught exception would produce. This is the correct way to signal "the caller did something wrong" (400), distinct from an unexpected server bug.
+
+**Delete by id** uses a dynamic route file, matching the \`[id].vue\` pattern from file-based routing, one level down in \`server/api/\`:
+
+\`\`\`ts
+// server/api/bookmarks/[id].delete.ts
+export default defineEventHandler((event) => {
+  const id = getRouterParam(event, 'id')
+  const index = bookmarks.findIndex((b) => b.id === id)
+
+  if (index === -1) {
+    throw createError({ statusCode: 404, statusMessage: 'Bookmark not found' })
+  }
+
+  bookmarks.splice(index, 1)
+  return { deleted: true }
+})
+\`\`\`
+
+Three routes, three files, no router configuration written by hand anywhere — \`GET /api/bookmarks\`, \`POST /api/bookmarks\`, and \`DELETE /api/bookmarks/:id\` all exist purely because of where these files live and how they're named. The next lesson builds the page that calls them.`,
+      },
+      {
+        slug: "project-bookmarks-ui",
+        titleEn: "Project: The Bookmarks UI",
+        order: 12,
+        contentEn: `With the API in place, the page is a matter of connecting the composables from earlier lessons to it: \`useFetch\` for the initial list (server-rendered, no double-fetch), and plain \`$fetch\` for the two mutations, since creating and deleting only ever happen after a user click — exactly the "event-based interaction" case where \`$fetch\` was the right tool, not \`useFetch\`.
+
+\`\`\`vue
+<!-- app/pages/bookmarks/index.vue -->
+<script setup lang="ts">
+const { data: bookmarks, refresh } = await useFetch('/api/bookmarks')
+
+const title = ref('')
+const url = ref('')
+const submitting = ref(false)
+
+async function addBookmark() {
+  submitting.value = true
+  try {
+    await $fetch('/api/bookmarks', {
+      method: 'POST',
+      body: { title: title.value, url: url.value }
+    })
+    title.value = ''
+    url.value = ''
+    await refresh()
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function removeBookmark(id: string) {
+  await $fetch(\`/api/bookmarks/\${id}\`, { method: 'DELETE' })
+  await refresh()
+}
+</script>
+
+<template>
+  <form @submit.prevent="addBookmark">
+    <input v-model="title" placeholder="Title" required>
+    <input v-model="url" placeholder="https://..." required>
+    <button type="submit" :disabled="submitting">Add</button>
+  </form>
+
+  <ul>
+    <li v-for="bookmark in bookmarks" :key="bookmark.id">
+      <a :href="bookmark.url" target="_blank">{{ bookmark.title }}</a>
+      <button @click="removeBookmark(bookmark.id)">Delete</button>
+    </li>
+  </ul>
+</template>
+\`\`\`
+
+\`refresh()\` — returned by \`useFetch\` alongside \`data\` — re-runs the same request and updates \`bookmarks\` in place, which is why the list reflects a new or deleted bookmark right after the mutation without a full page reload or any manual array manipulation. Calling it explicitly after each mutation, rather than trying to keep the local list in sync by hand (pushing to \`bookmarks.value\` after a create, splicing it after a delete), keeps the page's list always a true reflection of what the server actually has — worth the one extra round-trip for a feature this size, since a hand-maintained local copy would drift the moment two mutations happen close together or a request fails partway through.
+
+The \`required\` attributes give free client-side validation before a request is even sent; the server-side check in the previous lesson's \`POST\` handler is what actually protects the data, since client-side validation alone can always be bypassed by anyone calling the API directly. Both layers matter, and they're not redundant — one is for user experience, the other is the real guarantee.
+
+This page would typically live inside a layout (from the layouts lesson) and be reached via a \`<NuxtLink to="/bookmarks">\` somewhere in the site's navigation — nothing about it needs to be a special case once it's just another route under \`app/pages/\`.`,
+      },
+      {
+        slug: "project-loading-errors-and-next-steps",
+        titleEn: "Project: Loading States, Errors & Where to Go Next",
+        order: 13,
+        contentEn: `Two things the bookmarks page glossed over: what the user sees while a request is in flight, and what happens when one fails. Both are answered by state \`useFetch\` already gives back — \`status\` and \`error\` — rather than anything that needs to be built by hand.
+
+\`\`\`vue
+<script setup lang="ts">
+const { data: bookmarks, status, error, refresh } = await useFetch('/api/bookmarks')
+</script>
+
+<template>
+  <p v-if="status === 'pending'">Loading bookmarks…</p>
+  <p v-else-if="error">Couldn't load bookmarks: {{ error.statusMessage }}</p>
+  <ul v-else>
+    <li v-for="bookmark in bookmarks" :key="bookmark.id">{{ bookmark.title }}</li>
+  </ul>
+</template>
+\`\`\`
+
+Because the initial \`useFetch\` is \`await\`ed, this particular \`pending\` branch won't actually show on first load — the page doesn't finish rendering until the data (or the error) is already resolved, on the server. It matters once \`refresh()\` runs later, client-side, or if the same pattern is reused with \`lazy: true\`, where the page does render before the fetch resolves. The \`error\` case matters immediately, though: the \`POST\` and \`DELETE\` handlers from the last two lessons \`throw createError(...)\` on bad input or a missing id, and that status code and message are exactly what shows up in \`error.value\` here — the same error-handling path serves both a malformed request and a genuinely failed one, with no separate try/catch needed on the reading side.
+
+**Where this project is deliberately incomplete**, and what closing the gap would actually involve:
+
+- **Storage.** The in-memory array resets on every restart and isn't safe across multiple server instances. Swapping it for a real database means replacing \`server/utils/bookmarks.ts\` with calls into a database client or ORM — the three route handlers don't need to change at all, since they only ever talk to that one file's exports.
+- **Auth.** Nothing here checks who's making the request. A real version would add a \`server/middleware/\` handler (from the layouts & middleware lesson) that verifies a session and rejects unauthenticated requests before they reach any \`server/api/bookmarks*\` handler.
+- **Validation.** The \`POST\` handler checks that \`title\` and \`url\` exist, but not that \`url\` is actually a valid URL, or that \`title\` isn't absurdly long. A library like Zod, given a schema, would replace that hand-written \`if\` with something that validates the whole shape at once and produces a specific error message per field.
+
+None of these are Nuxt-specific gaps — they're the same concerns any backend has, which is really the point: \`server/api/\` gives a small project a backend without a second codebase to run and deploy, but everything you'd want from a "real" API is still something you build on top of it, the same way this course's earlier lessons on rendering modes, SEO, and deployment are things you'd layer onto this same small project as it grows into something worth shipping.`,
+      },
     ],
   },
 ];
