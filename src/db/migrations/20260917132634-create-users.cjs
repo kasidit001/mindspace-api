@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   // Mirrors src/models/User.ts.
   async up(queryInterface, Sequelize) {

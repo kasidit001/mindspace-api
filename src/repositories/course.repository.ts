@@ -1,6 +1,6 @@
 import { QueryTypes } from "sequelize";
 import sequelize from "../config/database";
-import { Course, Lesson } from "../models";
+import { Course, Lesson, Tag } from "../models";
 import type { FeaturedCourseRow } from "../interfaces/course.interface";
 
 /** Course overview + lesson counts, for the landing-page hero. Top 6, oldest first. */
@@ -35,8 +35,29 @@ export async function findFeaturedWithLessonCounts(): Promise<FeaturedCourseRow[
 export function findAllWithLessons() {
   return Course.findAll({
     include: [
-      { model: Lesson, as: "lessons", attributes: ["id", "titleEn", "titleTh", "slug", "order"] },
+      {
+        model: Lesson,
+        as: "lessons",
+        attributes: [
+          "id", "titleEn", "titleTh", "slug", "order", "contentType",
+          // Same 200wpm estimate the lesson page shows, so a course's total matches its lessons.
+          [
+            sequelize.literal(
+              `GREATEST(1, ROUND(cardinality(regexp_split_to_array(btrim("lessons"."content_en"), '\\s+')) / 200.0))::int`
+            ),
+            "readingMinutes",
+          ],
+        ],
+      },
+      { model: Tag, as: "tags", attributes: ["id", "name", "slug"], through: { attributes: [] } },
     ],
-    order: [["createdAt", "ASC"]],
+    // Without an explicit order on the association, Postgres/Sequelize
+    // returns each course's lessons in whatever order the join happens to
+    // produce — not lesson order — which is what made the lesson sidebar
+    // (CourseSidebarLessons.vue) list them out of sequence.
+    order: [
+      ["createdAt", "ASC"],
+      [{ model: Lesson, as: "lessons" }, "order", "ASC"],
+    ],
   });
 }

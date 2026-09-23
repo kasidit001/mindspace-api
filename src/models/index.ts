@@ -7,8 +7,10 @@ import { Progress } from "./Progress";
 import { Note } from "./Note";
 import { Role, ROLE_NAMES } from "./Role";
 import { User } from "./User";
+import { Tag } from "./Tag";
+import { CourseTag } from "./CourseTag";
 
-export { Course, Lesson, LessonEmbedding, Progress, Note, Role, User };
+export { Course, Lesson, LessonEmbedding, Progress, Note, Role, User, Tag, CourseTag };
 
 /**
  * Adds the pgvector `embedding` column + an HNSW cosine index to lesson_embeddings.
@@ -36,5 +38,7 @@ export async function syncModels(): Promise<void> {
   await sequelize.sync();
   await ensureVectorColumn();
   await ensureRoles();
-  console.log("[db] Models synced (courses, lessons, lesson_embeddings, user_progress, notes, roles, users).");
+  console.log(
+    "[db] Models synced (courses, lessons, lesson_embeddings, user_progress, notes, roles, users, tags, course_tags)."
+  );
 }

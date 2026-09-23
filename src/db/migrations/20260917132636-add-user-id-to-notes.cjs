@@ -6,7 +6,6 @@
  * (same reasoning as 20260917132635-add-user-id-to-progress.cjs).
  */
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.sequelize.query(`DELETE FROM notes;`);

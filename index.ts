@@ -8,6 +8,7 @@ import { progressRouter } from "./src/routes/progress";
 import { notesRouter } from "./src/routes/notes";
 import { statsRouter } from "./src/routes/stats";
 import { searchRouter } from "./src/routes/search";
+import { dashboardRouter } from "./src/routes/dashboard";
 import { authRouter } from "./src/routes/auth";
 import { AppError } from "./src/utils/errors";
 
@@ -42,6 +43,7 @@ app.use("/api", progressRouter);
 app.use("/api", notesRouter);
 app.use("/api", statsRouter);
 app.use("/api", searchRouter);
+app.use("/api", dashboardRouter);
 
 // Error-handling middleware must be registered last, after all routes, and take
 // exactly 4 args — that arity is how Express recognizes it as an error handler.
