@@ -32,12 +32,15 @@ async function main() {
   }
 
   for (const courseSeed of seedCourses) {
+    // Every course in seedContent.ts is real, finished catalog content — always
+    // seeded as published, unlike a course an admin might create as a draft.
     const [course] = await Course.findOrCreate({
       where: { slug: courseSeed.slug },
       defaults: {
         title: courseSeed.title,
         descriptionEn: courseSeed.descriptionEn,
         descriptionTh: courseSeed.descriptionTh ?? null,
+        published: true,
       },
     });
     // Keep title/description in sync on re-runs.
@@ -45,6 +48,7 @@ async function main() {
       title: courseSeed.title,
       descriptionEn: courseSeed.descriptionEn,
       descriptionTh: courseSeed.descriptionTh ?? null,
+      published: true,
     });
 
     console.log(`[seed] Course: ${course.title}`);

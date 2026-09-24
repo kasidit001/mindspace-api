@@ -29,7 +29,8 @@ export async function searchLessons(q: string): Promise<SearchResultRow[]> {
             ) AS rank
        FROM lessons l
        JOIN courses c ON c.id = l.course_id
-      WHERE to_tsvector('english', l.title_en || ' ' || l.content_en) @@ plainto_tsquery('english', :q)
+      WHERE c.published = true
+        AND to_tsvector('english', l.title_en || ' ' || l.content_en) @@ plainto_tsquery('english', :q)
       ORDER BY rank DESC
       LIMIT 20`,
     { replacements: { q }, type: QueryTypes.SELECT }

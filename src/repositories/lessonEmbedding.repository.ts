@@ -52,6 +52,7 @@ export async function findSimilarChunks(queryVector: number[], k: number): Promi
        FROM lesson_embeddings le
        JOIN lessons l ON l.id = le.lesson_id
        JOIN courses c ON c.id = l.course_id
+      WHERE c.published = true
       ORDER BY distance ASC
       LIMIT :k`,
     {

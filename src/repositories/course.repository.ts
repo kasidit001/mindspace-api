@@ -16,6 +16,7 @@ export async function findFeaturedWithLessonCounts(): Promise<FeaturedCourseRow[
     `SELECT c.id, c.title, c.slug, c.description_en, c.description_th, COUNT(l.id)::int AS lesson_count
        FROM courses c
        LEFT JOIN lessons l ON l.course_id = c.id
+      WHERE c.published = true
       GROUP BY c.id
       ORDER BY c."createdAt" ASC
       LIMIT 6`,
@@ -34,6 +35,7 @@ export async function findFeaturedWithLessonCounts(): Promise<FeaturedCourseRow[
 
 export function findAllWithLessons() {
   return Course.findAll({
+    where: { published: true },
     include: [
       {
         model: Lesson,
