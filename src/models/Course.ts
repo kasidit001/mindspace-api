@@ -19,6 +19,12 @@ export class Course extends Model<InferAttributes<Course>, InferCreationAttribut
   // English when descriptionTh is null. Same pattern as Lesson's title/content split.
   declare descriptionEn: string | null;
   declare descriptionTh: string | null;
+  // Gates visibility: unpublished courses are drafts — excluded from the
+  // public catalog and unreachable by lesson detail, until an admin flips
+  // this true. Defaults false (draft-first) for anything inserted without
+  // specifying it; see the add-published-to-courses migration for why
+  // every pre-existing course was backfilled to true instead.
+  declare published: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -55,6 +61,11 @@ Course.init(
       type: DataTypes.TEXT,
       allowNull: true,
       field: "description_th",
+    },
+    published: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,

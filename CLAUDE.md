@@ -64,10 +64,10 @@ Model → Database`, strictly in that order — a layer only calls the one direc
   has no native pgvector type — and `ensureRoles()`, which seeds the fixed `roles` rows.
 - `src/db/` holds a **separate** migration track (see `src/db/README.md`) for schema changes
   going forward, run via `src/db/migrate.ts` — a small custom runner, not `sequelize-cli`.
-  `roles`, `users`, and the `user_id` columns on `user_progress`/`notes` are migration-tracked;
-  the original tables (`courses`, `lessons`, `lesson_embeddings`, and the rest of
-  `user_progress`/`notes`) still rely solely on `sync()` and have no migration files for their
-  base schema.
+  `roles`, `users`, the `user_id` columns on `user_progress`/`notes`, and `courses.published`
+  are migration-tracked; the rest of `courses`, plus `lessons`, `lesson_embeddings`, and the
+  rest of `user_progress`/`notes`, still rely solely on `sync()` and have no migration files
+  for their base schema.
 - Associations: `Course.hasMany(Lesson)`, `Lesson.hasMany(LessonEmbedding)`,
   `Lesson.hasMany(Progress)`, `Lesson.hasMany(Note)` (nullable `lessonId` — a saved chat
   answer may not be tied to one lesson), `Role.hasMany(User)`, `User.hasMany(Progress)`,
@@ -88,6 +88,17 @@ carry tags itself — they're assigned per course slug in `src/scripts/seed.ts`'
 `findAllWithLessons()` includes `tags` on every course in `GET /api/courses` automatically
 (no controller/interface changes needed — same pass-through as every other included
 association).
+
+**Publishing**: `courses.published` (default `false`) gates whether a course is visible at
+all — `findAllWithLessons()`/`findFeaturedWithLessonCounts()` only return published courses,
+`lesson.repository.ts`'s `findByIdWithCourse()` inner-joins on `published: true` so a lesson
+under a draft course 404s exactly like a lesson that doesn't exist (no separate 403 path, same
+enumeration-avoidance spirit as login), and the full-text search and pgvector similarity
+queries (`search.repository.ts`, `lessonEmbedding.repository.ts`) both filter on it too, so a
+draft never surfaces via Cmd+K or gets cited by the chat tutor. `seed.ts` always seeds its
+courses as `published: true` — everything in `seedContent.ts` is finished catalog content, not
+draft material. There's no admin UI yet to toggle this on a course created outside the seed
+script; it's a data-model/gating layer only, ready for whenever that exists.
 
 **RAG chat flow** (the core feature): `src/services/embedding.service.ts` chunks lesson
 content on paragraph boundaries, embeds it via `OpenAIEmbeddings` pointed at OpenRouter, and
