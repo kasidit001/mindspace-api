@@ -4769,6 +4769,1151 @@ Eight steps, applied identically to every endpoint in this repo: mount → route
 
 แปดขั้นตอน ใช้แบบเดียวกันกับทุก endpoint ใน repo นี้: mount → route → controller → usecase → service → repository → (ส่วนเพิ่มสำหรับ destructive op) → model-ไว้อ้างอิงเท่านั้น นี่คือวิธีการทั้งหมดที่บทเรียนก่อนหน้าทั้งคอร์สค่อยๆ สร้างขึ้นมา — ทุกอย่างที่เรียนมาก่อนหน้านี้คือการฝึกทำแต่ละขั้นตอนให้เร็วขึ้น`,
       },
+      {
+        slug: "the-full-stack",
+        titleEn: "The Full Stack",
+        titleTh: "Stack ทั้งหมดของโปรเจกต์",
+        order: 13,
+        contentEn: `A quick reference for every major piece of secinsight-api's stack, read straight from \`package.json\` — worth having loaded before the deeper lessons that follow.
+
+| Category | Uses | Version |
+| --- | --- | --- |
+| Runtime | Bun (dev: \`bun run --watch\`, prod: \`bun run dist/server.js\`) | image \`oven/bun:1-slim\` |
+| Language | TypeScript | \`^5\` |
+| Framework | Express | \`^5.2.1\` |
+| ORM / DB client | Sequelize + mysql2 (two MySQL databases: \`secinsight\`, \`misp\`) | \`^6.37.8\` / \`^3.15.3\` |
+| Migrations | sequelize-cli | \`^6.6.3\` |
+| Validation | Zod | \`^4.1.13\` |
+| Auth / session | JWT (HS256) via \`jose\` + a DB-backed session table (\`user_sessions\`) + bcrypt + TOTP (\`otpauth\`) | \`^6.1.3\` / \`^6.0.0\` / \`^9.4.1\` |
+| External HTTP client | axios + axios-retry | \`1.18.0\` / \`^4.5.0\` |
+| Rate limiting | rate-limiter-flexible (in-memory) | \`^9.0.1\` |
+| Security headers | helmet, cors | \`^8.1.0\` |
+| Logger | winston | \`^3.19.0\` |
+| Email | mailgun.js | \`^12.9.0\` |
+| Other | cron, dayjs, multer, rss-parser, cookie-parser | -- |
+| Testing | Jest + ts-jest + Supertest | \`^29.7.0\` |
+| Lint / format | ESLint 9 + Prettier + husky + lint-staged + commitlint | -- |
+
+Two things worth flagging up front, both covered in depth later in this course: **auth is a JWT-plus-DB-session pair, not a JWT alone** -- the session row is what actually gates access (see the login/MFA worked example). And **this API talks to two separate MySQL databases**, \`secinsight\` (this app's own data) and \`misp\` (an external platform's data -- read directly via Sequelize, written only through its REST API) -- see the database schema and MISP integration lessons.
+
+## Conclusion
+
+Bun + Express + TypeScript on the runtime side, Sequelize/mysql2 across two databases for persistence, Zod at every input boundary, and a JWT-plus-DB-session pair for auth -- this is the skeleton every later lesson in this course assumes you already have in view.`,
+        contentTh: `สรุป stack หลักๆ ของ secinsight-api ทั้งหมด อ่านตรงจาก \`package.json\` — เหมาะเก็บไว้ในหัวก่อนเข้าบทเรียนที่ลึกกว่านี้
+
+| หมวด | ใช้อะไร | เวอร์ชัน |
+| --- | --- | --- |
+| Runtime | Bun (dev: \`bun run --watch\`, prod: \`bun run dist/server.js\`) | image \`oven/bun:1-slim\` |
+| Language | TypeScript | \`^5\` |
+| Framework | Express | \`^5.2.1\` |
+| ORM / DB client | Sequelize + mysql2 (MySQL สองฐาน: \`secinsight\`, \`misp\`) | \`^6.37.8\` / \`^3.15.3\` |
+| Migration | sequelize-cli | \`^6.6.3\` |
+| Validation | Zod | \`^4.1.13\` |
+| Auth / session | JWT HS256 ผ่าน \`jose\` + session เก็บใน DB (\`user_sessions\`) + bcrypt + TOTP (\`otpauth\`) | \`^6.1.3\` / \`^6.0.0\` / \`^9.4.1\` |
+| HTTP client ภายนอก | axios + axios-retry | \`1.18.0\` / \`^4.5.0\` |
+| Rate limit | rate-limiter-flexible (in-memory) | \`^9.0.1\` |
+| Security headers | helmet, cors | \`^8.1.0\` |
+| Logger | winston | \`^3.19.0\` |
+| Email | mailgun.js | \`^12.9.0\` |
+| อื่นๆ | cron, dayjs, multer, rss-parser, cookie-parser | -- |
+| Test | Jest + ts-jest + Supertest | \`^29.7.0\` |
+| Lint / format | ESLint 9 + Prettier + husky + lint-staged + commitlint | -- |
+
+สองเรื่องที่ควรรู้ไว้ก่อน ทั้งคู่จะพูดถึงลึกๆ ในบทเรียนหลังจากนี้: **auth เป็นคู่ JWT+session ใน DB ไม่ใช่ JWT อย่างเดียว** -- session row ต่างหากที่เป็นตัวคุมสิทธิ์จริง (ดูบทเรียน worked example ของ login/MFA) และ **API ตัวนี้คุยกับ MySQL สองฐานแยกกัน** คือ \`secinsight\` (ข้อมูลของแอปเราเอง) กับ \`misp\` (ข้อมูลของแพลตฟอร์มภายนอก -- อ่านตรงผ่าน Sequelize เขียนได้แค่ผ่าน REST API ของมันเท่านั้น) ดูบทเรียนเรื่อง database schema และ MISP integration
+
+## สรุป
+
+Bun + Express + TypeScript ฝั่ง runtime, Sequelize/mysql2 ข้ามสองฐานข้อมูลฝั่ง persistence, Zod ที่ทุก input boundary และคู่ JWT+session ใน DB สำหรับ auth — นี่คือโครงที่บทเรียนหลังจากนี้ทั้งหมดถือว่าพี่รู้อยู่แล้ว`,
+      },
+      {
+        slug: "worked-example-c-login-mfa-session",
+        titleEn: "Worked Example C — Login, MFA, and the Session Lifecycle",
+        titleTh: "ตัวอย่างจริง C — Login, MFA และวงจรชีวิตของ Session",
+        order: 14,
+        contentEn: `\`POST /api/v1/auth/login\` -- picked because it doesn't end in one trip. It needs a follow-up call to \`POST /api/v1/auth/verify-mfa\` before the returned token can actually be used elsewhere, which is exactly why newcomers get confused seeing a 401 \`MFA verification required\` right after a "successful" login. It also has two guards in front of the controller (rate limit + reCAPTCHA) that the Event example never needed.
+
+### 0. Mount -- where the path comes from
+
+- \`src/app.ts:49\` -> \`app.use('/api', globalRateLimit, apiRoutes);\`
+- \`src/routes/index.ts:11\` -> \`router.use('/v1', apiV1Router);\`
+- \`src/routes/v1/index.ts:27\` -> \`router.use('/auth', authRoutes);\` (no mount-level middleware here -- guards are attached per-route instead)
+
+### 1. Route -- \`src/routes/v1/auth.routes.ts:13-18\`
+
+\`\`\`ts
+router.post(
+  '/login',
+  authRateLimit,
+  recaptchaMiddleware('login'),
+  authController.login
+);
+\`\`\`
+
+- \`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) -- caps attempts per IP against \`AUTH_MAX_ATTEMPTS\` / \`AUTH_WINDOW_MINUTES\`; over the limit throws \`RateLimitError\` (429).
+- \`recaptchaMiddleware('login')\` (\`src/middleware/recaptcha.ts:47-99\`) -- reads the \`x-recaptcha-token\` header, verifies the action matches and the score clears \`RECAPTCHA_MIN_SCORE\` against Google reCAPTCHA Enterprise; can be switched off entirely with \`RECAPTCHA_ENABLED=false\`.
+
+Other routes in the same file, for context:
+
+| Method + path | Middleware | Handler |
+| --- | --- | --- |
+| \`POST /password-setup\` | \`authRateLimit\` | \`passwordSetup\` |
+| \`POST /forgot-password\` | \`authRateLimit\`, \`forgotPasswordEmailRateLimit\`, \`recaptchaMiddleware('forgot_password')\` | \`forgotPassword\` |
+| \`POST /logout\` | \`authMiddleware\` | \`logout\` |
+| \`POST /introspect\` | \`apiKeyMiddleware\`, \`authMiddleware\` | \`introspect\` |
+| \`POST /verify-mfa\` | \`authRateLimit\`, \`authMiddleware\`, \`recaptchaMiddleware('login')\` | \`verifyMfa\` |
+
+### 2. Controller -- \`src/controllers/AuthController.ts:27-54\`
+
+\`\`\`ts
+login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    const payload = SLoginRequest.safeParse({ email, password });
+
+    if (!payload.success) {
+      const message = payload.error.issues[0]?.message;
+      throw new ValidationError(\`Invalid payload: \${message}\`);
+    }
+
+    const ipAddress = this.getClientIp(req);
+    const deviceInfo = this.getUserAgent(req);
+
+    const useCase = new AuthLoginUseCase(services);
+    const result = await useCase.execute(payload.data, ipAddress, deviceInfo);
+
+    this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
+  } catch (error) {
+    next(error);
+  }
+};
+\`\`\`
+
+- Destructures fields off \`req.body\` before handing them to Zod -- never passes the raw body through whole.
+- A failed schema -> \`ValidationError\` -> 400.
+- IP and user-agent are forwarded to the UseCase to be stored on the session.
+
+### 3. UseCase -- \`src/usecases/auth/AuthLoginUseCase.ts:61-139\`
+
+Order of operations:
+1. \`UserService.authenticate({ email, password })\` -- verifies the password.
+2. \`OrganizationSubscriptionService.getAllByOrganizationId(...)\`, checked for \`ACTIVE\` -- none -> 401 \`No active subscription\`.
+3. \`UserPasswordResetService.findByUserId(...)\` -- a pending reset request -> 401 \`Password reset is pending\`.
+4. \`UserSessionService.revokeAll(...)\` (line 95) -- kicks out every existing session first, so only one device can be logged in at a time.
+5. \`TokenService.signToken(...)\` + \`generateRefreshToken()\`.
+6. \`UserSessionService.createPreAccess(createSessionPayload)\` (line 124) -- creates a session of type \`PRE_ACCESS\`, \`isMfaVerified: false\`.
+
+\`\`\`ts
+const createSessionPayload = {
+  userId: user.id,
+  type: SESSION_ACCESS_TYPE.PRE_ACCESS,
+  accessToken: token,
+  refreshTokenHash: hash,
+  isMfaVerified: false,
+  deviceInfo: deviceInfo ?? null,
+  ipAddress: ipAddress ?? null,
+  accessTokenExpiresAt: dayjs().add(ACCESS_TOKEN_EXPIRY_MS, 'ms').toDate(),
+  refreshTokenExpiresAt: dayjs().add(REFRESH_TOKEN_EXPIRY_MS, 'ms').toDate(),
+};
+
+const createdUserSession =
+  await this.UserSessionService.createPreAccess(createSessionPayload);
+
+return {
+  accessToken: token,
+  type: createdUserSession.session.type,
+  mfaEnrolled: user.mfaEnabled,
+  mfaVerified: createdUserSession.session.isMfaVerified,
+  refreshToken: refreshToken,
+  isConsentAccepted: user.isConsent,
+};
+\`\`\`
+
+### 4. Service
+
+**\`UserService.authenticate\` -- \`src/services/UserService.ts:126-174\`**
+
+\`\`\`ts
+const user = await this.UserRepository.findByEmail({ email: payload.email });
+if (!user) throw new AuthenticationError('Invalid email or password', { message: 'User not found' });
+if (!user.isActive) throw new AuthenticationError('Account is inactive', { message: 'Account is inactive' });
+if (user.lockedUntil && dayjs().isBefore(dayjs(user.lockedUntil))) {
+  throw new AuthenticationError('Account is locked', { message: 'Account has been locked due to too many failed login attempts' });
+}
+const credentials = await this.UserCredentialRepository.findByUserId({ userId: user.id });
+if (!credentials) throw new AuthenticationError('Invalid email or password', { message: 'Credentials not found' });
+
+const isValid = await bcrypt.compare(payload.password, credentials.value);
+if (!isValid) {
+  await this.handleFailedAttempt(user);
+  throw new AuthenticationError('Invalid email or password', { message: 'Invalid password' });
+}
+await this.resetFailedAttempts(user);
+return user;
+\`\`\`
+
+- The password lives in \`user_credentials\`, not \`users\`.
+- Repeated failures lock the account (\`lockedUntil\`) -- a server-side lockout, separate from the per-IP rate limit above it.
+- The message returned to the client is always the same generic \`Invalid email or password\`; the real reason lives only in server-side metadata.
+
+**\`TokenService\` -- \`src/services/TokenService.ts\`**
+
+\`\`\`ts
+// 63-67
+public generateRefreshToken(): { refreshToken: string; hash: string } {
+  const refreshToken = randomUUID();
+  const hash = createHash('sha256').update(refreshToken).digest('hex');
+  return { refreshToken, hash };
+}
+
+// 75-86
+public async signToken(payload: TSignTokenPayload): Promise<string> {
+  const secret = getJwtSecret();
+  const jwt = await new jose.SignJWT(payload as JWTPayload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_ACCESS_EXPIRES_IN)
+    .sign(secret);
+  return jwt;
+}
+\`\`\`
+
+- The DB only ever stores a hash of the refresh token -- the real value is handed to the client exactly once.
+
+### 5. Repository -- \`src/repositories/UserSessionRepository.ts:38-43\`
+
+\`\`\`ts
+async create(payload: TCreatePayload, transaction?: Transaction): Promise<UserSessionSchema> {
+  return await UserSession.create(payload, { transaction });
+}
+\`\`\`
+
+### 6. After login -- \`authMiddleware\` (\`src/middleware/auth.ts:59-158\`)
+
+Every request that needs to be logged in passes through this middleware:
+1. Reads \`Authorization: Bearer <token>\` -- missing -> 401.
+2. \`TokenService.verifyToken\` checks the signature.
+3. \`validateSession({ accessToken })\` looks the session up in the DB -- not found / expired -> 401.
+4. \`session.revokedAt\` is set -> 401 \`Session has been revoked\`.
+5. The session is still \`PRE_ACCESS\` or \`isMfaVerified === false\`, and the path isn't \`/api/v1/auth/verify-mfa\` or under \`/api/v1/mfa/\` -> 401 \`MFA verification required\`. **This is the step that explains the confusing 401 right after login.**
+6. Token close to expiry -> a fresh one is issued in the \`X-New-Access-Token\` response header, which the client is expected to store in place of the old one.
+7. The user is re-fetched from the DB and attached to \`req.user\` -- permissions always come from the DB, never from the token's own claims.
+
+### 7. Closing the loop -- \`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`)
+
+- Looks up the session -- must be \`PRE_ACCESS\`, not expired, not revoked.
+- Looks up \`user_mfa.secret\` -- verifies the OTP with \`UserMfaService.validateTotp\` (wrong code -> 409 \`Invalid OTP code\`).
+- \`UserSessionService.upgradeToFullAccess(sessionId)\` -- flips the session to type \`ACCESS\`, \`isMfaVerified = true\`.
+- The same access token keeps working -- no new token is issued at this step.
+
+## Conclusion
+
+A login that "succeeds" only creates a \`PRE_ACCESS\` session -- every other authenticated endpoint keeps returning 401 \`MFA verification required\` until \`verify-mfa\` upgrades that same session to \`ACCESS\`. The token itself never changes at that step; what changes is a row in \`user_sessions\`, which is exactly why \`authMiddleware\` re-checks the DB on every request instead of trusting anything encoded in the JWT.`,
+        contentTh: `\`POST /api/v1/auth/login\` -- เลือกอันนี้เพราะไม่จบในเส้นเดียว ต้องยิง \`POST /api/v1/auth/verify-mfa\` ต่อ token ที่ได้มาถึงจะใช้เรียก endpoint อื่นได้จริง ซึ่งเป็นเหตุผลตรงๆ ว่าทำไมคนใหม่มักงงว่าทำไม login "สำเร็จ" แล้วยังโดน 401 \`MFA verification required\` และยังมี guard ก่อนถึง controller สองชั้น (rate limit + reCAPTCHA) ที่ตัวอย่าง Event ไม่เคยมี
+
+### 0. Mount -- path มาจากไหน
+
+- \`src/app.ts:49\` -> \`app.use('/api', globalRateLimit, apiRoutes);\`
+- \`src/routes/index.ts:11\` -> \`router.use('/v1', apiV1Router);\`
+- \`src/routes/v1/index.ts:27\` -> \`router.use('/auth', authRoutes);\` (ไม่มี middleware ระดับ mount ตรงนี้ -- guard ติดรายเส้นแทน)
+
+### 1. Route -- \`src/routes/v1/auth.routes.ts:13-18\`
+
+\`\`\`ts
+router.post(
+  '/login',
+  authRateLimit,
+  recaptchaMiddleware('login'),
+  authController.login
+);
+\`\`\`
+
+- \`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) -- จำกัดจำนวนครั้งต่อ IP ตาม \`AUTH_MAX_ATTEMPTS\` / \`AUTH_WINDOW_MINUTES\` เกิน -> \`RateLimitError\` (429)
+- \`recaptchaMiddleware('login')\` (\`src/middleware/recaptcha.ts:47-99\`) -- อ่าน header \`x-recaptcha-token\` ตรวจกับ Google reCAPTCHA Enterprise ว่า action ตรงและ score ผ่าน \`RECAPTCHA_MIN_SCORE\` ปิดได้ทั้งหมดด้วย \`RECAPTCHA_ENABLED=false\`
+
+เส้นอื่นในไฟล์เดียวกัน สำหรับบริบท:
+
+| Method + path | Middleware | Handler |
+| --- | --- | --- |
+| \`POST /password-setup\` | \`authRateLimit\` | \`passwordSetup\` |
+| \`POST /forgot-password\` | \`authRateLimit\`, \`forgotPasswordEmailRateLimit\`, \`recaptchaMiddleware('forgot_password')\` | \`forgotPassword\` |
+| \`POST /logout\` | \`authMiddleware\` | \`logout\` |
+| \`POST /introspect\` | \`apiKeyMiddleware\`, \`authMiddleware\` | \`introspect\` |
+| \`POST /verify-mfa\` | \`authRateLimit\`, \`authMiddleware\`, \`recaptchaMiddleware('login')\` | \`verifyMfa\` |
+
+### 2. Controller -- \`src/controllers/AuthController.ts:27-54\`
+
+\`\`\`ts
+login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    const payload = SLoginRequest.safeParse({ email, password });
+
+    if (!payload.success) {
+      const message = payload.error.issues[0]?.message;
+      throw new ValidationError(\`Invalid payload: \${message}\`);
+    }
+
+    const ipAddress = this.getClientIp(req);
+    const deviceInfo = this.getUserAgent(req);
+
+    const useCase = new AuthLoginUseCase(services);
+    const result = await useCase.execute(payload.data, ipAddress, deviceInfo);
+
+    this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
+  } catch (error) {
+    next(error);
+  }
+};
+\`\`\`
+
+- แยก field จาก \`req.body\` ก่อนแล้วค่อยส่งให้ Zod (ห้ามส่ง \`req.body\` ทั้งก้อนตรงๆ)
+- ผิด schema -> \`ValidationError\` -> 400
+- ส่ง IP และ user-agent ต่อให้ UseCase ไปเก็บไว้ที่ session
+
+### 3. UseCase -- \`src/usecases/auth/AuthLoginUseCase.ts:61-139\`
+
+ลำดับงาน:
+1. \`UserService.authenticate({ email, password })\` -- ตรวจรหัสผ่าน
+2. \`OrganizationSubscriptionService.getAllByOrganizationId(...)\` เช็กสถานะ \`ACTIVE\` -- ไม่มี -> 401 \`No active subscription\`
+3. \`UserPasswordResetService.findByUserId(...)\` -- มีคำขอรีเซ็ตค้างอยู่ -> 401 \`Password reset is pending\`
+4. \`UserSessionService.revokeAll(...)\` (บรรทัด 95) -- เตะ session เก่าทั้งหมดออกก่อน ทำให้ล็อกอินได้ทีละเครื่องเท่านั้น
+5. \`TokenService.signToken(...)\` + \`generateRefreshToken()\`
+6. \`UserSessionService.createPreAccess(createSessionPayload)\` (บรรทัด 124) -- สร้าง session ประเภท \`PRE_ACCESS\`, \`isMfaVerified: false\`
+
+\`\`\`ts
+const createSessionPayload = {
+  userId: user.id,
+  type: SESSION_ACCESS_TYPE.PRE_ACCESS,
+  accessToken: token,
+  refreshTokenHash: hash,
+  isMfaVerified: false,
+  deviceInfo: deviceInfo ?? null,
+  ipAddress: ipAddress ?? null,
+  accessTokenExpiresAt: dayjs().add(ACCESS_TOKEN_EXPIRY_MS, 'ms').toDate(),
+  refreshTokenExpiresAt: dayjs().add(REFRESH_TOKEN_EXPIRY_MS, 'ms').toDate(),
+};
+
+const createdUserSession =
+  await this.UserSessionService.createPreAccess(createSessionPayload);
+
+return {
+  accessToken: token,
+  type: createdUserSession.session.type,
+  mfaEnrolled: user.mfaEnabled,
+  mfaVerified: createdUserSession.session.isMfaVerified,
+  refreshToken: refreshToken,
+  isConsentAccepted: user.isConsent,
+};
+\`\`\`
+
+### 4. Service
+
+**\`UserService.authenticate\` -- \`src/services/UserService.ts:126-174\`**
+
+\`\`\`ts
+const user = await this.UserRepository.findByEmail({ email: payload.email });
+if (!user) throw new AuthenticationError('Invalid email or password', { message: 'User not found' });
+if (!user.isActive) throw new AuthenticationError('Account is inactive', { message: 'Account is inactive' });
+if (user.lockedUntil && dayjs().isBefore(dayjs(user.lockedUntil))) {
+  throw new AuthenticationError('Account is locked', { message: 'Account has been locked due to too many failed login attempts' });
+}
+const credentials = await this.UserCredentialRepository.findByUserId({ userId: user.id });
+if (!credentials) throw new AuthenticationError('Invalid email or password', { message: 'Credentials not found' });
+
+const isValid = await bcrypt.compare(payload.password, credentials.value);
+if (!isValid) {
+  await this.handleFailedAttempt(user);
+  throw new AuthenticationError('Invalid email or password', { message: 'Invalid password' });
+}
+await this.resetFailedAttempts(user);
+return user;
+\`\`\`
+
+- รหัสผ่านอยู่ที่ตาราง \`user_credentials\` ไม่ใช่ \`users\`
+- ผิดหลายครั้งติด -> ล็อกบัญชี (\`lockedUntil\`) -- เป็น lockout ฝั่ง server แยกจาก rate limit ต่อ IP ข้างบน
+- ข้อความที่ส่งให้ client เป็นแบบกลางๆ เหมือนกันเสมอ (\`Invalid email or password\`) เหตุผลจริงอยู่แค่ใน metadata ฝั่ง server เท่านั้น
+
+**\`TokenService\` -- \`src/services/TokenService.ts\`**
+
+\`\`\`ts
+// 63-67
+public generateRefreshToken(): { refreshToken: string; hash: string } {
+  const refreshToken = randomUUID();
+  const hash = createHash('sha256').update(refreshToken).digest('hex');
+  return { refreshToken, hash };
+}
+
+// 75-86
+public async signToken(payload: TSignTokenPayload): Promise<string> {
+  const secret = getJwtSecret();
+  const jwt = await new jose.SignJWT(payload as JWTPayload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_ACCESS_EXPIRES_IN)
+    .sign(secret);
+  return jwt;
+}
+\`\`\`
+
+- DB เก็บแค่ hash ของ refresh token เท่านั้น -- ค่าจริงส่งให้ client แค่ครั้งเดียว
+
+### 5. Repository -- \`src/repositories/UserSessionRepository.ts:38-43\`
+
+\`\`\`ts
+async create(payload: TCreatePayload, transaction?: Transaction): Promise<UserSessionSchema> {
+  return await UserSession.create(payload, { transaction });
+}
+\`\`\`
+
+### 6. หลังล็อกอิน -- \`authMiddleware\` (\`src/middleware/auth.ts:59-158\`)
+
+ทุก request ที่ต้อง login ก่อนจะวิ่งผ่าน middleware นี้:
+1. อ่าน \`Authorization: Bearer <token>\` -- ไม่มี -> 401
+2. \`TokenService.verifyToken\` ตรวจลายเซ็น
+3. \`validateSession({ accessToken })\` หา session ใน DB -- ไม่เจอ/หมดอายุ -> 401
+4. \`session.revokedAt\` มีค่า -> 401 \`Session has been revoked\`
+5. session ยังเป็น \`PRE_ACCESS\` หรือ \`isMfaVerified === false\` และ path ไม่ใช่ \`/api/v1/auth/verify-mfa\` หรือใต้ \`/api/v1/mfa/\` -> 401 \`MFA verification required\` **นี่คือขั้นตอนที่อธิบาย 401 ที่งงๆ หลัง login**
+6. token ใกล้หมดอายุ -> ออก token ใหม่ให้ทาง header \`X-New-Access-Token\` ซึ่ง client ต้องเก็บไว้แทนของเดิม
+7. ดึง user จาก DB ใหม่แล้วใส่ใน \`req.user\` -- สิทธิ์ทั้งหมดมาจาก DB เสมอ ไม่เคยมาจาก claim ในตัว token เอง
+
+### 7. ปิดวงจร -- \`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`)
+
+- หา session -- ต้องเป็น \`PRE_ACCESS\`, ยังไม่หมดอายุ, ยังไม่ถูก revoke
+- หา \`user_mfa.secret\` -- ตรวจ OTP ด้วย \`UserMfaService.validateTotp\` (ผิด -> 409 \`Invalid OTP code\`)
+- \`UserSessionService.upgradeToFullAccess(sessionId)\` -- เปลี่ยน session เป็นประเภท \`ACCESS\`, \`isMfaVerified = true\`
+- ใช้ access token เดิมต่อได้เลย ไม่มีการออก token ใหม่ในขั้นนี้
+
+## สรุป
+
+login ที่ "สำเร็จ" สร้างได้แค่ session ประเภท \`PRE_ACCESS\` เท่านั้น -- endpoint ที่ต้อง auth อื่นๆ จะยัง 401 \`MFA verification required\` อยู่จนกว่า \`verify-mfa\` จะอัปเกรด session แถวเดียวกันนั้นให้เป็น \`ACCESS\` ตัว token เองไม่เปลี่ยนในขั้นนี้เลย สิ่งที่เปลี่ยนคือแถวหนึ่งใน \`user_sessions\` ซึ่งเป็นเหตุผลตรงๆ ว่าทำไม \`authMiddleware\` ต้องเช็ก DB ใหม่ทุก request แทนที่จะเชื่อค่าที่เข้ารหัสไว้ใน JWT`,
+      },
+      {
+        slug: "database-schema-users-orgs-subscriptions",
+        titleEn: "Database Schema — Users, Organizations & Subscriptions",
+        titleTh: "Database Schema — Users, Organizations และ Subscriptions",
+        order: 15,
+        contentEn: `Model registration splits into two sets in \`src/models/index.ts\`: \`misp\` via \`SequelizeConnection.getClient('mispConnection')\`, and \`secinsight\` via \`SequelizeConnection.getClient('secinsightConnection')\`. Migrations only exist on the \`secinsight\` side (\`src/sequelize/secinsight/migrations/\`, 74 files as of this writing) -- there's no \`src/sequelize/misp\` migrations folder, because those tables belong to MISP itself, not to this app (see the next lesson).
+
+### Users & login
+
+| Table | Key columns | Relationships |
+| --- | --- | --- |
+| \`users\` | \`email\` (unique), \`organizationId\`, \`teamId\` (nullable), \`roleId\`, \`isActive\`, \`mfaEnabled\`, \`failedLoginAttempts\`, \`lockedUntil\`, \`isConsent\` | belongsTo Organization, Team, Role · hasMany UserSession (\`User.ts:161-179\`) |
+| \`user_credentials\` | \`userId\`, \`type\`, \`value\` (bcrypt hash) | belongsTo User |
+| \`user_sessions\` | \`userId\`, \`type\` (\`PRE_ACCESS\` / \`ACCESS\`), \`accessToken\`, \`refreshTokenHash\`, \`isMfaVerified\`, \`accessTokenExpiresAt\`, \`refreshTokenExpiresAt\`, \`revokedAt\` | belongsTo User |
+| \`user_mfa\` | \`userId\` (unique), \`type\` (TOTP), \`secret\`, \`isVerified\`, \`backupCodes\` | belongsTo User |
+| \`user_password_resets\` | \`userId\`, \`token\`, \`expireAt\`, \`deletedAt\` | belongsTo User |
+| \`roles\` | \`id\`, \`name\` | -- |
+| \`api_keys\` | \`keyHash\` (unique), \`keyPrefix\`, \`scopes\`, \`rateLimit\`, \`active\`, \`expiresAt\`, \`createdBy\` | belongsTo User |
+
+This table set is exactly what the login/MFA worked example touches -- \`users\` + \`user_credentials\` for \`UserService.authenticate\`, \`user_sessions\` for the whole \`PRE_ACCESS\` -> \`ACCESS\` lifecycle, \`user_mfa\` for the OTP check.
+
+### Organizations, packages, and entitlements
+
+| Table | Key columns | Relationships |
+| --- | --- | --- |
+| \`organizations\` | \`nameEn\`, \`nameTh\`, \`industryId\`, address fields, \`phone\` | belongsTo Industry |
+| \`teams\` | \`nameEn\`, \`nameTh\`, \`organizationId\` (unique across 3 columns together) | belongsTo Organization |
+| \`industries\` | \`nameEn\`, \`nameTh\` | -- |
+| \`packages\` | \`code\` (unique), bilingual name/description, \`range\` | hasOne PackageDefault |
+| \`package_defaults\` | \`packageId\` (PK), \`maxUser\`, \`maxTeam\`, \`usersPerTeam\`, \`price\`, \`currency\` | belongsTo Package |
+| \`organization_subscriptions\` | \`organizationId\`, \`packageId\`, \`maxUser\`, \`maxTeam\`, \`price\`, \`startDate\`, \`endDate\`, \`status\` | belongsTo Organization, Package, User (creator/updater) |
+| \`features\` | \`key\` (unique), \`category\`, \`valueType\`, \`resetPeriod\`, \`deletedAt\` (paranoid/soft-delete) | -- |
+| \`feature_limits\` | \`featureId\`, \`packageId\`, \`valueBoolean\` / \`valueInteger\` / \`valueText\` | belongsTo Feature, Package |
+| \`organization_feature_overrides\` | \`organizationId\`, \`subscriptionId\`, \`featureId\`, override value | belongsTo Organization, Subscription, Feature |
+| \`feature_usage\` | \`organizationId\`, \`featureId\`, \`usedCount\`, \`resetPeriod\` | belongsTo Organization, Feature |
+
+Two rules worth remembering here, both referenced directly in the login worked example: **an organization needs an \`ACTIVE\` row in \`organization_subscriptions\` for its users to log in at all** (step 2 of \`AuthLoginUseCase\`), and **feature access = that subscription's \`feature_limits\`, overridden per-organization by \`organization_feature_overrides\` when one exists.**
+
+### Free-trial requests
+
+| Table | Key columns | Relationships |
+| --- | --- | --- |
+| \`request_references\` | \`code\` (unique), \`packageId\`, \`status\`, \`approvedBy\`, \`rejectedBy\`, \`reason\`, \`isConsent\` | hasOne OrganizationRequest |
+| \`organization_requests\` | \`requestReferenceId\` (unique), bilingual name/address, \`industryId\`, contact fields | hasMany UserRequest |
+| \`user_requests\` | \`organizationRequestId\`, bilingual name/position, \`roleId\`, \`email\`, \`phone\` | belongsTo OrganizationRequest, Role |
+| \`trial_feedback\` | \`token\` (unique), \`userId\`, \`organizationId\`, \`subscriptionId\`, \`rating1\`-\`rating4\`, \`requestTrialExtension\`, \`extensionSubscriptionId\` | hasMany TrialFeedbackFeature |
+| \`trial_feedback_features\` | \`trialFeedbackId\`, \`featureId\` | -- |
+
+A \`user_requests\` row only becomes a real row in \`users\` once the parent request is approved (per \`CONTEXT.md\`) -- it's a staging table, not a preview of an account that already exists.
+
+## Conclusion
+
+Three clusters worth keeping mentally separate: identity (\`users\` + \`user_credentials\` + \`user_sessions\` + \`user_mfa\`), entitlement (\`organizations\` + \`packages\` + \`feature_limits\` + overrides, gating both login and feature access), and the free-trial funnel (\`request_references\` through \`user_requests\`, which only graduates into a real user on approval). All three live in the \`secinsight\` database.`,
+        contentTh: `การลงทะเบียน model แยกเป็นสองชุดใน \`src/models/index.ts\`: \`misp\` ผ่าน \`SequelizeConnection.getClient('mispConnection')\` และ \`secinsight\` ผ่าน \`SequelizeConnection.getClient('secinsightConnection')\` migration มีอยู่แค่ฝั่ง \`secinsight\` เท่านั้น (\`src/sequelize/secinsight/migrations/\`, 74 ไฟล์ ณ ตอนที่เขียนนี้) -- ไม่มีโฟลเดอร์ migration ของ \`misp\` เพราะตารางฝั่งนั้นเป็นของแอป MISP เอง ไม่ใช่ของเรา (ดูบทเรียนถัดไป)
+
+### ผู้ใช้และการเข้าสู่ระบบ
+
+| ตาราง | คอลัมน์สำคัญ | ความสัมพันธ์ |
+| --- | --- | --- |
+| \`users\` | \`email\` (unique), \`organizationId\`, \`teamId\` (nullable), \`roleId\`, \`isActive\`, \`mfaEnabled\`, \`failedLoginAttempts\`, \`lockedUntil\`, \`isConsent\` | belongsTo Organization, Team, Role · hasMany UserSession (\`User.ts:161-179\`) |
+| \`user_credentials\` | \`userId\`, \`type\`, \`value\` (bcrypt hash) | belongsTo User |
+| \`user_sessions\` | \`userId\`, \`type\` (\`PRE_ACCESS\` / \`ACCESS\`), \`accessToken\`, \`refreshTokenHash\`, \`isMfaVerified\`, \`accessTokenExpiresAt\`, \`refreshTokenExpiresAt\`, \`revokedAt\` | belongsTo User |
+| \`user_mfa\` | \`userId\` (unique), \`type\` (TOTP), \`secret\`, \`isVerified\`, \`backupCodes\` | belongsTo User |
+| \`user_password_resets\` | \`userId\`, \`token\`, \`expireAt\`, \`deletedAt\` | belongsTo User |
+| \`roles\` | \`id\`, \`name\` | -- |
+| \`api_keys\` | \`keyHash\` (unique), \`keyPrefix\`, \`scopes\`, \`rateLimit\`, \`active\`, \`expiresAt\`, \`createdBy\` | belongsTo User |
+
+ชุดตารางนี้คือสิ่งที่บทเรียน worked example ของ login/MFA แตะโดยตรง -- \`users\` + \`user_credentials\` สำหรับ \`UserService.authenticate\`, \`user_sessions\` สำหรับวงจร \`PRE_ACCESS\` -> \`ACCESS\` ทั้งหมด, \`user_mfa\` สำหรับการตรวจ OTP
+
+### องค์กร แพ็กเกจ และสิทธิ์ใช้งาน
+
+| ตาราง | คอลัมน์สำคัญ | ความสัมพันธ์ |
+| --- | --- | --- |
+| \`organizations\` | \`nameEn\`, \`nameTh\`, \`industryId\`, ที่อยู่, \`phone\` | belongsTo Industry |
+| \`teams\` | \`nameEn\`, \`nameTh\`, \`organizationId\` (unique รวมสามคอลัมน์) | belongsTo Organization |
+| \`industries\` | \`nameEn\`, \`nameTh\` | -- |
+| \`packages\` | \`code\` (unique), ชื่อ/คำอธิบายสองภาษา, \`range\` | hasOne PackageDefault |
+| \`package_defaults\` | \`packageId\` (PK), \`maxUser\`, \`maxTeam\`, \`usersPerTeam\`, \`price\`, \`currency\` | belongsTo Package |
+| \`organization_subscriptions\` | \`organizationId\`, \`packageId\`, \`maxUser\`, \`maxTeam\`, \`price\`, \`startDate\`, \`endDate\`, \`status\` | belongsTo Organization, Package, User (creator/updater) |
+| \`features\` | \`key\` (unique), \`category\`, \`valueType\`, \`resetPeriod\`, \`deletedAt\` (paranoid) | -- |
+| \`feature_limits\` | \`featureId\`, \`packageId\`, \`valueBoolean\` / \`valueInteger\` / \`valueText\` | belongsTo Feature, Package |
+| \`organization_feature_overrides\` | \`organizationId\`, \`subscriptionId\`, \`featureId\`, ค่า override | belongsTo Organization, Subscription, Feature |
+| \`feature_usage\` | \`organizationId\`, \`featureId\`, \`usedCount\`, \`resetPeriod\` | belongsTo Organization, Feature |
+
+สองกฎที่ควรจำไว้ตรงนี้ ทั้งคู่ถูกอ้างถึงตรงๆ ในบทเรียน worked example ของ login: **องค์กรต้องมีแถวสถานะ \`ACTIVE\` ใน \`organization_subscriptions\` ผู้ใช้ถึงจะล็อกอินได้เลย** (ขั้นที่ 2 ของ \`AuthLoginUseCase\`) และ **สิทธิ์ใช้ฟีเจอร์ = \`feature_limits\` ของ subscription นั้น ทับด้วย \`organization_feature_overrides\` ถ้ามี**
+
+### คำขอทดลองใช้ (free trial)
+
+| ตาราง | คอลัมน์สำคัญ | ความสัมพันธ์ |
+| --- | --- | --- |
+| \`request_references\` | \`code\` (unique), \`packageId\`, \`status\`, \`approvedBy\`, \`rejectedBy\`, \`reason\`, \`isConsent\` | hasOne OrganizationRequest |
+| \`organization_requests\` | \`requestReferenceId\` (unique), ชื่อ/ที่อยู่สองภาษา, \`industryId\`, ผู้ติดต่อ | hasMany UserRequest |
+| \`user_requests\` | \`organizationRequestId\`, ชื่อ/ตำแหน่งสองภาษา, \`roleId\`, \`email\`, \`phone\` | belongsTo OrganizationRequest, Role |
+| \`trial_feedback\` | \`token\` (unique), \`userId\`, \`organizationId\`, \`subscriptionId\`, \`rating1\`-\`rating4\`, \`requestTrialExtension\`, \`extensionSubscriptionId\` | hasMany TrialFeedbackFeature |
+| \`trial_feedback_features\` | \`trialFeedbackId\`, \`featureId\` | -- |
+
+แถวใน \`user_requests\` จะกลายเป็นแถวจริงใน \`users\` ก็ต่อเมื่อคำขอหลักได้รับอนุมัติแล้วเท่านั้น (ตาม \`CONTEXT.md\`) -- มันเป็นตาราง staging ไม่ใช่ตัวอย่างล่วงหน้าของ account ที่มีอยู่จริงแล้ว
+
+## สรุป
+
+สามกลุ่มที่ควรแยกไว้ในหัว: identity (\`users\` + \`user_credentials\` + \`user_sessions\` + \`user_mfa\`), สิทธิ์ใช้งาน (\`organizations\` + \`packages\` + \`feature_limits\` + override ซึ่งคุมทั้ง login และการเข้าถึงฟีเจอร์) และ funnel ของ free trial (\`request_references\` ไปจนถึง \`user_requests\` ที่จะกลายเป็น user จริงก็ต่อเมื่อได้รับอนุมัติเท่านั้น) ทั้งสามกลุ่มอยู่ในฐาน \`secinsight\` ทั้งหมด`,
+      },
+      {
+        slug: "database-schema-cve-ai-insight-misp",
+        titleEn: "Database Schema — CVEs, AI Insight & the MISP Tables",
+        titleTh: "Database Schema — CVE, AI Insight และตารางฝั่ง MISP",
+        order: 16,
+        contentEn: `Continuing from the users/organizations tables in the previous lesson -- this one covers the \`secinsight\` database's CVE and AI Insight tables, plus the \`misp\` database tables this app actually reads.
+
+### CVEs, in \`secinsight\`
+
+| Table | Key columns |
+| --- | --- |
+| \`cves\` | \`cveId\` (unique, a string like \`CVE-2024-1234\`), \`baseScore\`, \`baseSeverity\`, \`cvssVector\`, \`kev\`, \`epss\`, trend numbers, \`lastSyncedAt\` |
+| \`cve_affected_configs\` | \`cveId\`, \`vendor\`, \`product\`, \`cpe\`, version range |
+| \`cve_references\`, \`cve_lab_assets\`, \`cve_trend_daily\`, \`kev_profiles\` | supporting CVE data |
+| \`organization_asset_profiles\` | software an organization actually runs (\`vendor\`, \`product\`, \`version\`, \`cpe\`) |
+| \`organization_cve_matches\` | which CVE matches which organization asset, plus remediation status (\`status\`, \`assignedTo\`, \`dueAt\`, \`resolvedAt\`) |
+
+Every CVE-related table joins on \`cveId\` -- the string, not \`cves.id\` (\`sourceKey\`/\`targetKey: 'cveId'\` in \`Cve.ts:186-207\`). This is worth internalizing before writing any query that touches this cluster; reaching for the numeric \`id\` the way you would on most other tables produces a query that silently returns nothing.
+
+### AI Insight & news
+
+| Table | Key columns |
+| --- | --- |
+| \`ai_insight_items\` | \`organizationId\`, \`category\`, \`score\`, \`severity\`, bilingual title/summary/recommendation (full-text indexed) |
+| \`ai_insight_tags\`, \`ai_insight_item_tags\` | tags + the join table |
+| \`organization_news_filters\` | \`organizationId\`, \`tagId\` (referencing a tag that actually lives in the \`misp\` database -- a cross-database reference) |
+
+### The \`misp\` database -- tables this app reads
+
+| Table | Key columns | Relationships |
+| --- | --- | --- |
+| \`events\` | \`info\`, \`date\`, \`threatLevelId\`, \`published\`, \`distribution\`, \`timestamp\` | hasMany Attribute · belongsToMany Tags via \`event_tags\` · belongsTo ThreatLevel |
+| \`attributes\` | \`eventId\`, \`objectId\`, \`category\`, \`type\`, \`value1\`, \`value2\`, \`toIds\`, \`deleted\` | belongsTo Event, Object |
+| \`objects\` | \`name\`, \`metaCategory\` (mapped from the actual column \`meta-category\`), \`eventId\` | hasMany Attribute |
+| \`tags\` / \`event_tags\` | tag name (TLP tags included), color | -- |
+| \`threat_levels\` | \`name\`, \`description\` | -- |
+| \`users\` (as \`MispUser\`) | \`id\`, \`email\` | -- |
+| \`thai_threat_news\` | \`eventId\`, \`attributeId\`, \`content\`, \`link\`, \`status\`, \`publishedAt\` | belongsTo Event, Attribute |
+
+Two things worth flagging: \`thai_threat_news\` is registered in the \`misp\` connection but configured like a normal table (\`timestamps: true\`), not like the true external MISP tables above it (which are \`timestamps: false\` and skip Sequelize's \`underscored\` convention, since every column is mapped by hand to match MISP's own naming). And \`User\` is registered on *both* connections -- there's a \`users\` table in each database, and they are not the same table.
+
+## Conclusion
+
+\`cveId\` (the string) is the real join key across every CVE table, not the numeric \`id\`. The \`misp\`-side tables mirror MISP's own schema exactly (manual column mapping, no timestamps, no underscoring) except for \`thai_threat_news\`, which behaves like a normal \`secinsight\`-style table despite living on the \`misp\` connection -- and \`users\` exists as two genuinely different tables depending on which connection you're looking through.`,
+        contentTh: `ต่อจากตาราง users/organizations ในบทเรียนก่อนหน้า -- บทนี้พูดถึงตาราง CVE และ AI Insight ในฐาน \`secinsight\` บวกกับตารางฝั่ง \`misp\` ที่แอปนี้อ่านจริงๆ
+
+### CVE ในฐาน \`secinsight\`
+
+| ตาราง | คอลัมน์สำคัญ |
+| --- | --- |
+| \`cves\` | \`cveId\` (unique, string เช่น \`CVE-2024-1234\`), \`baseScore\`, \`baseSeverity\`, \`cvssVector\`, \`kev\`, \`epss\`, ตัวเลขเทรนด์, \`lastSyncedAt\` |
+| \`cve_affected_configs\` | \`cveId\`, \`vendor\`, \`product\`, \`cpe\`, ช่วงเวอร์ชัน |
+| \`cve_references\`, \`cve_lab_assets\`, \`cve_trend_daily\`, \`kev_profiles\` | ข้อมูลประกอบของ CVE |
+| \`organization_asset_profiles\` | ซอฟต์แวร์ที่องค์กรใช้จริง (\`vendor\`, \`product\`, \`version\`, \`cpe\`) |
+| \`organization_cve_matches\` | CVE ไหนตรงกับ asset ขององค์กรไหน + สถานะการจัดการ (\`status\`, \`assignedTo\`, \`dueAt\`, \`resolvedAt\`) |
+
+ตารางที่เกี่ยวกับ CVE ทุกตัว join กันด้วย \`cveId\` -- ตัว string ไม่ใช่ \`cves.id\` (\`sourceKey\`/\`targetKey: 'cveId'\` ใน \`Cve.ts:186-207\`) เรื่องนี้ควรจำไว้ก่อนเขียน query ที่แตะกลุ่มนี้ -- ถ้าเผลอใช้ \`id\` แบบตัวเลขเหมือนตารางอื่นๆ ส่วนใหญ่ query จะคืนค่าว่างเปล่าแบบเงียบๆ
+
+### AI Insight และข่าว
+
+| ตาราง | คอลัมน์สำคัญ |
+| --- | --- |
+| \`ai_insight_items\` | \`organizationId\`, \`category\`, \`score\`, \`severity\`, หัวข้อ/สรุป/คำแนะนำสองภาษา (มี fulltext index) |
+| \`ai_insight_tags\`, \`ai_insight_item_tags\` | แท็กและตารางกลาง |
+| \`organization_news_filters\` | \`organizationId\`, \`tagId\` (อ้างถึง tag ที่อยู่ในฐาน \`misp\` จริงๆ -- เป็นการอ้างอิงข้ามฐานข้อมูล) |
+
+### ฐาน \`misp\` -- ตารางที่แอปนี้อ่าน
+
+| ตาราง | คอลัมน์สำคัญ | ความสัมพันธ์ |
+| --- | --- | --- |
+| \`events\` | \`info\`, \`date\`, \`threatLevelId\`, \`published\`, \`distribution\`, \`timestamp\` | hasMany Attribute · belongsToMany Tags ผ่าน \`event_tags\` · belongsTo ThreatLevel |
+| \`attributes\` | \`eventId\`, \`objectId\`, \`category\`, \`type\`, \`value1\`, \`value2\`, \`toIds\`, \`deleted\` | belongsTo Event, Object |
+| \`objects\` | \`name\`, \`metaCategory\` (map จากคอลัมน์จริง \`meta-category\`), \`eventId\` | hasMany Attribute |
+| \`tags\` / \`event_tags\` | ชื่อ tag (รวม TLP), สี | -- |
+| \`threat_levels\` | \`name\`, \`description\` | -- |
+| \`users\` (เรียกว่า \`MispUser\`) | \`id\`, \`email\` | -- |
+| \`thai_threat_news\` | \`eventId\`, \`attributeId\`, \`content\`, \`link\`, \`status\`, \`publishedAt\` | belongsTo Event, Attribute |
+
+สองเรื่องที่ควรรู้ไว้: \`thai_threat_news\` ลงทะเบียนอยู่ใน connection ของ \`misp\` แต่ตั้งค่าเหมือนตารางปกติ (\`timestamps: true\`) ไม่เหมือนตารางฝั่ง MISP จริงๆ ข้างบนที่เป็น \`timestamps: false\` และไม่ใช้ convention \`underscored\` ของ Sequelize เพราะทุกคอลัมน์ต้อง map มือให้ตรงกับชื่อจริงฝั่ง MISP และ \`User\` ลงทะเบียนอยู่ *ทั้งสอง* connection -- มีตาราง \`users\` อยู่ในแต่ละฐานข้อมูล และมันไม่ใช่ตารางเดียวกัน
+
+## สรุป
+
+\`cveId\` (แบบ string) คือ join key จริงของทุกตาราง CVE ไม่ใช่ \`id\` แบบตัวเลข ตารางฝั่ง \`misp\` เลียนแบบ schema จริงของ MISP เป๊ะๆ (map คอลัมน์มือ ไม่มี timestamp ไม่ underscore) ยกเว้น \`thai_threat_news\` ที่ทำตัวเหมือนตารางสไตล์ \`secinsight\` ปกติ แม้จะอยู่ใน connection ของ \`misp\` และ \`users\` มีอยู่เป็นสองตารางที่ต่างกันจริงๆ ขึ้นอยู่กับว่ามองผ่าน connection ไหน`,
+      },
+      {
+        slug: "misp-integration",
+        titleEn: "MISP Integration",
+        titleTh: "การเชื่อมต่อกับ MISP",
+        order: 17,
+        contentEn: `MISP is an external threat-intelligence platform with its own database and its own REST API. SecInsight does not own MISP's data (\`CONTEXT.md:314-327\`) -- it's a consumer, and the integration is built around one firm rule.
+
+### The rule: read from the DB, write through the API
+
+| Task | Channel | Where in the code |
+| --- | --- | --- |
+| Read (event, attribute, tag, threat level) | Sequelize straight into the \`misp\` MySQL database via \`mispConnection\` | \`src/models/index.ts\`, \`EventRepository\`, \`AttributeRepository\`, \`TagRepository\`, \`ObjectRepository\` |
+| Write (create/edit/delete an event, attribute, tag) | MISP's REST API via \`mispAdminApi\` | \`src/services/EventService.ts:250-342\` |
+
+There is no repository method for writing MISP data -- that's intentional, not an oversight (see the pitfalls lesson). Reads go straight to MySQL because it's fast and lets SecInsight join MISP data against its own tables (like \`organization_news_filters.tagId\`); writes go through the API because MISP owns validation, side effects, and its own audit trail for anything that changes its data.
+
+### The API connection (\`src/helper/axiosInstance.ts:175-187\`)
+
+- Base URL comes from \`MISP_API_URL\`.
+- Two separate keys: \`MISP_API_KEY\` (used by \`mispReadOnlyApi\`) and \`MISP_ADMIN_API_KEY\` (used by \`mispAdminApi\`, the one \`EventService\` actually writes through).
+- The key goes in an \`Authorization\` header with no \`Bearer\` prefix -- just the raw key.
+- If either key is missing, the app refuses to start.
+- Errors coming back from MISP are converted to \`UpstreamError\` in an axios interceptor, preserving MISP's original HTTP status rather than always returning a generic one.
+
+Example REST endpoints actually called: \`/events/addTag/{eventId}/{tagId}/local:0\`, \`/attributes/add/{eventId}\`, \`/events/delete/{id}\`.
+
+The DB connection itself reuses the same host/user as the \`secinsight\` database, pointed at a different database name: \`MYSQL_HOST\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`, \`MYSQL_MISP_NAME\`.
+
+### Every other external client in \`axiosInstance.ts\`
+
+| Client | Purpose | Auth |
+| --- | --- | --- |
+| \`OpenRouterApi\` | LLM summarization/analysis for AI Insight | \`Bearer\`, retries 3x |
+| \`VulnerabilityRegisterApi\` | CVE catalog | \`apiKey\` header, built-in rate limiting |
+| \`FirstEpssApi\` / \`CisaKevApi\` / \`CirclCveApi\` | EPSS scores / KEV list / CVE details | none, retries 3x |
+| \`CveCrowdApi\` | CVE trend data | \`Bearer\` |
+| \`SpgVulnerabilityApi\` | CVE-related labs and repos | HMAC-signs every request |
+| \`SocSecinsightApi\` | organization SOC dashboard | \`X-Api-Key\` |
+| \`BlueskyApi\` / \`NewsFeedApi\` | threat news feeds | JWT session / none |
+| \`RecaptchaApi\` | reCAPTCHA verification | API key |
+
+## Conclusion
+
+MISP is the one external system with a split integration: reads bypass the API entirely and go straight to MySQL for speed and cross-database joins, while every write goes through \`mispAdminApi\` so MISP retains control over validation and its own audit trail. Every other external service in this codebase is a normal REST client through \`axiosInstance.ts\`, no split -- MISP is the exception, not the pattern.`,
+        contentTh: `MISP คือแพลตฟอร์ม threat intelligence ภายนอก มีฐานข้อมูลและ REST API เป็นของตัวเอง SecInsight ไม่ได้เป็นเจ้าของข้อมูล MISP (\`CONTEXT.md:314-327\`) -- มันเป็นแค่ผู้บริโภคข้อมูล และการเชื่อมต่อทั้งหมดถูกออกแบบรอบกติกาเดียว
+
+### กติกาหลัก: อ่านจาก DB เขียนผ่าน API
+
+| งาน | ช่องทาง | ที่อยู่ในโค้ด |
+| --- | --- | --- |
+| อ่าน (event, attribute, tag, threat level) | Sequelize ตรงเข้า MySQL ฐาน \`misp\` ผ่าน \`mispConnection\` | \`src/models/index.ts\`, \`EventRepository\`, \`AttributeRepository\`, \`TagRepository\`, \`ObjectRepository\` |
+| เขียน (สร้าง/แก้/ลบ event, attribute, ติด tag) | MISP REST API ผ่าน \`mispAdminApi\` | \`src/services/EventService.ts:250-342\` |
+
+ไม่มี repository method สำหรับเขียนข้อมูล MISP -- นี่เป็นความตั้งใจ ไม่ใช่ความบกพร่อง (ดูบทเรียนเรื่องจุดที่หลงทางบ่อย) การอ่านไปตรงที่ MySQL เพราะเร็วและทำให้ SecInsight join ข้อมูล MISP กับตารางของตัวเองได้ (เช่น \`organization_news_filters.tagId\`) ส่วนการเขียนต้องผ่าน API เพราะ MISP เป็นเจ้าของการ validate, side effect และ audit trail ของตัวเองสำหรับทุกอย่างที่แก้ข้อมูลมัน
+
+### การเชื่อมต่อ API (\`src/helper/axiosInstance.ts:175-187\`)
+
+- base URL มาจาก \`MISP_API_URL\`
+- มี key สองตัวแยกกัน: \`MISP_API_KEY\` (ใช้โดย \`mispReadOnlyApi\`) และ \`MISP_ADMIN_API_KEY\` (ใช้โดย \`mispAdminApi\` ตัวที่ \`EventService\` ใช้เขียนจริง)
+- key ถูกส่งใน header \`Authorization\` โดยไม่มีคำว่า \`Bearer\` นำหน้า -- ส่ง key ดิบๆ ไปเลย
+- ถ้าขาด key ตัวใดตัวหนึ่ง แอปจะปฏิเสธการเริ่มทำงาน
+- error ที่ตอบกลับมาจาก MISP จะถูกแปลงเป็น \`UpstreamError\` ใน axios interceptor โดยคง status code เดิมของ MISP ไว้ ไม่ใช่ตอบ status กลางๆ เสมอ
+
+ตัวอย่าง REST endpoint ที่ถูกเรียกจริง: \`/events/addTag/{eventId}/{tagId}/local:0\`, \`/attributes/add/{eventId}\`, \`/events/delete/{id}\`
+
+การเชื่อมต่อ DB ใช้ host/user ชุดเดียวกับฐาน \`secinsight\` แต่ชี้ไปที่ชื่อฐานข้อมูลคนละตัว: \`MYSQL_HOST\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`, \`MYSQL_MISP_NAME\`
+
+### บริการภายนอกอื่นใน \`axiosInstance.ts\`
+
+| Client | ใช้ทำอะไร | Auth |
+| --- | --- | --- |
+| \`OpenRouterApi\` | LLM สรุป/วิเคราะห์ AI Insight | \`Bearer\`, retry 3 ครั้ง |
+| \`VulnerabilityRegisterApi\` | ดึงแค็ตตาล็อก CVE | \`apiKey\` header, จำกัดความถี่ในตัว |
+| \`FirstEpssApi\` / \`CisaKevApi\` / \`CirclCveApi\` | คะแนน EPSS / รายการ KEV / รายละเอียด CVE | ไม่มี, retry 3 ครั้ง |
+| \`CveCrowdApi\` | ข้อมูลเทรนด์ CVE | \`Bearer\` |
+| \`SpgVulnerabilityApi\` | lab และ repo ที่เกี่ยวกับ CVE | HMAC ลงลายเซ็นทุก request |
+| \`SocSecinsightApi\` | แดชบอร์ด SOC ขององค์กร | \`X-Api-Key\` |
+| \`BlueskyApi\` / \`NewsFeedApi\` | ดึงข่าวภัยคุกคาม | JWT session / ไม่มี |
+| \`RecaptchaApi\` | ตรวจ reCAPTCHA | API key |
+
+## สรุป
+
+MISP เป็นระบบภายนอกตัวเดียวที่มีการเชื่อมต่อแบบแยกสองทาง: การอ่านข้ามผ่าน API ไปตรง MySQL เลยเพื่อความเร็วและ join ข้ามฐานข้อมูลได้ ส่วนการเขียนทุกอย่างต้องผ่าน \`mispAdminApi\` เพื่อให้ MISP คุม validation และ audit trail ของตัวเอง บริการภายนอกอื่นๆ ในโค้ดนี้เป็น REST client ปกติผ่าน \`axiosInstance.ts\` ไม่มีการแยกทาง -- MISP คือข้อยกเว้น ไม่ใช่รูปแบบมาตรฐาน`,
+      },
+      {
+        slug: "testing-practices",
+        titleEn: "Testing Practices",
+        titleTh: "แนวทางการเทส",
+        order: 18,
+        contentEn: `Two test suites, run separately, with a different mocking boundary each.
+
+| Suite | Command | Config | What's mocked |
+| --- | --- | --- | --- |
+| Unit | \`bun run test\` | \`jest.config.cjs\` (skips \`tests/integration/\`) | Service mocked in UseCase tests, Repository mocked in Service tests |
+| Integration | \`bun run test:integration\` | \`jest.integration.config.cjs\` | Mocked only at the UseCase boundary -- route, middleware, Zod, and the error handler all run for real, but nothing touches a live database |
+| Both | \`bun run test:all\` / \`bun run test:ci\` | -- | -- |
+
+\`bun run test\` passing on its own isn't enough to open a PR -- \`test:all\` is the actual bar, since a unit-test-only green run says nothing about whether the HTTP wiring (routes, middleware, error envelope) still works.
+
+### Project-wide mocking setup
+
+- \`jest.config.cjs\` maps \`~/utils/Logger\`, \`jose\`, and \`bcrypt\` to files under \`tests/mocks/*\`.
+- \`tests/setup.ts\` fills in fake env values with \`??=\` so the app can boot in tests without any real secrets.
+- \`tests/integration/setup.ts\`:
+  - stubs \`~/models\` entirely, so nothing tries to connect to a database
+  - automocks the whole \`~/usecases\` barrel
+  - makes \`authMiddleware\` pass by default as if the caller were a SYSTEM_ADMIN
+- \`tests/integration/helpers/authHarness.ts\` provides \`signTestToken()\`, \`asRole('<ROLE>')\`, \`INVALID_TOKEN\`, \`API_KEY\`, \`cronToken()\` -- there's no real login flow anywhere in the test suite, tokens are just signed directly.
+- \`tests/mocks/factories.ts\` is a barrel re-exporting 22 files under \`tests/mocks/factories/\`.
+
+### Integration test example -- \`tests/integration/request-trial.routes.test.ts\`
+
+This test targets \`POST /api/v1/request-trial\`, a public route with no auth. The comment at the top of the real file explains something worth internalizing: \`RequestTrialController\` imports its usecase from a direct subpath (\`~/usecases/request-trial/CreateRequestTrialUseCase\`, default export) rather than through the \`~/usecases\` barrel that \`tests/integration/setup.ts\` automocks -- so the global automock doesn't cover it, and the test has to mock that exact subpath itself.
+
+\`\`\`ts
+const mockExecute = jest.fn();
+jest.mock('~/usecases/request-trial/CreateRequestTrialUseCase', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({ execute: mockExecute })),
+}));
+
+import app from '~/app';
+
+describe('POST /api/v1/request-trial - Integration Tests (public)', () => {
+  beforeEach(() => {
+    mockExecute.mockReset();
+  });
+
+  describe('Success Path', () => {
+    it('should create the trial request and return 201 with the success envelope', async () => {
+      expect.assertions(4);
+      mockExecute.mockResolvedValue({ trackingCode: 'TRIAL-0001' });
+
+      const response = await request(app)
+        .post('/api/v1/request-trial')
+        .send(validBody);
+
+      expect(response.status).toBe(201);
+      expect(response.body.status).toBe('success');
+      expect(response.body.result.data.trackingCode).toBe('TRIAL-0001');
+      expect(mockExecute).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Business Logic', () => {
+    it('should map a usecase ConflictError to a 409 error envelope', async () => {
+      expect.assertions(3);
+      const { ConflictError } = await import('~/errors/AppError');
+      mockExecute.mockRejectedValue(
+        new ConflictError('Trial request failed', {
+          message: 'Email already requested a trial',
+        })
+      );
+
+      const response = await request(app)
+        .post('/api/v1/request-trial')
+        .send(validBody);
+
+      expect(response.status).toBe(409);
+      expect(response.body.status).toBe('error');
+      expect(response.body.result.message).toBe('Trial request failed');
+    });
+  });
+});
+\`\`\`
+
+Note the pattern: mock the usecase's \`execute\` to resolve or reject, then assert on the real HTTP response -- status code, envelope shape, message. The route, Zod validation, and the error-handler middleware are all exercised for real in this one test file.
+
+### Unit test example -- \`tests/unit/usecases/GetUserProfileUseCase.test.ts\` (abridged)
+
+\`\`\`ts
+describe('GetUserProfileUseCase', () => {
+  let useCase: GetUserProfileUseCase;
+  let mockUserService: ReturnType<typeof createMockUserService>;
+
+  beforeEach(() => {
+    mockUserService = createMockUserService();
+    useCase = new GetUserProfileUseCase({ UserService: mockUserService });
+    jest.clearAllMocks();
+  });
+
+  it('should throw NotFoundError when user is not found', async () => {
+    mockUserService.findById.mockResolvedValue(null);
+
+    await expect(useCase.execute({ actorId: 999 })).rejects.toThrow(
+      new NotFoundError('Get user profile failed', { message: 'User not found' })
+    );
+  });
+});
+\`\`\`
+
+This file predates the current standard -- it doesn't use \`expect.assertions(n)\`, which newer tests do. Useful for the general shape, not as a model of the current convention.
+
+## Conclusion
+
+Two suites, two boundaries: unit tests mock one layer down (Service in UseCase tests, Repository in Service tests), integration tests mock only at the UseCase edge and run everything else -- route, middleware, validation, error handling -- for real, without a live database. \`test:all\` (not \`test\`) is the actual gate before opening a PR.`,
+        contentTh: `มีเทสสองชุด รันแยกกัน แต่ละชุด mock ที่ระดับต่างกัน
+
+| ชุด | คำสั่ง | config | mock อะไร |
+| --- | --- | --- | --- |
+| Unit | \`bun run test\` | \`jest.config.cjs\` (ข้าม \`tests/integration/\`) | Service ถูก mock ใน UseCase test, Repository ถูก mock ใน Service test |
+| Integration | \`bun run test:integration\` | \`jest.integration.config.cjs\` | mock แค่ที่ขอบ UseCase ส่วน route, middleware, Zod, error handler รันจริงหมด แต่ไม่ต่อฐานข้อมูลจริง |
+| ทั้งคู่ | \`bun run test:all\` / \`bun run test:ci\` | -- | -- |
+
+\`bun run test\` เขียวอย่างเดียวยังไม่พอที่จะเปิด PR -- \`test:all\` คือมาตรฐานจริง เพราะ unit test เขียวอย่างเดียวไม่ได้บอกอะไรเลยว่า HTTP wiring (route, middleware, error envelope) ยังทำงานถูกหรือเปล่า
+
+### การตั้ง mock ระดับโปรเจกต์
+
+- \`jest.config.cjs\` map \`~/utils/Logger\`, \`jose\`, \`bcrypt\` ไปที่ไฟล์ใน \`tests/mocks/*\`
+- \`tests/setup.ts\` ใส่ค่า env ปลอมด้วย \`??=\` ให้แอปโหลดได้ในเทสโดยไม่ต้องมี secret จริง
+- \`tests/integration/setup.ts\`:
+  - stub \`~/models\` ทั้งหมด ไม่มีอะไรพยายามต่อฐานข้อมูล
+  - automock ทั้ง barrel \`~/usecases\`
+  - ทำให้ \`authMiddleware\` ผ่านโดยค่าเริ่มต้นเหมือนผู้เรียกเป็น SYSTEM_ADMIN
+- \`tests/integration/helpers/authHarness.ts\` มี \`signTestToken()\`, \`asRole('<ROLE>')\`, \`INVALID_TOKEN\`, \`API_KEY\`, \`cronToken()\` -- ไม่มีการล็อกอินจริงเลยในชุดเทส token ถูก sign ตรงๆ
+- \`tests/mocks/factories.ts\` เป็น barrel รวม 22 ไฟล์ใน \`tests/mocks/factories/\`
+
+### ตัวอย่าง integration test -- \`tests/integration/request-trial.routes.test.ts\`
+
+เทสนี้เล็ง \`POST /api/v1/request-trial\` เส้นสาธารณะที่ไม่มี auth คอมเมนต์ต้นไฟล์จริงอธิบายเรื่องที่ควรจำไว้: \`RequestTrialController\` import usecase จาก subpath ตรง (\`~/usecases/request-trial/CreateRequestTrialUseCase\`, default export) ไม่ผ่าน barrel \`~/usecases\` ที่ \`tests/integration/setup.ts\` automock ไว้ -- ดังนั้น automock ระดับ global ไม่ครอบมัน เทสต้อง mock subpath นั้นตรงๆ เอง
+
+\`\`\`ts
+const mockExecute = jest.fn();
+jest.mock('~/usecases/request-trial/CreateRequestTrialUseCase', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({ execute: mockExecute })),
+}));
+
+import app from '~/app';
+
+describe('POST /api/v1/request-trial - Integration Tests (public)', () => {
+  beforeEach(() => {
+    mockExecute.mockReset();
+  });
+
+  describe('Success Path', () => {
+    it('should create the trial request and return 201 with the success envelope', async () => {
+      expect.assertions(4);
+      mockExecute.mockResolvedValue({ trackingCode: 'TRIAL-0001' });
+
+      const response = await request(app)
+        .post('/api/v1/request-trial')
+        .send(validBody);
+
+      expect(response.status).toBe(201);
+      expect(response.body.status).toBe('success');
+      expect(response.body.result.data.trackingCode).toBe('TRIAL-0001');
+      expect(mockExecute).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Business Logic', () => {
+    it('should map a usecase ConflictError to a 409 error envelope', async () => {
+      expect.assertions(3);
+      const { ConflictError } = await import('~/errors/AppError');
+      mockExecute.mockRejectedValue(
+        new ConflictError('Trial request failed', {
+          message: 'Email already requested a trial',
+        })
+      );
+
+      const response = await request(app)
+        .post('/api/v1/request-trial')
+        .send(validBody);
+
+      expect(response.status).toBe(409);
+      expect(response.body.status).toBe('error');
+      expect(response.body.result.message).toBe('Trial request failed');
+    });
+  });
+});
+\`\`\`
+
+รูปแบบที่ควรสังเกต: mock \`execute\` ของ usecase ให้ resolve หรือ reject แล้ว assert กับ HTTP response จริง -- status code, รูปร่าง envelope, message ทั้ง route, Zod validation, และ error-handler middleware ล้วนถูกใช้งานจริงในไฟล์เทสไฟล์เดียวนี้
+
+### ตัวอย่าง unit test -- \`tests/unit/usecases/GetUserProfileUseCase.test.ts\` (ย่อ)
+
+\`\`\`ts
+describe('GetUserProfileUseCase', () => {
+  let useCase: GetUserProfileUseCase;
+  let mockUserService: ReturnType<typeof createMockUserService>;
+
+  beforeEach(() => {
+    mockUserService = createMockUserService();
+    useCase = new GetUserProfileUseCase({ UserService: mockUserService });
+    jest.clearAllMocks();
+  });
+
+  it('should throw NotFoundError when user is not found', async () => {
+    mockUserService.findById.mockResolvedValue(null);
+
+    await expect(useCase.execute({ actorId: 999 })).rejects.toThrow(
+      new NotFoundError('Get user profile failed', { message: 'User not found' })
+    );
+  });
+});
+\`\`\`
+
+ไฟล์นี้เก่ากว่ากฎปัจจุบัน -- ไม่มี \`expect.assertions(n)\` ซึ่งเทสรุ่นใหม่มี ใช้ดูโครงสร้างทั่วไปได้ แต่ไม่ใช่ตัวอย่างของมาตรฐานปัจจุบัน
+
+## สรุป
+
+สองชุด สองขอบเขต: unit test mock ลงไปหนึ่งชั้น (Service ใน UseCase test, Repository ใน Service test), integration test mock แค่ที่ขอบ UseCase แล้วรันทุกอย่างที่เหลือจริง -- route, middleware, validation, error handling -- โดยไม่ต่อฐานข้อมูลจริง \`test:all\` (ไม่ใช่ \`test\`) คือด่านจริงก่อนเปิด PR`,
+      },
+      {
+        slug: "observability-health-checks",
+        titleEn: "Observability & Health Checks",
+        titleTh: "Observability และ Health Check",
+        order: 19,
+        contentEn: `### Logger
+
+Winston, wrapped in a \`Logger\` class (\`src/utils/Logger.ts\`), used as \`Logger.child({ component: 'X' })\` per module -- so every log line is tagged with which component emitted it. Log levels are winston's standard syslog set (\`error\`, \`warning\`, \`info\`, \`debug\`, ...).
+
+| Environment | Format | Minimum level |
+| --- | --- | --- |
+| \`NODE_ENV=development\` | Human-readable, colorized: \`[HH:mm:ss] LEVEL: [Component] Message\` | \`debug\` |
+| everything else | Single-line JSON with a \`severity\` field, in the shape Google Cloud Logging expects | \`info\` |
+
+Output goes to stdout only -- there's no direct shipping to a log aggregator. Cloud Run picks stdout up into Cloud Logging on its own.
+
+### Per-request tracing (\`src/middleware/requestLogger.ts\`)
+
+- Reads \`x-cloud-trace-context\` if present, or generates a new trace id.
+- Reads \`x-request-id\` if present, or generates a new one.
+- Stores both in \`AsyncLocalStorage\`, so every log line emitted anywhere during that request automatically carries the same trace id -- no need to thread it through function signatures manually.
+- Logs \`Request received\` on the way in, and \`Request finished\` (with status code and elapsed time) on the way out.
+
+### Error handling (\`src/middleware/errorHandler.ts\`)
+
+The single place that shapes an error HTTP response:
+- A Zod error or an \`AppError\` subclass logs at \`warn\` level.
+- A Sequelize error or anything unexpected logs at \`error\` level, and the client gets a generic message in production (never the raw error).
+
+### Health checks
+
+Two separate surfaces, easy to mix up:
+- \`GET /health\` (\`src/app.ts:39\`) -- lives outside the \`/api\` prefix, used by the Docker \`HEALTHCHECK\` instruction.
+- \`GET /api/health\` and \`GET /api/health/detailed\` (\`src/routes/health.routes.ts\`) -- the app-level health endpoints.
+
+### Monitoring / alerting
+
+Nothing found in the codebase -- no Sentry, no equivalent. If something exists, it's configured directly in Google Cloud outside this repo; ask whoever owns infra rather than assuming it's absent just because it's not in the code.
+
+## Conclusion
+
+Logging is component-tagged winston with an environment-dependent format (readable in dev, GCP-shaped JSON everywhere else), tied together per-request by an \`AsyncLocalStorage\`-backed trace id that needs no manual threading. There are two health endpoints, not one, serving two different consumers (Docker vs. the app layer) -- and no in-repo evidence of alerting, which is a known gap to confirm with infra rather than a documented absence.`,
+        contentTh: `### Logger
+
+ใช้ Winston ห่อด้วยคลาส \`Logger\` (\`src/utils/Logger.ts\`) เรียกใช้แบบ \`Logger.child({ component: 'X' })\` ต่อโมดูล -- ทุกบรรทัด log จึงติดแท็กว่ามาจาก component ไหน ระดับ log เป็นชุด syslog มาตรฐานของ winston (\`error\`, \`warning\`, \`info\`, \`debug\`, ...)
+
+| สภาพแวดล้อม | รูปแบบ | ระดับต่ำสุด |
+| --- | --- | --- |
+| \`NODE_ENV=development\` | ข้อความสีอ่านง่าย: \`[HH:mm:ss] LEVEL: [Component] Message\` | \`debug\` |
+| อื่นๆ ทั้งหมด | JSON บรรทัดเดียว มีฟิลด์ \`severity\` ตามรูปแบบที่ Google Cloud Logging ต้องการ | \`info\` |
+
+ส่งไปที่ stdout อย่างเดียว -- ไม่มีการส่งตรงไปยัง log aggregator ใดๆ Cloud Run จะดึง stdout เข้า Cloud Logging เอง
+
+### การผูก log ต่อ request (\`src/middleware/requestLogger.ts\`)
+
+- อ่าน \`x-cloud-trace-context\` ถ้ามี หรือสร้าง trace id ใหม่
+- อ่าน \`x-request-id\` ถ้ามี หรือสร้างใหม่
+- เก็บทั้งคู่ไว้ใน \`AsyncLocalStorage\` ทุกบรรทัด log ที่เกิดขึ้นระหว่าง request เดียวกันจะมี trace id เดียวกันโดยอัตโนมัติ -- ไม่ต้องส่งต่อผ่าน function signature เอง
+
+- log \`Request received\` ตอนเข้า และ \`Request finished\` (พร้อม status code และเวลาที่ใช้) ตอนออก
+
+### การจัดการ error (\`src/middleware/errorHandler.ts\`)
+
+ที่เดียวที่จัดรูป error response:
+- Zod error หรือ \`AppError\` subclass → log ระดับ \`warn\`
+- Sequelize error หรือ error ที่ไม่คาดคิด → log ระดับ \`error\` และตอบ client ด้วยข้อความกลางๆ ใน production (ไม่ใช่ error ดิบ)
+
+### Health check
+
+มีสองจุดแยกกัน สับสนได้ง่าย:
+- \`GET /health\` (\`src/app.ts:39\`) -- อยู่นอก prefix \`/api\` ใช้กับคำสั่ง \`HEALTHCHECK\` ของ Docker
+- \`GET /api/health\` และ \`GET /api/health/detailed\` (\`src/routes/health.routes.ts\`) -- health endpoint ระดับแอป
+
+### Monitoring / alerting
+
+ไม่พบในโค้ด -- ไม่มี Sentry หรือของเทียบเท่า ถ้ามีจริง คงตั้งไว้ฝั่ง Google Cloud โดยตรงนอกเรปนี้ ควรถามคนดูแล infra แทนที่จะสรุปว่าไม่มีเพราะไม่เห็นในโค้ด
+
+## สรุป
+
+Logging เป็น winston ที่แท็กตาม component รูปแบบขึ้นกับ environment (อ่านง่ายตอน dev, JSON ตามฟอร์แมต GCP ที่อื่น) ผูกกันต่อ request ด้วย trace id ที่เก็บใน \`AsyncLocalStorage\` โดยไม่ต้องส่งต่อมือ มี health endpoint สองจุด ไม่ใช่จุดเดียว รับใช้ผู้บริโภคคนละกลุ่ม (Docker กับระดับแอป) -- และไม่มีหลักฐานเรื่อง alerting ในเรป ซึ่งเป็นช่องว่างที่ต้องถาม infra ยืนยัน ไม่ใช่ข้อสรุปที่บันทึกไว้แล้ว`,
+      },
+      {
+        slug: "deployment-and-ci",
+        titleEn: "Deployment & CI",
+        titleTh: "การ Deploy และ CI",
+        order: 20,
+        contentEn: `### Where it deploys
+
+Google Cloud Run, with images stored in Artifact Registry (\`asia-southeast1\`). Cloud Build handles the pipeline -- \`cloudbuild.yaml\` for production, \`cloudbuild.staging.yaml\` for staging -- in three steps: \`docker build\` -> \`docker push\` -> \`gcloud run deploy\`.
+
+### Dockerfile -- two stages
+
+- \`builder\`: \`bun install --frozen-lockfile\`, then \`bun run build\`.
+- \`production\`: installs only the dependencies actually needed at runtime, runs as a non-root user, listens on port 8080, and its \`HEALTHCHECK\` points at \`/health\` (the one outside \`/api\`, from the observability lesson).
+
+**Not found anywhere in Cloud Build:** a migration step during deploy. Whether migrations run manually or somewhere else entirely is unconfirmed -- worth asking whoever owns the deploy pipeline rather than assuming either answer.
+
+### CI (\`.github/workflows/\`)
+
+| File | Does | Runs on |
+| --- | --- | --- |
+| \`lint-actions.yml\` | \`bun run typecheck\` + \`bun run lint\` | PR opened/updated |
+| \`pr-title-check.yml\` | validates the PR title against \`commitlint-pr.config.mjs\` | PR opened/edited |
+| \`sonarqube.yml\` | build + SonarQube scan + quality gate | push to master/develop/feature/hotfix/releases, and PRs |
+| \`backup-repository.yaml\` | backs the repo up to GCS | daily at 17:00 UTC |
+
+**Not found:** any workflow that runs \`bun run test\`. Tests exist and are enforced as a local pre-open-PR discipline (\`test:all\`), but nothing in CI currently re-runs them.
+
+### Git hooks (\`.husky/\`)
+
+- \`pre-commit\` -> \`lint-staged\` (eslint + prettier)
+- \`commit-msg\` -> commitlint, Conventional Commits format
+- \`pre-push\` -> pulls from the tracked remote and merges \`develop\` in if the branch has fallen behind
+- \`post-merge\` / \`post-rewrite\` -> intended to run \`bun install\`, run migrations, and \`bun env:dev\` when relevant files change -- see the pitfalls lesson for why this doesn't actually work as written
+- \`pre-rebase\` -> blocks rebasing \`main\` or \`develop\`
+
+### Environment variables
+
+Stored in 1Password; the files committed to the repo are just templates referencing \`op://...\` paths, never real values: \`1pw.development.env\`, \`1pw.staging.env\`, \`1pw.production.env\`. A local \`.env\` is generated with \`bun run env:dev\` (= \`op inject -i 1pw.development.env -o .env --force\`), which requires the 1Password CLI to be installed and authenticated.
+
+Variable groups (names only, not values):
+
+| Group | Examples |
+| --- | --- |
+| DB | \`MYSQL_HOST\`, \`MYSQL_PORT\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`, \`MYSQL_SECINSIGHT_NAME\`, \`MYSQL_MISP_NAME\` |
+| Auth | \`JWT_SECRET\`, \`JWT_ACCESS_EXPIRES_IN\`, \`AUTH_MAX_ATTEMPTS\`, \`AUTH_WINDOW_MINUTES\`, \`RESET_PASSWORD_TOKEN_EXPIRY\` |
+| MISP | \`MISP_API_URL\`, \`MISP_API_KEY\`, \`MISP_ADMIN_API_KEY\` |
+| Cron | \`CRON_OIDC_AUDIENCE\`, \`CRON_INVOKER_SERVICE_ACCOUNT\`, \`GOOGLE_OIDC_JWKS_URL\` |
+| External services | \`OPENROUTER_*\`, \`BLUESKY_*\`, \`CISA_KEV_*\`, \`FIRST_EPSS_*\`, \`CIRCL_CVE_*\`, \`VULNERABILITY_REGISTER_*\`, \`SPG_VULNERABILITY_*\`, \`SOC_SECINSIGHT_*\`, \`MAILGUN_*\`, \`RECAPTCHA_*\` |
+| Rate limiting | \`API_MAX_REQUESTS\`, \`PUBLIC_MAX_REQUESTS\`, \`FORGOT_PASSWORD_MAX_ATTEMPTS\`, plus a \`*_WINDOW_MINUTES\` counterpart for each |
+| App | \`NODE_ENV\`, \`PORT\`, \`CORS_ORIGIN\`, \`BASE_URL\`, \`TZ\`, \`APP_VERSION\` |
+
+## Conclusion
+
+Deploy is Cloud Run via a two-stage Docker build and a three-step Cloud Build pipeline, with no visible migration step -- confirm that separately before assuming it's handled. CI runs lint, typecheck, PR-title validation, SonarQube, and a daily backup, but notably never runs the test suite -- \`test:all\` passing locally is currently the only gate that exists for tests. All real secrets live in 1Password, never in the repo.`,
+        contentTh: `### Deploy ที่ไหน
+
+Google Cloud Run image เก็บใน Artifact Registry (\`asia-southeast1\`) Cloud Build เป็นตัวจัดการ pipeline -- \`cloudbuild.yaml\` สำหรับ production, \`cloudbuild.staging.yaml\` สำหรับ staging -- สามขั้นตอน: \`docker build\` -> \`docker push\` -> \`gcloud run deploy\`
+
+### Dockerfile -- สองขั้น
+
+- \`builder\`: \`bun install --frozen-lockfile\` แล้ว \`bun run build\`
+- \`production\`: ติดตั้งเฉพาะ dependency ที่ใช้จริงตอน runtime รันด้วย user ที่ไม่ใช่ root ฟัง port 8080 และ \`HEALTHCHECK\` ชี้ไปที่ \`/health\` (ตัวที่อยู่นอก \`/api\` จากบทเรียน observability)
+
+**ไม่พบใน Cloud Build เลย:** ขั้นตอนรัน migration ตอน deploy ยังไม่ยืนยันว่ารันเองมือหรือรันที่อื่น -- ควรถามคนดูแล deploy pipeline แทนที่จะสรุปเอาเอง
+
+### CI (\`.github/workflows/\`)
+
+| ไฟล์ | ทำอะไร | ทำงานเมื่อ |
+| --- | --- | --- |
+| \`lint-actions.yml\` | \`bun run typecheck\` + \`bun run lint\` | เปิด/อัปเดต PR |
+| \`pr-title-check.yml\` | ตรวจชื่อ PR ด้วย \`commitlint-pr.config.mjs\` | เปิด/แก้ PR |
+| \`sonarqube.yml\` | build + SonarQube scan + quality gate | push เข้า master/develop/feature/hotfix/releases และ PR |
+| \`backup-repository.yaml\` | สำรอง repo ขึ้น GCS | ทุกวัน 17:00 UTC |
+
+**ไม่พบ:** workflow ที่รัน \`bun run test\` เทสมีอยู่จริงและถูกบังคับเป็นวินัยระดับ local ก่อนเปิด PR (\`test:all\`) แต่ไม่มีอะไรใน CI รันเทสซ้ำอีกที
+
+### Git hooks (\`.husky/\`)
+
+- \`pre-commit\` -> \`lint-staged\` (eslint + prettier)
+- \`commit-msg\` -> commitlint แบบ Conventional Commits
+- \`pre-push\` -> pull ตาม remote และ merge \`develop\` เข้ามาถ้าตามไม่ทัน
+- \`post-merge\` / \`post-rewrite\` -> ตั้งใจจะรัน \`bun install\`, รัน migration, \`bun env:dev\` เมื่อไฟล์ที่เกี่ยวข้องเปลี่ยน -- ดูบทเรียนจุดที่หลงทางบ่อยว่าทำไมมันไม่ทำงานจริงตามที่เขียนไว้
+- \`pre-rebase\` -> ห้าม rebase \`main\` หรือ \`develop\`
+
+### Environment variables
+
+เก็บใน 1Password ไฟล์ในเรปเป็นแค่ template อ้างถึง \`op://...\` ไม่มีค่าจริงเลย: \`1pw.development.env\`, \`1pw.staging.env\`, \`1pw.production.env\` สร้าง \`.env\` ในเครื่องด้วย \`bun run env:dev\` (= \`op inject -i 1pw.development.env -o .env --force\`) ต้องมี 1Password CLI ติดตั้งและล็อกอินไว้
+
+กลุ่มตัวแปร (ชื่อเท่านั้น ไม่ใช่ค่า):
+
+| กลุ่ม | ตัวอย่าง |
+| --- | --- |
+| DB | \`MYSQL_HOST\`, \`MYSQL_PORT\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`, \`MYSQL_SECINSIGHT_NAME\`, \`MYSQL_MISP_NAME\` |
+| Auth | \`JWT_SECRET\`, \`JWT_ACCESS_EXPIRES_IN\`, \`AUTH_MAX_ATTEMPTS\`, \`AUTH_WINDOW_MINUTES\`, \`RESET_PASSWORD_TOKEN_EXPIRY\` |
+| MISP | \`MISP_API_URL\`, \`MISP_API_KEY\`, \`MISP_ADMIN_API_KEY\` |
+| Cron | \`CRON_OIDC_AUDIENCE\`, \`CRON_INVOKER_SERVICE_ACCOUNT\`, \`GOOGLE_OIDC_JWKS_URL\` |
+| บริการภายนอก | \`OPENROUTER_*\`, \`BLUESKY_*\`, \`CISA_KEV_*\`, \`FIRST_EPSS_*\`, \`CIRCL_CVE_*\`, \`VULNERABILITY_REGISTER_*\`, \`SPG_VULNERABILITY_*\`, \`SOC_SECINSIGHT_*\`, \`MAILGUN_*\`, \`RECAPTCHA_*\` |
+| Rate limit | \`API_MAX_REQUESTS\`, \`PUBLIC_MAX_REQUESTS\`, \`FORGOT_PASSWORD_MAX_ATTEMPTS\` พร้อม \`*_WINDOW_MINUTES\` คู่กันแต่ละตัว |
+| แอป | \`NODE_ENV\`, \`PORT\`, \`CORS_ORIGIN\`, \`BASE_URL\`, \`TZ\`, \`APP_VERSION\` |
+
+## สรุป
+
+Deploy คือ Cloud Run ผ่าน Docker แบบสองขั้นและ Cloud Build pipeline สามขั้นตอน โดยไม่เห็นขั้นตอน migration เลย -- ต้องยืนยันแยกต่างหาก อย่าสรุปเอาเองว่ามีคนจัดการแล้ว CI รัน lint, typecheck, ตรวจชื่อ PR, SonarQube และสำรองข้อมูลรายวัน แต่ไม่เคยรันชุดเทสเลย -- \`test:all\` ที่เขียวใน local ตอนนี้คือด่านเดียวที่มีอยู่สำหรับเทส secret จริงทั้งหมดอยู่ใน 1Password ไม่เคยอยู่ในเรป`,
+      },
+      {
+        slug: "common-pitfalls",
+        titleEn: "Common Pitfalls",
+        titleTh: "จุดที่หลงทางบ่อย",
+        order: 21,
+        contentEn: `A collection of specific, real gotchas from this codebase -- the kind of thing that's obvious once you know it and confusing every time before that.
+
+1. **Got a token back but still hit 401.** The session is still \`PRE_ACCESS\` -- \`verify-mfa\` has to be called first. See step 5 of \`authMiddleware\` (\`src/middleware/auth.ts\`), covered in the login worked-example lesson.
+
+2. **Logged in on a second device and the first one got kicked out.** \`AuthLoginUseCase\` calls \`revokeAll\` on every login (line 95) -- this is a deliberate one-session-at-a-time design, not a bug.
+
+3. **The access token changes mid-session, seemingly on its own.** When a token is close to expiring, the server issues a new one in the \`X-New-Access-Token\` response header. The client is responsible for picking it up and using it in place of the old one -- if a client ignores this header, it'll eventually start failing with an expired-token error that looks unrelated to anything the client did.
+
+4. **Trying to modify MISP data and can't find a repository method for it.** This is intentional, not a gap -- writes to MISP have to go through \`mispAdminApi\` in \`EventService\`, never through a repository. See the MISP integration lesson.
+
+5. **A CVE table join returns nothing.** Every CVE-related table joins on \`cveId\` (a string like \`CVE-2024-1234\`), not the numeric \`id\` column. Reaching for \`id\` the way you would on most other tables silently returns an empty result instead of erroring.
+
+6. **A controller imports its usecase directly from a file path** (\`RequestTrialController\` is the example) instead of through the \`~/usecases\` barrel. The global integration-test automock only covers the barrel, so a test hitting one of these controllers has to \`jest.mock('<exact path>')\` itself -- copying a working integration test from elsewhere without noticing this difference will silently fail to mock anything.
+
+7. **There are two health endpoints, easy to confuse.** \`/health\` sits outside \`/api\` and exists for Docker's \`HEALTHCHECK\`; \`/api/health\` and \`/api/health/detailed\` are the app-level ones. Hitting the wrong one when debugging a deploy issue wastes time.
+
+8. **\`package.json\` has \`db:misp:*\` scripts, but there's no \`src/sequelize/misp\` folder.** Running one of these scripts fails on a missing path -- migrations only exist for the \`secinsight\` side; the \`misp\` database's schema belongs to MISP itself.
+
+9. **The \`post-merge\` / \`post-rewrite\` git hooks that are supposed to auto-run migrations don't actually work.** Two independent problems stack here: the \`post-merge\` hook checks for changes under \`server/migrations/\`, which doesn't match the real path (\`src/sequelize/secinsight/migrations/\`), so it never detects that migrations changed; and both hooks call \`bun db:migrate\` / \`bun db:seed\`, but \`package.json\` only defines \`db:secinsight:migrate\` and \`db:misp:migrate\` -- neither of those script names exists, so the commands fail outright even when they do run. In practice: after pulling or merging, run \`bun run db:secinsight:migrate\` yourself rather than trusting the hook to have done it.
+
+## Conclusion
+
+Most of these pitfalls share a shape: something that looks like a bug (a silent empty query result, a hook that seems to do nothing, an endpoint that 401s right after a successful login) is actually either an intentional design choice (single-session login, MISP writes forced through the API) or a small, specific, already-diagnosed break (the two mismatched migration commands in the git hooks). Knowing which one you're looking at before trying to "fix" it saves a lot of wasted debugging.`,
+        contentTh: `รวมจุดที่หลงทางจริงๆ ในโค้ดนี้ -- แบบที่พอรู้แล้วจะรู้สึกชัดเจน แต่ตอนไม่รู้จะงงทุกครั้ง
+
+1. **ได้ token กลับมาแล้วแต่ยังโดน 401** session ยังเป็น \`PRE_ACCESS\` อยู่ -- ต้องเรียก \`verify-mfa\` ก่อน ดูขั้นที่ 5 ของ \`authMiddleware\` (\`src/middleware/auth.ts\`) ซึ่งอธิบายไว้ในบทเรียน worked example ของ login
+
+2. **ล็อกอินเครื่องที่สองแล้วเครื่องแรกหลุดออกไป** \`AuthLoginUseCase\` เรียก \`revokeAll\` ทุกครั้งที่ล็อกอิน (บรรทัด 95) -- เป็นการออกแบบให้ล็อกอินได้ทีละเครื่องโดยตั้งใจ ไม่ใช่บั๊ก
+
+3. **access token เปลี่ยนเองกลางทาง เหมือนไม่มีสาเหตุ** เมื่อ token ใกล้หมดอายุ server จะออก token ใหม่มาทาง response header \`X-New-Access-Token\` client มีหน้าที่รับและใช้ตัวใหม่แทนตัวเดิม -- ถ้า client ไม่สนใจ header นี้ ในที่สุดจะเริ่มพังด้วย error token หมดอายุที่ดูเหมือนไม่เกี่ยวอะไรกับสิ่งที่ client ทำ
+
+4. **จะแก้ข้อมูล MISP แล้วหาเมธอด repository ไม่เจอ** ตั้งใจให้เป็นแบบนี้ ไม่ใช่ช่องโหว่ -- การเขียนข้อมูล MISP ต้องผ่าน \`mispAdminApi\` ใน \`EventService\` เท่านั้น ไม่เคยผ่าน repository ดูบทเรียนเรื่อง MISP integration
+
+5. **join ตาราง CVE แล้วไม่ได้ผลลัพธ์อะไรเลย** ตาราง CVE ทุกตัวเชื่อมกันด้วย \`cveId\` (string เช่น \`CVE-2024-1234\`) ไม่ใช่คอลัมน์ \`id\` แบบตัวเลข ถ้าเผลอใช้ \`id\` แบบที่ใช้กับตารางอื่นส่วนใหญ่ จะได้ผลลัพธ์ว่างเปล่าแบบเงียบๆ ไม่ error
+
+6. **controller บางตัว import usecase ตรงจาก path ไฟล์** (ตัวอย่างคือ \`RequestTrialController\`) แทนที่จะผ่าน barrel \`~/usecases\` automock ระดับ global ของ integration test ครอบแค่ barrel เท่านั้น ดังนั้นเทสที่แตะ controller แบบนี้ต้อง \`jest.mock('<path ตรง>')\` เอง -- ถ้าก๊อปปี้ integration test ที่ใช้งานได้จากที่อื่นมาโดยไม่สังเกตความต่างนี้ mock จะไม่ทำงานแบบเงียบๆ
+
+7. **มี health endpoint สองจุด สับสนได้ง่าย** \`/health\` อยู่นอก \`/api\` มีไว้ให้ \`HEALTHCHECK\` ของ Docker ส่วน \`/api/health\` และ \`/api/health/detailed\` เป็นระดับแอป เรียกผิดจุดตอน debug ปัญหา deploy จะเสียเวลาเปล่า
+
+8. **มีสคริปต์ \`db:misp:*\` ใน \`package.json\` แต่ไม่มีโฟลเดอร์ \`src/sequelize/misp\`** รันสคริปต์เหล่านี้แล้วจะหา path ไม่เจอ -- migration มีเฉพาะฝั่ง \`secinsight\` เท่านั้น schema ของฐาน \`misp\` เป็นของ MISP เอง
+
+9. **git hook \`post-merge\` / \`post-rewrite\` ที่ควรรัน migration อัตโนมัติ ไม่ทำงานจริง** มีปัญหาซ้อนกันสองเรื่อง: \`post-merge\` เช็คการเปลี่ยนแปลงที่ path \`server/migrations/\` ซึ่งไม่ตรงกับ path จริง (\`src/sequelize/secinsight/migrations/\`) จึงไม่เคยตรวจจับว่า migration เปลี่ยน และทั้งสอง hook เรียก \`bun db:migrate\` / \`bun db:seed\` แต่ \`package.json\` มีแค่ \`db:secinsight:migrate\` กับ \`db:misp:migrate\` -- ไม่มีชื่อสคริปต์เหล่านั้นจริง คำสั่งเลยล้มทันทีแม้จะรันจริง ในทางปฏิบัติ: หลัง pull หรือ merge ต้องรัน \`bun run db:secinsight:migrate\` เองเสมอ อย่าเชื่อว่า hook จัดการให้แล้ว
+
+## สรุป
+
+จุดที่หลงทางส่วนใหญ่มีรูปแบบคล้ายกัน: สิ่งที่ดูเหมือนบั๊ก (query ว่างเปล่าแบบเงียบๆ, hook ที่ดูเหมือนไม่ทำอะไร, endpoint ที่ตอบ 401 ทันทีหลังล็อกอินสำเร็จ) จริงๆ แล้วเป็นการออกแบบตั้งใจ (ล็อกอินได้ทีละเครื่อง, บังคับเขียน MISP ผ่าน API) หรือเป็นจุดพังเล็กๆ ที่ระบุสาเหตุไว้แล้ว (คำสั่ง migration สองชื่อที่ไม่ตรงกันใน git hook) รู้ว่ากำลังเจอแบบไหนก่อนพยายาม "แก้" มันจะประหยัดเวลา debug ไปได้เยอะ`,
+      },
     ],
   },
   {
