@@ -1,7 +1,7 @@
 import * as lessonRepository from "../repositories/lesson.repository";
 
-export function getLessonWithCourse(id: string) {
-  return lessonRepository.findByIdWithCourse(id);
+export function getLessonWithCourse(id: string, includeUnpublished = false) {
+  return lessonRepository.findByIdWithCourse(id, includeUnpublished);
 }
 
 // Routes through the course-joined lookup (not the plain findById) so a lesson

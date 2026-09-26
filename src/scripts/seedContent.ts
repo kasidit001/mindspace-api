@@ -33,6 +33,13 @@ export interface SeedCourse {
   descriptionEn: string;
   /** Thai translation. Optional — courses without one fall back to English (see Course model). */
   descriptionTh?: string;
+  /**
+   * Defaults to true (published) when omitted — every course seeded here is
+   * normally finished catalog content. Set false for a draft only meant for
+   * an admin's own reference, not the public catalog (see Course model's
+   * `published` column).
+   */
+  published?: boolean;
   lessons: SeedLesson[];
 }
 
@@ -4034,6 +4041,1686 @@ const { data: bookmarks, status, error, refresh } = await useFetch('/api/bookmar
 ## สรุป
 
 \`status\` และ \`error\` จาก \`useFetch\` ครอบคลุม state ของการโหลดและความล้มเหลวได้โดยไม่ต้องเขียน logic เอง โดยการเรียก \`createError\` เดียวกันจากบทเรียนเรื่อง API ก็ไหลตรงมาถึง \`error.value\` บนหน้าเพจพอดี บทเรียนปิดท้ายนี้ยังระบุจุดที่โปรเจกต์ bookmarks ยังไม่สมบูรณ์โดยเจตนา — storage แบบ in-memory, ไม่มี auth และ validation ที่ตื้นเกินไป — พร้อมสิ่งที่ต้องทำจริงๆ เพื่อปิดแต่ละช่องว่างนั้น`,
+      },
+    ],
+  },
+  {
+    slug: "secinsight-api-layers",
+    title: "SecInsight API: Tracing the Codebase by Layers",
+    descriptionEn: `Not a tour of every file, but a repeatable method: every request in the SecInsight API codebase crosses the same fixed chain. Learn to jump the chain by class name and import statement, and trace any endpoint in minutes without reading unrelated code. A private reference course for tracing a real work codebase by its layers -- assumes general TypeScript/backend knowledge, not knowledge of this repo going in.`,
+    descriptionTh: `ไม่ใช่คู่มือไล่อ่านทุกไฟล์ แต่เป็นวิธีอ่านโค้ดที่ใช้ซ้ำได้ -- ทุก request ใน codebase ของ SecInsight API วิ่งผ่านสายเดียวกันเสมอ เรียนรู้วิธีกระโดดข้าม layer ด้วยชื่อ class กับ import statement แล้วไล่ endpoint ไหนก็ได้จบภายในไม่กี่นาที คอร์สอ้างอิงส่วนตัวสำหรับไล่อ่าน codebase งานจริงทีละ layer -- สมมุติว่ามีพื้นฐาน TypeScript/backend ทั่วไปอยู่แล้ว เพียงแต่ยังไม่รู้จัก repo นี้เป็นการเฉพาะ`,
+    published: false,
+    lessons: [
+      {
+        slug: "where-it-starts-server-app",
+        titleEn: "Where It Starts — server.ts + app.ts",
+        titleTh: "จุดเริ่มต้น — server.ts + app.ts",
+        order: 1,
+        contentEn: `Before the next lesson (the fixed chain), you need to know how a request even reaches a Route. These two files are the real starting point — nothing runs without passing through them first.
+
+| File | What it does | Order |
+| --- | --- | --- |
+| \`server.ts\` | Confirms the DB connection first, only then calls \`app.listen()\` — so it never accepts a request while the DB is down. Also wires graceful shutdown (SIGTERM/SIGINT). | Runs first — the one that invokes \`app.ts\`. |
+| \`app.ts\` | Creates the Express app and wires global middleware in a fixed order (helmet → cors → body-parser → request logger → \`/health\` → routes → errorHandler). | \`errorHandler\` always comes last (see the middleware table in the lesson on middleware). |
+
+\`\`\`ts
+// src/server.ts
+await SequelizeConnection.connectAll(); // 1. DB must be up first
+const server = app.listen(PORT, () => Logger.info('server running'));
+process.on('SIGTERM', gracefulShutdown); // 3. close DB before exit
+\`\`\`
+
+\`\`\`ts
+// src/app.ts
+const app = express();
+app.use(helmet()); // 1. security headers
+app.use(cors({ origin: corsOrigin, credentials: true }));
+app.use(express.json({ limit: '10mb' })); // 2. body parsing
+app.use(requestLogger); // 3. Winston request log
+app.get('/health', (_req, res) => res.status(200).json({ status: 'healthy' }));
+app.use('/api', globalRateLimit, apiRoutes); // 5. -> routes/index.ts mounts /v1 -> routes/v1/index.ts
+app.use(errorHandler); // 6. MUST be last
+\`\`\`
+
+**Why this matters for reading:** these two files explain what later lessons reference loosely. \`errorHandler\` is "always last" because Express literally runs middleware in \`app.use()\` call order — and the full path \`/api/v1/events\` comes from 3 stacked mounts: \`/api\` (app.ts) → \`/v1\` (routes/index.ts) → \`/events\` (routes/v1/index.ts).
+
+## Conclusion
+
+\`server.ts\` guarantees the database is reachable before the process ever accepts traffic, and \`app.ts\` wires every global middleware in one fixed, non-negotiable order ending in \`errorHandler\`. Every later lesson's talk of "the chain" and "the mount path" traces back to these two files.`,
+        contentTh: `ก่อนถึงบทเรียนถัดไป (fixed chain) ต้องรู้ก่อนว่า request มาถึง Route ได้อย่างไร — 2 ไฟล์นี้คือจุดเริ่มต้นจริงของทุกอย่าง ไม่มีโค้ดส่วนไหนทำงานได้เลยถ้าไม่ผ่านมันก่อน
+
+| File | ทำอะไร | ลำดับ |
+| --- | --- | --- |
+| \`server.ts\` | เช็กว่า DB connection ต่อสำเร็จก่อนเสมอ แล้วค่อยเปิด \`app.listen()\` — กัน request หลุดเข้ามาตอน DB ยังไม่พร้อม พร้อมผูก graceful shutdown ไว้ด้วย (SIGTERM/SIGINT) | รันเป็นไฟล์แรก — เป็นตัวเรียก \`app.ts\` ต่อ |
+| \`app.ts\` | สร้าง Express app แล้วต่อ global middleware ตามลำดับที่ตายตัว (helmet → cors → body-parser → request logger → \`/health\` → routes → errorHandler) | \`errorHandler\` ต้องอยู่ลำดับสุดท้ายเสมอ (ดูตาราง middleware ในบทเรียนเรื่อง middleware) |
+
+\`\`\`ts
+// src/server.ts
+await SequelizeConnection.connectAll(); // 1. DB must be up first
+const server = app.listen(PORT, () => Logger.info('server running'));
+process.on('SIGTERM', gracefulShutdown); // 3. close DB before exit
+\`\`\`
+
+\`\`\`ts
+// src/app.ts
+const app = express();
+app.use(helmet()); // 1. security headers
+app.use(cors({ origin: corsOrigin, credentials: true }));
+app.use(express.json({ limit: '10mb' })); // 2. body parsing
+app.use(requestLogger); // 3. Winston request log
+app.get('/health', (_req, res) => res.status(200).json({ status: 'healthy' }));
+app.use('/api', globalRateLimit, apiRoutes); // 5. -> routes/index.ts mounts /v1 -> routes/v1/index.ts
+app.use(errorHandler); // 6. MUST be last
+\`\`\`
+
+**ทำไมเรื่องนี้สำคัญตอนอ่านโค้ด:** สองไฟล์นี้อธิบายสิ่งที่บทเรียนหลังๆ อ้างถึงแบบลอยๆ ไว้ก่อน: \`errorHandler\` "อยู่ท้ายสุดเสมอ" เพราะ Express เรียง middleware ตามลำดับที่ \`app.use()\` ถูกเรียกจริงๆ — และ path เต็มอย่าง \`/api/v1/events\` ก็มาจาก 3 ชั้น mount ที่ต่อกัน: \`/api\` (app.ts) → \`/v1\` (routes/index.ts) → \`/events\` (routes/v1/index.ts)
+
+## สรุป
+
+\`server.ts\` รับประกันว่าฐานข้อมูลเชื่อมต่อได้ก่อนที่ process จะรับ traffic ใดๆ ส่วน \`app.ts\` ต่อ global middleware ทั้งหมดตามลำดับตายตัวหนึ่งเดียว จบที่ \`errorHandler\` บทเรียนหลังๆ ที่พูดถึง "chain" และ "mount path" ล้วนย้อนกลับมาที่สองไฟล์นี้ทั้งสิ้น`,
+      },
+      {
+        slug: "the-fixed-chain-api",
+        titleEn: "The Fixed Chain",
+        titleTh: "The Fixed Chain (สายที่ตายตัว)",
+        order: 2,
+        contentEn: `Every feature — auth, events, CVEs, admin actions — flows through the same six stops, always in this order, never skipped, never reversed:
+
+**Route → Controller → UseCase → Service → Repository → Model → Database**
+
+| Layer | Job | Why it exists | What breaks if you skip it | Directory |
+| --- | --- | --- | --- | --- |
+| Route | Maps URL + method → controller function | Single source of truth for verb+path — lets you grep an endpoint from one file | Endpoint discovery scatters across the codebase, no single index | \`src/routes/v1/\` |
+| Controller | Parse req, Zod-validate, call UseCase, format response | Keeps malformed input out of business code — one validation boundary | Business logic couples to req/res directly — hard to unit test, tied to HTTP | \`src/controllers/\` |
+| UseCase | Orchestrate one business operation: strip actor fields, re-fetch DB, authorize, act, log | The one place that knows operation order — including security logic (authorize from re-fetched DB values, never raw JWT claims) | Each Controller reinvents the business flow, duplicated and drifting | \`src/usecases/\` |
+| Service | Reusable domain logic, zero HTTP concern | Lets multiple UseCases share the same domain rule (e.g. create user+credential) | The same logic gets copy-pasted into multiple UseCases — a fix in one misses the rest | \`src/services/\` |
+| Repository | All DB queries via Sequelize | Only place touching raw SQL/ORM — swap DB or optimize a query without touching layers above | SQL scatters into Service/UseCase — injection risk rises, indexing gets hard to reason about | \`src/repositories/\` |
+| Model | Sequelize schema / table mapping | Defines columns/types/associations once, shared by both the \`secinsight\` and \`misp\` databases | Field name/type mismatches drift between query sites | \`src/models/\` |
+
+**Why this matters for reading:** because the direction is unidirectional and fixed, you never have to search for "where does this call go" — it always goes one stop to the right. The only skill worth building is finding which file is the next stop, fast.
+
+## Conclusion
+
+Six stops, one direction, no exceptions: Route → Controller → UseCase → Service → Repository → Model → Database. Once this order is memorized, tracing any endpoint stops being a search problem and becomes a lookup problem.`,
+        contentTh: `ทุกฟีเจอร์ — auth, events, CVE, admin action — ไหลผ่าน 6 จุดเดียวกันเสมอ ตามลำดับนี้เท่านั้น ห้ามข้ามขั้นตอน ห้ามสลับที่:
+
+**Route → Controller → UseCase → Service → Repository → Model → Database**
+
+| Layer | หน้าที่ | ทำไมต้องมี layer นี้ | ถ้าข้าม layer นี้ จะพังตรงไหน | Directory |
+| --- | --- | --- | --- | --- |
+| Route | map URL + method → controller function | เป็นจุดเดียวในทั้ง codebase ที่รู้ว่า HTTP verb ตัวไหนคู่กับ path ตัวไหน เปิดไฟล์นี้ไฟล์เดียวก็เจอคำตอบ | การ map URL จะกระจัดกระจายอยู่ในหลายที่ ต้องไล่อ่านทั้ง codebase ถึงจะรู้ว่า API มีกี่ตัว | \`src/routes/v1/\` |
+| Controller | parse req, validate ด้วย Zod, เรียก UseCase, format response | เป็น boundary เดียวที่ validate input ทั้งหมดก่อนปล่อยเข้าสู่ business logic | business logic จะต้องรู้จัก object request/response ของ Express โดยตรง ทดสอบยาก | \`src/controllers/\` |
+| UseCase | ควบคุมลำดับขั้นตอนของ business operation: strip actor field, re-fetch DB, authorize, ทำ operation, log | เป็นจุดเดียวในระบบที่รู้ลำดับที่ถูกต้องของแต่ละ operation ธุรกิจ รวม security logic ไว้ที่นี่ด้วย | แต่ละ Controller ต้องเขียน business flow ของตัวเองแยกกัน logic เดียวกันถูก copy ไปหลายที่ | \`src/usecases/\` |
+| Service | domain logic ที่ใช้ซ้ำได้ ไม่ขึ้นกับ HTTP เลย | ทำให้หลาย UseCase เรียกใช้ logic ชุดเดียวกันได้โดยไม่ต้อง copy-paste | logic ที่ควรใช้ร่วมกันจะถูก copy กระจายไปในหลาย UseCase | \`src/services/\` |
+| Repository | query database ทั้งหมดผ่าน Sequelize | เป็นจุดเดียวในระบบที่แตะ SQL/ORM จริง ปรับ query หรือเปลี่ยน database engine ได้โดยไม่แตะ layer บน | SQL หรือ query logic จะกระจายไปอยู่ใน Service/UseCase เพิ่มความเสี่ยง SQL injection | \`src/repositories/\` |
+| Model | นิยาม schema ของ Sequelize / table mapping | นิยาม column, type และ association ไว้แค่ครั้งเดียว ใช้ร่วมกันได้ทั้งฝั่ง database \`secinsight\` และ \`misp\` | field name หรือ type ไม่ตรงกันระหว่างจุดที่ query ตารางเดียวกัน | \`src/models/\` |
+
+**ทำไมเรื่องนี้สำคัญตอนอ่านโค้ด:** เพราะทิศทางเดินทางเดียวและตายตัว จึงไม่ต้องเดาเลยว่า "call นี้ไปไหนต่อ" — มันไปสถานีถัดไปด้านขวาเสมอ ทักษะเดียวที่ต้องมีคือหาไฟล์ของสถานีถัดไปให้เจอเร็วๆ เท่านั้น
+
+## สรุป
+
+หกสถานี ทิศทางเดียว ไม่มีข้อยกเว้น: Route → Controller → UseCase → Service → Repository → Model → Database เมื่อจำลำดับนี้ได้แล้ว การไล่ endpoint ไหนก็ตามจะไม่ใช่ปัญหาการค้นหาอีกต่อไป แต่กลายเป็นแค่การเปิดไฟล์ตามลำดับที่รู้อยู่แล้ว`,
+      },
+      {
+        slug: "how-to-jump-one-stop-api",
+        titleEn: "How to Jump One Stop, at Each Layer",
+        titleTh: "วิธีกระโดดข้ามสถานี ทีละ Layer",
+        order: 3,
+        contentEn: `Each layer hands off with a predictable, greppable signal. Learn the signal, not the file name.
+
+| Hop | Signal |
+| --- | --- |
+| Route → Controller | Route file imports one controller class, wires each HTTP verb to one method on it. Grep the method name called on the controller instance. |
+| Controller → UseCase | Look for \`new <Verb><Entity>UseCase(services)\` inside the controller method — the class name is a direct file name in \`src/usecases/<domain>/\`. Controller method name ≈ UseCase class name. The controller's 7-step template (validate → new UseCase → execute → sendSuccess) is identical everywhere — read it once, skip it forever after. |
+| UseCase → Service | The UseCase constructor destructures \`this.XService\` off the injected registry. Every call like \`this.EventService.foo()\` names the next file directly: \`src/services/EventService.ts\`. |
+| Service → Repository | Same pattern one level down — Service holds \`this.XRepository\`, method name usually unchanged or minimally reshaped. If the Service is a one-line pass-through to Repository, skip straight to Repository. If it has real logic (loop, branch, transform), that's the domain rule worth reading. |
+| Repository → Model | Repository imports \`secinsightModel\` or \`mispModel\` from \`src/models/index.ts\`, destructures the entity (\`const { Event } = secinsightModel\`), then calls Sequelize methods on it. The destructured model name tells you both the table and which database. |
+
+**The find/get name IS the contract.** \`find<X>By<Key>\` can return \`null\` (check for it). \`getAll<X>\` / \`get<X>Options\` never return \`null\`. You know the caller's obligation before opening the method body — the full table is in the naming-canon lesson.
+
+## Conclusion
+
+Every hand-off between layers has one predictable, greppable signal: an import, a \`new <X>UseCase(...)\` call, a \`this.<X>Service\`/\`this.<X>Repository\` reference, or a destructured model. Memorize the signal, not the file paths — the signal finds the file for you every time.`,
+        contentTh: `แต่ละ layer ส่งไม้ต่อด้วยสัญญาณที่ grep เจอได้แน่นอน จำ "สัญญาณ" ไว้ ไม่ต้องจำชื่อไฟล์
+
+| การกระโดด | สัญญาณ |
+| --- | --- |
+| Route → Controller | ไฟล์ route import controller class มาหนึ่งตัว แล้วผูกแต่ละ HTTP verb เข้ากับ method หนึ่งตัวบน instance นั้น grep หาชื่อ method ที่ถูกเรียกบน controller instance |
+| Controller → UseCase | มองหา \`new <Verb><Entity>UseCase(services)\` ในตัว controller method — ชื่อ class ตรงกับชื่อไฟล์ใน \`src/usecases/<domain>/\` เป๊ะๆ ชื่อ method ของ controller ≈ ชื่อ class UseCase 7-step template ของ controller (validate → new UseCase → execute → sendSuccess) เหมือนกันทุกไฟล์ — อ่านให้เข้าใจครั้งเดียว ครั้งต่อไปข้ามได้เลย |
+| UseCase → Service | constructor ของ UseCase destructure \`this.XService\` ออกมาจาก registry ที่ inject เข้ามา ทุก call แบบ \`this.EventService.foo()\` จึงบอกชื่อไฟล์ถัดไปตรงๆ: \`src/services/EventService.ts\` |
+| Service → Repository | รูปแบบเดียวกันอีกชั้นหนึ่ง — Service ถือ \`this.XRepository\` ไว้ ชื่อ method มักไม่เปลี่ยนหรือเปลี่ยนรูปแค่เล็กน้อย ถ้า Service เป็นแค่ pass-through บรรทัดเดียวตรงไป Repository ข้ามไปดู Repository ได้เลย แต่ถ้ามี logic เพิ่ม (loop, if, transform) นั่นคือ domain rule ที่ต้องอ่านจริงๆ |
+| Repository → Model | Repository import \`secinsightModel\` หรือ \`mispModel\` จาก \`src/models/index.ts\` แล้ว destructure entity ออกมา (\`const { Event } = secinsightModel\`) จากนั้นเรียก method ของ Sequelize บนตัวนั้น ชื่อ model ที่ destructure บอกทั้งชื่อตารางและ DB ที่ใช้ |
+
+**ชื่อ find/get คือสัญญา** \`find<X>By<Key>\` คืน \`null\` ได้ (ต้องเช็กเสมอ) ส่วน \`getAll<X>\` / \`get<X>Options\` ไม่มีวันคืน \`null\` — รู้ภาระของผู้เรียกได้ตั้งแต่ก่อนเปิดอ่าน body ด้วยซ้ำ รายละเอียดเต็มดูบทเรียนเรื่อง naming canon
+
+## สรุป
+
+ทุกการส่งไม้ต่อระหว่าง layer มีสัญญาณที่ grep เจอได้แน่นอนหนึ่งอย่าง: import, การเรียก \`new <X>UseCase(...)\`, การอ้างอิง \`this.<X>Service\`/\`this.<X>Repository\`, หรือ model ที่ destructure ออกมา จำสัญญาณไว้ ไม่ต้องจำ path ไฟล์ — สัญญาณจะพาไปหาไฟล์ให้เองทุกครั้ง`,
+      },
+      {
+        slug: "foundations-under-the-chain",
+        titleEn: "Foundations Under the Chain",
+        titleTh: "รากฐานใต้สาย — abstracts, config, helper",
+        order: 4,
+        contentEn: `None of these three is a stop in the chain — no route runs through them directly. But every stop in the chain stands on all three. Know what each one does as a whole; no need to read file by file.
+
+| Directory | What it does | Why it matters for tracing |
+| --- | --- | --- |
+| \`src/abstracts/\` | The base classes every Controller/UseCase/Service extends — gives them shared methods/plumbing (building the response, holding the services registry, the \`execute()\` contract). | Anywhere you see \`this.sendSuccess(...)\` or \`this.<X>Service\`, don't hunt for the definition in that file — it always comes from here. |
+| \`src/config/\` | Infrastructure settings the app depends on, read from env once at boot, fail-fast if a value is missing. | The source of the connection pools that split \`secinsight\`/\`misp\` (see the Database row in the fixed-chain lesson) — the rest (mail, log format) is single-purpose config, skip it while tracing an endpoint. |
+| \`src/helper/\` + \`src/schema/helpers/\` | The axios client class for every external API (MISP, OpenRouter, Recaptcha, Bluesky, …) in \`axiosInstance.ts\` — paired with its request/response contract types in \`schema/helpers/S*Params.ts\`. | The pattern behind \`mispAdminApi.delete(...)\` in the destructive-path worked example — its interceptor is what translates an external failure into \`UpstreamError\` / \`BadGatewayError\`. |
+
+**Why this matters for reading:** read all three once, done — you never reopen them per endpoint. Understanding each one's job is enough; no need to memorize file details.
+
+## Conclusion
+
+\`abstracts/\`, \`config/\`, and \`helper/\` never appear as a named stop in the request chain, but every stop stands on top of them — shared base classes, boot-time settings, and external API clients. Read each once for what it does, then stop revisiting them per endpoint.`,
+        contentTh: `ทั้งสามอย่างนี้ไม่ใช่สถานีในสาย ไม่มี route ไหนวิ่งผ่านมันตรงๆ แต่ทุกสถานีในสาย "ยืน" อยู่บนของสามอย่างนี้ทั้งหมด — รู้แค่ว่าแต่ละอย่าง "ทำหน้าที่อะไร" ก็พอ ไม่ต้องไล่อ่านทีละไฟล์
+
+| Directory | ทำหน้าที่อะไร | ทำไมเกี่ยวกับการ trace |
+| --- | --- | --- |
+| \`src/abstracts/\` | base class ที่ทุกไฟล์ Controller/UseCase/Service extends เสมอ — ให้ method และกลไกที่ใช้ร่วมกัน เช่น ประกอบ response, เก็บ services registry, กำหนดสัญญา \`execute()\` | เจอ \`this.sendSuccess(...)\` หรือ \`this.<X>Service\` ที่ไหนก็ตาม ไม่ต้องเสียเวลาหาว่านิยามไว้ตรงไหนในไฟล์นั้น — มันมาจากที่นี่เสมอ |
+| \`src/config/\` | ตั้งค่า infrastructure ที่แอปต้องพึ่งพา อ่านจาก env ตอน boot ครั้งเดียว แล้ว fail-fast ทันทีถ้าค่าหาย | ต้นตอของ connection pool ที่แยก DB \`secinsight\`/\`misp\` ออกจากกัน — ที่เหลือ (mail, log format) เป็น config เฉพาะจุด ไม่ต้องอ่านตอน trace endpoint |
+| \`src/helper/\` + \`src/schema/helpers/\` | axios client class ของทุก external API (MISP, OpenRouter, Recaptcha, Bluesky, …) รวมไว้ใน \`axiosInstance.ts\` — คู่กับ type สัญญา request/response ใน \`schema/helpers/S*Params.ts\` | เป็น pattern เดียวกับที่อยู่เบื้องหลัง \`mispAdminApi.delete(...)\` ในบทเรียน worked example ฝั่ง write — interceptor ในนี้เองที่แปลง error จากภายนอกให้กลายเป็น \`UpstreamError\` / \`BadGatewayError\` |
+
+**ทำไมเรื่องนี้สำคัญตอนอ่านโค้ด:** ทั้งสามอย่างนี้อ่านครั้งเดียวจบ ไม่ต้องเปิดซ้ำทุก endpoint — เข้าใจแค่ "หน้าที่" ของแต่ละอย่างก็พอแล้ว ไม่ต้องจำรายละเอียดไฟล์
+
+## สรุป
+
+\`abstracts/\`, \`config/\`, และ \`helper/\` ไม่เคยปรากฏเป็นสถานีที่มีชื่อในสายของ request แต่ทุกสถานียืนอยู่บนทั้งสามนี้ — base class ที่ใช้ร่วมกัน, ค่าตั้งค่าตอน boot, และ client เรียก API ภายนอก อ่านแต่ละอย่างครั้งเดียวให้เข้าใจหน้าที่ แล้วเลิกเปิดซ้ำทุก endpoint`,
+      },
+      {
+        slug: "the-type-boundary-schema",
+        titleEn: "The Type Boundary — src/schema/",
+        titleTh: "ขอบเขตของ Type — src/schema/",
+        order: 5,
+        contentEn: `The same piece of data changes its type name every time it crosses a stop — \`src/schema/\` holds all of them, organized by hand-off point, not by entity.
+
+| Directory | What it is | What it does | When it's used |
+| --- | --- | --- | --- |
+| \`schema/requests/<domain>/\` | A Zod schema \`S*Request\` + its inferred \`T*Request\` type — one file per operation | Validates raw HTTP input (query/body/params) — rejects malformed shapes, coerces string→number/date | In the Controller, right after destructuring \`req.query\`/\`req.body\`, before instantiating the UseCase |
+| \`schema/payloads/services/\` | A plain TS type (no Zod) named \`T*Payload\` — one file per entity | Shapes the data a UseCase passes into a Service — actor fields already stripped, DB-derived values already substituted | In the UseCase, calling \`this.<X>Service.<method>(payload)\` |
+| \`schema/payloads/repositories/\` | Same mechanism as above (\`T*Payload\`, plain type) — a different file, a different boundary | Shapes the data a Service passes down into a Repository | In the Service, calling \`this.<X>Repository.<method>(payload)\` |
+| \`schema/models/\` | A Zod schema \`<Entity>Schema\` matching the table's columns — the Model class in \`src/models/\` implements this type | Defines what one DB row looks like to TypeScript — not validating anything, just the type contract | As the return type of Repository/Service methods (\`Promise<UserSchema \\| null>\`) — never invoked directly |
+| \`src/interfaces/<domain>/\` | An interface (not \`type\`, no Zod) named \`I<Action><Entity>Response\` — one file per response shape + a barrel \`index.ts\` | Shapes the data a UseCase returns to the Controller — closes the type loop that started at the Request | As the return type of every UseCase's \`execute()\` — this is exactly what the Controller passes into \`sendSuccess(res, { data })\` next |
+| \`schema/helpers/\` | Paired with \`src/helper/axiosInstance.ts\` — see the foundations lesson | | |
+
+**A real example** — one \`Event\`, changing type 4 times, out and back:
+
+\`\`\`ts
+// schema/requests/event/SGetEventRequest.ts
+export const SGetEventRequest = SEventFilterRequest.extend(SBaseActorRequest.shape);
+export type TGetEventRequest = z.infer<typeof SGetEventRequest>;
+
+// schema/payloads/services/SEventServicePayload.ts
+export type TGetAllEventsPayload = TEventFilterPayload; // no actorId -- already stripped
+
+// schema/payloads/repositories/SEventRepositoryPayload.ts
+export type TGetAllPayload = TEventFilterPayload; // same shape here, different file/boundary
+
+// schema/models/EventSchema.ts
+export const EventValidation = z.object({ id: z.number(), orgId: z.number(), info: z.string() /* ... */ });
+
+// interfaces/event/IGetAllEventsResponse.ts
+export interface IGetEventResponse { id: number; info: string; tlp: ITagResponse /* ... */ }
+export interface IGetAllEventResponse { rows: IGetEventResponse[]; pagination: IPaginationResult; } // <- this is what execute() returns
+\`\`\`
+
+**One-sentence teach:** Request validates once, at the boundary (has Zod) · Payload (services/repositories) just moves data along, no re-validation (no Zod) · Model schema is the DB-row contract, not a validator · Response interface is the outbound contract, closing the loop back to the Controller.
+
+## Conclusion
+
+\`src/schema/\` is organized by where data crosses a boundary, not by what entity it represents — Request (validated once, Zod), Payload (moved along, no re-validation), Model schema (the DB-row contract), Response interface (the outbound contract). The same \`Event\` wears four different type names on one trip through the chain, and that's by design, not accident.`,
+        contentTh: `ข้อมูลชิ้นเดียวกันเปลี่ยนชื่อ type ทุกครั้งที่ข้ามสถานี — \`src/schema/\` คือที่เก็บ type เหล่านั้นทั้งหมด จัดกลุ่มตามจุดส่งต่อของแต่ละสถานี ไม่ใช่ตาม entity
+
+| Directory | คืออะไร | ทำอะไร | ใช้ตอนไหน |
+| --- | --- | --- | --- |
+| \`schema/requests/<domain>/\` | Zod schema \`S*Request\` + type ที่ infer ออกมา \`T*Request\` — 1 ไฟล์ต่อ 1 operation | validate ข้อมูลดิบจาก HTTP (query/body/params) — ปฏิเสธถ้ารูปแบบผิด, coerce string→number/date | ใน Controller ทันทีหลัง destructure \`req.query\`/\`req.body\` ก่อนสร้าง UseCase |
+| \`schema/payloads/services/\` | plain TS type (ไม่มี Zod) ชื่อ \`T*Payload\` — 1 ไฟล์ต่อ 1 entity | กำหนดรูปข้อมูลที่ UseCase ส่งเข้า Service — actor field ถูก strip ออกไปแล้ว | ใน UseCase ตอนเรียก \`this.<X>Service.<method>(payload)\` |
+| \`schema/payloads/repositories/\` | กลไกเดียวกับข้างบน (\`T*Payload\`, plain type) แต่เป็นคนละไฟล์ คนละ boundary | กำหนดรูปข้อมูลที่ Service ส่งลง Repository | ใน Service ตอนเรียก \`this.<X>Repository.<method>(payload)\` |
+| \`schema/models/\` | Zod schema \`<Entity>Schema\` ที่ตรงกับคอลัมน์ตาราง — Model class ใน \`src/models/\` implements type นี้ | นิยามรูปแถว DB หนึ่งแถวในสายตา TypeScript — ไม่ได้ validate อะไร แค่เป็นสัญญา | เป็น return type ของ Repository/Service (\`Promise<UserSchema \\| null>\`) — ไม่ได้ถูกเรียกใช้งานเอง |
+| \`src/interfaces/<domain>/\` | interface (ไม่ใช่ \`type\`, ไม่มี Zod) ชื่อ \`I<Action><Entity>Response\` — 1 ไฟล์ต่อ 1 response shape + barrel \`index.ts\` | กำหนดรูปข้อมูลที่ UseCase ส่งกลับ ให้ Controller — ปิดวงจร type ที่เริ่มจาก Request | เป็น return type ของ \`execute()\` ทุก UseCase — ค่านี้แหละที่ Controller เอาไปใส่ \`sendSuccess(res, { data })\` ต่อ |
+| \`schema/helpers/\` | คู่กับ \`src/helper/axiosInstance.ts\` — ดูบทเรียนเรื่อง foundations | | |
+
+**ตัวอย่างจริง** — \`Event\` ตัวเดียวกัน เปลี่ยน type ไปแล้วกลับมารวม 4 รอบ:
+
+\`\`\`ts
+// schema/requests/event/SGetEventRequest.ts
+export const SGetEventRequest = SEventFilterRequest.extend(SBaseActorRequest.shape);
+export type TGetEventRequest = z.infer<typeof SGetEventRequest>;
+
+// schema/payloads/services/SEventServicePayload.ts
+export type TGetAllEventsPayload = TEventFilterPayload; // no actorId -- already stripped
+
+// schema/payloads/repositories/SEventRepositoryPayload.ts
+export type TGetAllPayload = TEventFilterPayload; // same shape here, different file/boundary
+
+// schema/models/EventSchema.ts
+export const EventValidation = z.object({ id: z.number(), orgId: z.number(), info: z.string() /* ... */ });
+
+// interfaces/event/IGetAllEventsResponse.ts
+export interface IGetEventResponse { id: number; info: string; tlp: ITagResponse /* ... */ }
+export interface IGetAllEventResponse { rows: IGetEventResponse[]; pagination: IPaginationResult; } // <- นี่คือสิ่งที่ execute() คืนกลับ
+\`\`\`
+
+**จำแบบประโยคเดียว:** Request validate ครั้งเดียวตรง boundary (มี Zod) · Payload (services/repositories) แค่ส่งข้อมูลต่อ ไม่ validate ซ้ำ (ไม่มี Zod) · Model schema คือสัญญารูปแถว DB ไม่ใช่ตัว validate · Response interface คือสัญญาขาออก ปิดวงจรกลับไปหา Controller
+
+## สรุป
+
+\`src/schema/\` จัดกลุ่มตามจุดที่ข้อมูลข้ามขอบเขต ไม่ใช่ตาม entity — Request (validate ครั้งเดียว, มี Zod), Payload (ส่งต่อเฉยๆ ไม่ validate ซ้ำ), Model schema (สัญญารูปแถว DB), Response interface (สัญญาขาออก) \`Event\` ตัวเดียวกันสวมชื่อ type ต่างกัน 4 ชื่อในทริปเดียว และนั่นคือการออกแบบที่ตั้งใจ ไม่ใช่ความบังเอิญ`,
+      },
+      {
+        slug: "the-gate-before-controller-middleware",
+        titleEn: "The Gate Before Controller — src/middleware/",
+        titleTh: "ด่านก่อนถึง Controller — src/middleware/",
+        order: 6,
+        contentEn: `Unlike \`abstracts\`/\`config\`/\`helper\`, this one sits in the actual path. Every request passes through it before reaching the Controller; it doesn't just stand underneath.
+
+| File | Verifies | Used at |
+| --- | --- | --- |
+| \`auth.ts\` | \`authMiddleware\` — session JWT (cookie or Bearer) → \`requireRole(...roles)\` — role from the DB-backed auth payload | Router mount level (\`src/routes/v1/index.ts\`) — always before the Controller |
+| \`auth.ts\` | \`apiKeyMiddleware\` — API key | Per-route on \`/external\` — the caller is a machine, not a person |
+| \`cronAuth.ts\` | \`cronAuthMiddleware\` — Google-signed OIDC token (signature + issuer + audience + invoker email) | Per-route on \`/internal/cron\` — Cloud Scheduler calls this, not a person |
+| \`rateLimit.ts\` | \`authRateLimit\` — caps request count per IP/time window | Per-route on auth endpoints (login, verify-mfa, …) |
+| \`recaptcha.ts\` | \`recaptchaMiddleware\` — verifies the reCAPTCHA token | Per-route on bot-exposed endpoints (register, request-trial, …) |
+| \`errorHandler.ts\` | Verifies nothing — the one place that assembles the error response (see the error-propagation lesson) | App-level, last — catches every error handed to \`next(error)\` |
+
+The real example connecting to the destructive-path worked example — \`authMiddleware\` + \`requireRole\` are wired at the router mount, not per-route:
+
+\`\`\`ts
+// src/routes/v1/index.ts
+router.use(
+  '/system-admin',
+  authMiddleware,                            // 1. verify session JWT, attach req.user
+  requireRole(USER_ROLES.SYSTEM_ADMIN),      // 2. check role -- from DB-backed payload, not the raw claim
+  systemAdminRoutes                          // 3. only now does the route file's controller run
+);
+\`\`\`
+
+**Why this matters for reading:** whatever Controller method you're looking at, it was never called in isolation — \`authMiddleware\`/\`requireRole\` (human callers) or \`apiKeyMiddleware\`/\`cronAuthMiddleware\` (machine callers) always ran first. The full prefix-to-guard mapping lives in \`api-patterns.md\`.
+
+## Conclusion
+
+\`src/middleware/\` is the one directory in this lesson's group of "foundations" that genuinely sits in the request path — every Controller method runs after some combination of auth, role, rate-limit, or reCAPTCHA checks, wired at the router mount rather than scattered per-route.`,
+        contentTh: `ต่างจาก abstracts/config/helper — อันนี้อยู่ในสายจริง ทุก request ต้องวิ่งผ่านก่อนถึง Controller เสมอ ไม่ใช่แค่ยืนอยู่ข้างล่างเฉยๆ
+
+| File | ตรวจอะไร | ใช้ตรงไหน |
+| --- | --- | --- |
+| \`auth.ts\` | \`authMiddleware\` — session JWT (cookie หรือ Bearer) → \`requireRole(...roles)\` — role จาก auth payload ที่ผูกกับ DB | router mount level (\`src/routes/v1/index.ts\`) — ก่อน Controller เสมอ |
+| \`auth.ts\` | \`apiKeyMiddleware\` — API key | per-route ใน \`/external\` — ผู้เรียกเป็นเครื่อง ไม่ใช่คน |
+| \`cronAuth.ts\` | \`cronAuthMiddleware\` — Google-signed OIDC token (signature + issuer + audience + invoker email) | per-route ใน \`/internal/cron\` — Cloud Scheduler เรียก ไม่ใช่คน |
+| \`rateLimit.ts\` | \`authRateLimit\` — จำกัดจำนวนครั้งต่อ IP/หน้าต่างเวลา | per-route บน auth endpoint (login, verify-mfa, ...) |
+| \`recaptcha.ts\` | \`recaptchaMiddleware\` — ตรวจ token reCAPTCHA | per-route บน endpoint ที่เสี่ยง bot (register, request-trial, ...) |
+| \`errorHandler.ts\` | ไม่ตรวจอะไร — เป็นจุดเดียวที่ประกอบ error response (ดูบทเรียนเรื่อง error propagation) | app-level ตัวสุดท้าย จับทุก error ที่ \`next(error)\` ส่งมา |
+
+ตัวอย่างจริงที่ต่อกับบทเรียน worked example ฝั่ง write — \`authMiddleware\` + \`requireRole\` ผูกไว้ที่ router mount ไม่ใช่ต่อ route:
+
+\`\`\`ts
+// src/routes/v1/index.ts
+router.use(
+  '/system-admin',
+  authMiddleware,                            // 1. verify session JWT, attach req.user
+  requireRole(USER_ROLES.SYSTEM_ADMIN),      // 2. check role -- from DB-backed payload, not the raw claim
+  systemAdminRoutes                          // 3. only now does the route file's controller run
+);
+\`\`\`
+
+**ทำไมเรื่องนี้สำคัญตอนอ่านโค้ด:** เจอ Controller method ไหนก็ตาม อย่าลืมว่ามันไม่เคยถูกเรียกลอยๆ — \`authMiddleware\`/\`requireRole\` (ผู้เรียกเป็นคน) หรือ \`apiKeyMiddleware\`/\`cronAuthMiddleware\` (ผู้เรียกเป็นเครื่อง) วิ่งผ่านมาก่อนเสมอ ดูตารางเต็มว่า prefix ไหนใช้ guard แบบไหนได้ใน \`api-patterns.md\`
+
+## สรุป
+
+\`src/middleware/\` คือ directory เดียวในกลุ่ม "รากฐาน" ที่อยู่ในเส้นทางจริงของ request — Controller method ทุกตัวรันหลังจากผ่านชุดตรวจ auth, role, rate-limit หรือ reCAPTCHA อย่างใดอย่างหนึ่งเสมอ ผูกไว้ที่ router mount ไม่ใช่กระจัดกระจายต่อ route`,
+      },
+      {
+        slug: "worked-example-a-read-path",
+        titleEn: "Worked Example A — Read Path GET /api/v1/events",
+        titleTh: "ตัวอย่างจริง A — เส้นทางอ่าน GET /api/v1/events",
+        order: 7,
+        contentEn: `One real endpoint, traced stop by stop. Same method works for any route in the repo.
+
+**1 - Mount** — \`src/routes/v1/index.ts\`. Find the prefix first — every mount lives in one file.
+
+\`\`\`ts
+router.use('/events', authMiddleware, eventRoutes);
+\`\`\`
+
+**2 - Route** — \`src/routes/v1/event.routes.ts\`. \`GET /\` under that prefix → one controller method.
+
+\`\`\`ts
+router.get('/', eventController.getAllEvents);
+\`\`\`
+
+**3 - Controller** — \`src/controllers/EventController.ts\`. Destructures query params, Zod-validates, then instantiates the UseCase — its class name is the next stop.
+
+\`\`\`ts
+getAllEvents = async (req, res, next) => {
+  const actorId = req.user?.actorId;
+  const { searchString, threatLevel, tags, tlp, startDate, endDate, page, limit, sortBy, sort } = req.query;
+  const payload = SGetEventRequest.safeParse({ actorId, searchString, /* ... */ });
+  if (!payload.success) throw new ValidationError(/* first Zod issue */);
+  const useCase = new GetAllEventsUseCase(services);
+  const result = await useCase.execute(payload.data);
+  this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
+};
+\`\`\`
+
+**4 - UseCase** — \`src/usecases/event/GetAllEventsUseCase.ts\`. Strips \`actorId\`, calls one Service method — \`this.EventService\` names \`EventService.ts\` directly.
+
+\`\`\`ts
+async execute(request) {
+  const { actorId, ...payload } = request;
+  const result = await this.EventService.getAllWithPagination(payload);
+  // reshape rows: split TLP tag, format Thai date, ...
+  this.logger.info('...');
+  return { rows, pagination: result.pagination };
+}
+\`\`\`
+
+**5 - Service → Repository → Model** — \`src/services/EventService.ts\` → \`src/repositories/EventRepository.ts\` → \`src/models/Event.ts\`. \`EventService.getAllWithPagination\` (\`EventService.ts:77\`) passes straight through to \`EventRepository.getAllWithPagination\` (\`EventRepository.ts:38\`), which queries the \`Event\` model via \`mispModel\` — the \`misp\` database, confirmed, not \`secinsight\`.
+
+## Conclusion
+
+Five hops, each one a greppable signal from the previous lesson: mount → route → controller → usecase → service/repository/model. Tracing a read endpoint is a straight, predictable walk once you know what to grep for at each stop — even the database (\`misp\`, not \`secinsight\`) is confirmed by what the Repository actually imports, not assumed from the feature name.`,
+        contentTh: `endpoint จริงหนึ่งเส้น ไล่ทีละสถานีให้ดู วิธีเดียวกันนี้ใช้ได้กับทุก route ใน repo
+
+**1 · จุด mount** — \`src/routes/v1/index.ts\` หา prefix ก่อนเสมอ — ทุก mount อยู่ในไฟล์เดียว
+
+\`\`\`ts
+router.use('/events', authMiddleware, eventRoutes);
+\`\`\`
+
+**2 · Route** — \`src/routes/v1/event.routes.ts\` \`GET /\` ใต้ prefix นี้ → ไปที่ method controller ตัวเดียว
+
+\`\`\`ts
+router.get('/', eventController.getAllEvents);
+\`\`\`
+
+**3 · Controller** — \`src/controllers/EventController.ts\` destructure query param, validate ด้วย Zod แล้วค่อย \`new UseCase\` — ชื่อ class ก็คือสถานีถัดไปนั่นเอง
+
+\`\`\`ts
+getAllEvents = async (req, res, next) => {
+  const actorId = req.user?.actorId;
+  const { searchString, threatLevel, tags, tlp, startDate, endDate, page, limit, sortBy, sort } = req.query;
+  const payload = SGetEventRequest.safeParse({ actorId, searchString, /* ... */ });
+  if (!payload.success) throw new ValidationError(/* first Zod issue */);
+  const useCase = new GetAllEventsUseCase(services);
+  const result = await useCase.execute(payload.data);
+  this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
+};
+\`\`\`
+
+**4 · UseCase** — \`src/usecases/event/GetAllEventsUseCase.ts\` strip \`actorId\` ออก แล้วเรียก Service method ตัวเดียว — \`this.EventService\` ก็คือชื่อไฟล์ \`EventService.ts\` ตรงตัว
+
+\`\`\`ts
+async execute(request) {
+  const { actorId, ...payload } = request;
+  const result = await this.EventService.getAllWithPagination(payload);
+  // reshape rows: split TLP tag, format Thai date, ...
+  this.logger.info('...');
+  return { rows, pagination: result.pagination };
+}
+\`\`\`
+
+**5 · Service → Repository → Model** — \`src/services/EventService.ts\` → \`src/repositories/EventRepository.ts\` → \`src/models/Event.ts\` \`EventService.getAllWithPagination\` (\`EventService.ts:77\`) ส่งตรงไปที่ \`EventRepository.getAllWithPagination\` (\`EventRepository.ts:38\`) ซึ่ง query model \`Event\` ผ่าน \`mispModel\` — DB ที่ใช้จริงคือ \`misp\` ไม่ใช่ \`secinsight\`
+
+## สรุป
+
+ห้าจุด แต่ละจุดมีสัญญาณที่ grep เจอได้จากบทเรียนก่อนหน้า: mount → route → controller → usecase → service/repository/model การไล่ endpoint ฝั่งอ่านเป็นการเดินตรงไปเรื่อยๆ ที่คาดเดาได้ทันทีที่รู้ว่าต้อง grep หาอะไรในแต่ละจุด แม้แต่ database ที่ใช้จริง (\`misp\` ไม่ใช่ \`secinsight\`) ก็ยืนยันได้จากสิ่งที่ Repository import จริงๆ ไม่ใช่เดาจากชื่อฟีเจอร์`,
+      },
+      {
+        slug: "worked-example-b-write-destructive-path",
+        titleEn: "Worked Example B — Write + Destructive Path DELETE /api/v1/system-admin/events/:eventId",
+        titleTh: "ตัวอย่างจริง B — เส้นทางเขียน/ทำลาย DELETE /api/v1/system-admin/events/:eventId",
+        order: 8,
+        contentEn: `Reads aren't enough — you need the "write" shape too, especially a destructive op with a password-gate and DB-only authorization (never JWT claims).
+
+**1 - Route** — \`src/routes/v1/system-admin.routes.ts\`. This mount carries \`requireRole(SYSTEM_ADMIN)\` at router level — not per-route.
+
+\`\`\`ts
+router.delete('/events/:eventId', systemAdminController.deleteEvent);
+\`\`\`
+
+**2 - Controller** — \`src/controllers/SystemAdminController.ts\`. Route param \`:eventId\` + body \`actorPassword\` validated together — the controller has no idea about the password-gate, it just forwards.
+
+\`\`\`ts
+deleteEvent = async (req, res, next) => {
+  const { eventId } = req.params;
+  const actorId = req.user?.actorId;
+  const { actorPassword } = req.body;
+  const payload = SDeleteEventRequest.safeParse({ id: eventId, actorId, actorPassword });
+  const useCase = new DeleteEventUseCase(services);
+  const result = await useCase.execute(payload.data);
+  this.sendSuccess(res, { data: result }, HTTP_STATUS.OK); // 200, not 201
+};
+\`\`\`
+
+**3 - UseCase — the real password-gate + authz** — \`src/usecases/event/DeleteEventUseCase.ts\`. This is where "delete" is actually guarded, 3 layers deep: (1) re-fetch credential from DB (2) \`bcrypt.compare\` the real password — never trust the JWT (3) re-fetch the event to confirm it exists before deleting.
+
+\`\`\`ts
+async execute(request) {
+  const { actorId, actorPassword, id } = request;
+  // 1. re-fetch credential -- never trust anything from the request
+  const existsActorCredential = await this.UserCredentialService.findByUserId({ userId: actorId });
+  if (!existsActorCredential) throw new NotFoundError(/*...*/);
+  // 2. verify real password -- password-gate for destructive ops
+  const isActorPasswordValid = await bcrypt.compare(actorPassword, existsActorCredential.value);
+  if (!isActorPasswordValid) throw new ValidationError(/*...*/);
+  // 3. re-fetch target -- confirm it still exists
+  const existEvent = await this.EventService.getById({ id });
+  if (!existEvent) throw new NotFoundError(/*...*/);
+  // 4. act, then validate the mutation actually happened
+  const result = await this.EventService.delete({ id });
+  if (!result.success) throw new ConflictError(/*...*/);
+  this.logger.info('Event deleted successfully', { id, actorId });
+  return { id, message: 'Event deleted successfully' };
+}
+\`\`\`
+
+Notice: no try/catch wrapping the service calls — errors propagate naturally up to the single errorHandler (see the error-propagation lesson).
+
+**4 - Service → external MISP API (no Repository/DB here)** — \`src/services/EventService.ts:298\` → \`src/helper/axiosInstance.ts\` (\`mispAdminApi\`).
+
+Two spots where checking the real source contradicted the "textbook" story — logged honestly: \`getById\` (\`EventService.ts:100\`) actually returns \`null\` when the event is missing — a real naming-canon gap in this file (\`get*\` should never be null); \`DeleteEventUseCase\` already guards it with its own null-check regardless. \`delete\` (\`EventService.ts:298\`) skips \`EventRepository\` entirely — it calls \`mispAdminApi.delete(...)\` straight to the external MISP API. The actual "database" for this mutation is MISP's own backend, not local MySQL.
+
+## Conclusion
+
+A destructive endpoint adds three things a read path never needs: a password-gate that re-verifies against a freshly-fetched credential (never the JWT), a re-fetch of the target record right before acting on it, and a check that the mutation actually happened (\`result.success\`). And real code doesn't always match the naming canon exactly — \`EventService.getById\` genuinely returns \`null\` despite its \`get*\` name; noting that gap honestly is more useful than pretending the canon is perfectly followed everywhere.`,
+        contentTh: `อ่านอย่างเดียวไม่พอ ต้องเห็นเส้นทาง "เขียน" ด้วย — โดยเฉพาะ destructive operation ที่มี password-gate และ authorize จากค่าใน DB เท่านั้น ไม่ใช่จาก JWT
+
+**1 · Route** — \`src/routes/v1/system-admin.routes.ts\` mount นี้ผ่าน \`requireRole(SYSTEM_ADMIN)\` ที่ระดับ router — ไม่ใช่ per-route
+
+\`\`\`ts
+router.delete('/events/:eventId', systemAdminController.deleteEvent);
+\`\`\`
+
+**2 · Controller** — \`src/controllers/SystemAdminController.ts\` route param \`:eventId\` + body \`actorPassword\` ถูก validate เข้าด้วยกัน — controller ไม่รู้เรื่อง password-gate เลยสักนิด รู้แค่ว่าต้อง pass ต่อไป
+
+\`\`\`ts
+deleteEvent = async (req, res, next) => {
+  const { eventId } = req.params;
+  const actorId = req.user?.actorId;
+  const { actorPassword } = req.body;
+  const payload = SDeleteEventRequest.safeParse({ id: eventId, actorId, actorPassword });
+  const useCase = new DeleteEventUseCase(services);
+  const result = await useCase.execute(payload.data);
+  this.sendSuccess(res, { data: result }, HTTP_STATUS.OK); // 200, not 201
+};
+\`\`\`
+
+**3 · UseCase — password-gate + authz จริง** — \`src/usecases/event/DeleteEventUseCase.ts\` นี่คือจุดที่ "การลบ" ถูกป้องกันจริง 3 ชั้น: (1) re-fetch credential จาก DB (2) \`bcrypt.compare\` กับ password จริง ไม่เชื่อค่าจาก JWT (3) re-fetch event เพื่อยืนยันว่ายังอยู่จริง ก่อนสั่งลบ
+
+\`\`\`ts
+async execute(request) {
+  const { actorId, actorPassword, id } = request;
+  // 1. re-fetch credential -- never trust anything from the request
+  const existsActorCredential = await this.UserCredentialService.findByUserId({ userId: actorId });
+  if (!existsActorCredential) throw new NotFoundError(/*...*/);
+  // 2. verify real password -- password-gate for destructive ops
+  const isActorPasswordValid = await bcrypt.compare(actorPassword, existsActorCredential.value);
+  if (!isActorPasswordValid) throw new ValidationError(/*...*/);
+  // 3. re-fetch target -- confirm it still exists
+  const existEvent = await this.EventService.getById({ id });
+  if (!existEvent) throw new NotFoundError(/*...*/);
+  // 4. act, then validate the mutation actually happened
+  const result = await this.EventService.delete({ id });
+  if (!result.success) throw new ConflictError(/*...*/);
+  this.logger.info('Event deleted successfully', { id, actorId });
+  return { id, message: 'Event deleted successfully' };
+}
+\`\`\`
+
+สังเกต: ไม่มี try/catch ห่อรอบ service call เลย — error จะ "ปล่อยผ่าน" (propagate) ขึ้นไปเองให้ errorHandler จัดการที่จุดเดียว (ดูบทเรียนเรื่อง error propagation)
+
+**4 · Service → external MISP API (ไม่มี Repository/DB ในสเต็ปนี้)** — \`src/services/EventService.ts:298\` → \`src/helper/axiosInstance.ts\` (\`mispAdminApi\`)
+
+2 จุดที่เช็กแล้วไม่ตรงกับ "ทฤษฎี" ในเอกสาร ขอบันทึกไว้ตามจริง: \`getById\` (\`EventService.ts:100\`) คืน \`null\` ได้จริงเมื่อไม่เจอ event — ขัดกับ canon ของชื่อ \`get*\` (ที่ควรการันตีว่าไม่ null) ถือเป็นช่องโหว่ naming จริงในไฟล์นี้ (แต่ \`DeleteEventUseCase\` ก็เช็ก null เองอยู่แล้ว เป็นการป้องกันซ้ำ) ส่วน \`delete\` (\`EventService.ts:298\`) ไม่แตะ \`EventRepository\` เลยสักนิด — เรียก \`mispAdminApi.delete(...)\` ตรงไปที่ MISP API ภายนอกทันที "DB" จริงของ mutation นี้จึงอยู่ฝั่ง MISP เอง ไม่ใช่ MySQL local
+
+## สรุป
+
+endpoint แบบทำลายข้อมูลเพิ่ม 3 อย่างที่เส้นทางอ่านไม่มี: password-gate ที่ตรวจซ้ำกับ credential ที่ re-fetch มาใหม่ (ไม่ใช่จาก JWT), การ re-fetch record เป้าหมายก่อนลงมือทำ, และการเช็กว่า mutation เกิดขึ้นจริง (\`result.success\`) และโค้ดจริงก็ไม่ได้ตรงกับ naming canon เป๊ะๆ เสมอไป — \`EventService.getById\` คืน \`null\` ได้จริงแม้ชื่อจะเป็น \`get*\` การบันทึกช่องว่างนี้ไว้ตามจริงมีประโยชน์กว่าการแสร้งว่า canon ถูกทำตามทุกจุด`,
+      },
+      {
+        slug: "error-and-security-propagation-api",
+        titleEn: "Error & Security Propagation",
+        titleTh: "การไหลของ Error และ Security",
+        order: 9,
+        contentEn: `These two flow across the layers, not down the chain — worth tracing separately.
+
+### Error: thrown anywhere, caught once
+
+Service/Repository/UseCase throw directly, no try/catch in between. Only the Controller try/catches, purely to call \`next(error)\`. The one place that formats an error response is \`src/middleware/errorHandler.ts\`.
+
+| AppError | HTTP | Use for |
+| --- | --- | --- |
+| \`ValidationError\` | 400 | malformed input / wrong password |
+| \`AuthenticationError\` | 401 | login failure / expired session |
+| \`AuthorizationError\` | 403 | insufficient permission |
+| \`NotFoundError\` | 404 | record not found (an \`exists*\` came back null) |
+| \`ConflictError\` | 409 | duplicate / mutation didn't take (affected count != 1) |
+| \`RateLimitError\` | 429 | Too Many Requests |
+| \`UpstreamError\` / \`BadGatewayError\` | passthrough / 502 | external dependency down (MISP, SOC monitoring, ...) |
+| \`ConfigurationError\` | 500 | missing env var at boot only — never rendered to a client |
+
+**Never:** catch-and-rethrow to mask the original error — it hides the real cause and breaks the "propagate once" rule. Let the original error bubble.
+
+### Security: never trust JWT, always re-fetch DB
+
+\`req.user\` (from JWT) is a pointer only — \`actorId\`, \`actorRoleId\` are never authorization proof. Every authorizing UseCase re-fetches from DB before comparing (as in the destructive-path worked example, steps 1-3). The canonical pattern:
+
+\`\`\`ts
+// canonical pattern -- security.md
+// bad: trusting the JWT claim directly
+if (teamId !== actorTeamId) throw new AuthorizationError(/*...*/);
+
+// good: re-fetch from DB, \`exists\` prefix, compare persisted values
+const existsActor = await this.UserService.findById({ id: actorId });
+if (!existsActor) throw new NotFoundError(/*...*/);
+const existsTeam = await this.TeamService.findById({ id: teamId });
+if (!existsTeam || existsTeam.id !== existsActor.teamId)
+  throw new AuthorizationError('Not authorized for this team');
+\`\`\`
+
+Every DB-lookup variable is prefixed \`exists\` (\`existsActor\`, \`existsTeam\`) — the name alone signals "may be null, check me."
+
+## Conclusion
+
+Errors and authorization both cut across every layer rather than flowing down the chain: errors throw anywhere and get caught exactly once, at \`errorHandler.ts\`; authorization never trusts a JWT claim directly, it re-fetches the real record from the database first. Both rules exist for the same reason — a single point of truth beats trusting data that traveled through an untrusted hop.`,
+        contentTh: `สองเรื่องนี้ไหล "ข้าม" layer ไม่ใช่ไหล "ลง" ตามสาย — ต้องรู้แยกไว้ต่างหาก
+
+### Error: โยนที่ไหน จับที่เดียว
+
+Service/Repository/UseCase throw ตรงๆ ไม่มี try/catch ห่อไว้ระหว่างทางเลย มีแค่ Controller ที่ try/catch เพื่อเรียก \`next(error)\` เท่านั้น จุดเดียวที่ format error response คือ \`src/middleware/errorHandler.ts\`
+
+| AppError | HTTP | ใช้เมื่อ |
+| --- | --- | --- |
+| \`ValidationError\` | 400 | input ผิดรูปแบบ / password ไม่ถูกต้อง |
+| \`AuthenticationError\` | 401 | login ล้มเหลว / session หมดอายุ |
+| \`AuthorizationError\` | 403 | สิทธิ์ไม่พอ |
+| \`NotFoundError\` | 404 | record หาไม่เจอ (มาจาก \`exists*\` ที่เป็น null) |
+| \`ConflictError\` | 409 | ค่าซ้ำ / mutation ไม่สำเร็จ (affected count ≠ 1) |
+| \`RateLimitError\` | 429 | Too Many Requests |
+| \`UpstreamError\` / \`BadGatewayError\` | passthrough / 502 | API ภายนอกล่ม (MISP, SOC monitoring, ...) |
+| \`ConfigurationError\` | 500 | env var หายตอน boot เท่านั้น ไม่เคยถูกส่งให้ client |
+
+**อย่าทำ:** catch แล้ว throw error ใหม่ทับของเดิม (catch-and-rethrow) — วิธีนี้ซ่อนสาเหตุจริงไว้ และขัดกับกฎ "ปล่อยผ่านครั้งเดียว" ปล่อยให้ error เดิมวิ่งขึ้นไปเองดีกว่า
+
+### Security: ไม่เชื่อ JWT, re-fetch จาก DB เสมอ
+
+\`req.user\` (จาก JWT) เป็นแค่ "ตัวชี้" เท่านั้น — \`actorId\`, \`actorRoleId\` ไม่ใช่ของจริงที่เอาไป authorize ได้ ทุก UseCase ที่ต้อง authorize จึงต้อง re-fetch ค่าจาก DB ก่อนเทียบเสมอ (ดังตัวอย่างในบทเรียน worked example ฝั่ง write ขั้นที่ 1–3) — pattern มาตรฐานคือ:
+
+\`\`\`ts
+// canonical pattern -- security.md
+// bad: trusting the JWT claim directly
+if (teamId !== actorTeamId) throw new AuthorizationError(/*...*/);
+
+// good: re-fetch from DB, \`exists\` prefix, compare persisted values
+const existsActor = await this.UserService.findById({ id: actorId });
+if (!existsActor) throw new NotFoundError(/*...*/);
+const existsTeam = await this.TeamService.findById({ id: teamId });
+if (!existsTeam || existsTeam.id !== existsActor.teamId)
+  throw new AuthorizationError('Not authorized for this team');
+\`\`\`
+
+ตัวแปรที่มาจาก DB lookup ทั้งหมดต้องขึ้นต้นด้วย \`exists\` (\`existsActor\`, \`existsTeam\`) — เห็นชื่อปุ๊บรู้ทันทีว่าอาจเป็น null ต้องเช็ก
+
+## สรุป
+
+Error และ authorization ทั้งคู่ตัดผ่านทุก layer แทนที่จะไหลลงตามสาย: error โยนได้จากที่ไหนก็ได้ แล้วถูกจับแค่ครั้งเดียวที่ \`errorHandler.ts\`; authorization ไม่เชื่อ JWT claim ตรงๆ เลย ต้อง re-fetch record จริงจาก database ก่อนเสมอ ทั้งสองกฎมีเหตุผลเดียวกัน — จุดความจริงเดียวดีกว่าการเชื่อข้อมูลที่เดินทางผ่านจุดที่ไม่น่าเชื่อถือมา`,
+      },
+      {
+        slug: "full-naming-canon-find-get",
+        titleEn: "Full Naming Canon (find/get)",
+        titleTh: "Naming Canon ฉบับเต็ม (find/get)",
+        order: 10,
+        contentEn: `The prefix encodes the return contract — read the name, know the null-check obligation, without opening the implementation. Same rule at every layer (Service and Repository).
+
+| Prefix | Shape | Return contract | Caller obligation | Real example in repo |
+| --- | --- | --- | --- | --- |
+| \`find<X>By<Key>\` | single record | \`X \\| null\` | \`exists*\` variable + \`NotFoundError\` | \`UserCredentialService.findByUserId\` |
+| \`getAll<X>\` / \`get<X>Options\` | list/aggregate | never null — data or \`[]\` | no null-check | \`EventService.getAllWithPagination\` |
+| \`get<X>By<Key>\` | single record | guaranteed — throws inside if missing | no null-check | \`RoleService.getNameById\` — a real example that does not yet follow canon cleanly: the repository underneath returns \`''\` instead of throwing when missing (\`EventService.getById\` also genuinely returns \`null\`, same gap — canon is mandatory for new code; older methods aren't fully retrofitted) |
+| \`create<X>\` | mutation | created record | \`!record\` → \`ConflictError\` | \`UserService.create\` |
+| \`update<X>By<Key>\` / \`delete<X>By<Key>\` | mutation | affected count | \`count !== 1\` → \`ConflictError\` | \`UserCredentialRepository.updateByUserId\` |
+
+**One-sentence teach:** find may miss → check. get never misses → don't.
+
+## Conclusion
+
+Four prefixes, four contracts: \`find*\` may return \`null\` and demands a check; \`get*\` (plural/aggregate) never returns \`null\`; \`get*By<Key>\` (singular) is guaranteed or throws internally; mutation prefixes (\`create*\`, \`update*By*\`, \`delete*By*\`) return either the created record or an affected count. The canon isn't retrofitted everywhere in the real codebase — \`RoleService.getNameById\` and \`EventService.getById\` are documented exceptions, not secrets to discover the hard way.`,
+        contentTh: `prefix ของ method บอก "สัญญา" การคืนค่าไว้ในตัว — เห็นชื่อก็รู้ทันทีว่าต้องเช็ก null ไหม โดยไม่ต้องเปิดดู implementation เลย กฎเดียวกันนี้ใช้กับทุก layer (Service และ Repository)
+
+| Prefix | รูปแบบ | สัญญาการคืนค่า | ภาระของผู้เรียก | ตัวอย่างจริงใน repo |
+| --- | --- | --- | --- | --- |
+| \`find<X>By<Key>\` | record เดียว | \`X \\| null\` | ตัวแปร \`exists*\` + \`NotFoundError\` | \`UserCredentialService.findByUserId\` |
+| \`getAll<X>\` / \`get<X>Options\` | list/aggregate | ไม่มีวัน null — data หรือ \`[]\` | ไม่ต้องเช็ก null | \`EventService.getAllWithPagination\` |
+| \`get<X>By<Key>\` | record เดียว | การันตีมีค่า — โยน error เองภายในถ้าไม่เจอ | ไม่ต้องเช็ก null | \`RoleService.getNameById\` — ตัวอย่างจริงที่ยังไม่ทำตาม canon เป๊ะๆ: repository ชั้นล่างคืน \`''\` แทนที่จะ throw เมื่อไม่เจอ (\`EventService.getById\` เองก็คืน \`null\` ได้จริงเหมือนกัน ขัด canon แบบเดียวกัน — canon เป็นกฎบังคับสำหรับโค้ดใหม่เท่านั้น โค้ดเก่ายังไม่ได้ retrofit ให้ครบทุกจุด) |
+| \`create<X>\` | mutation | record ที่สร้างแล้ว | \`!record\` → \`ConflictError\` | \`UserService.create\` |
+| \`update<X>By<Key>\` / \`delete<X>By<Key>\` | mutation | จำนวนแถวที่ถูกกระทบ | \`count !== 1\` → \`ConflictError\` | \`UserCredentialRepository.updateByUserId\` |
+
+**จำแบบประโยคเดียว:** find อาจไม่เจอ → ต้องเช็ก · get ไม่มีวันพลาด → ไม่ต้องเช็ก
+
+## สรุป
+
+สี่ prefix สี่สัญญา: \`find*\` อาจคืน \`null\` และต้องเช็กเสมอ; \`get*\` (แบบ list/aggregate) ไม่มีวันคืน \`null\`; \`get*By<Key>\` (record เดียว) การันตีมีค่าหรือ throw เองข้างใน; prefix ของ mutation (\`create*\`, \`update*By*\`, \`delete*By*\`) คืน record ที่สร้างหรือจำนวนแถวที่ถูกกระทบ canon นี้ยังไม่ถูก retrofit ทุกจุดในโค้ดจริง — \`RoleService.getNameById\` และ \`EventService.getById\` เป็นข้อยกเว้นที่บันทึกไว้ตามจริง ไม่ใช่เรื่องที่ต้องไปค้นพบเอาเองแบบยากๆ`,
+      },
+      {
+        slug: "use-graphify-instead-of-grep-api",
+        titleEn: "Use graphify Instead of grep",
+        titleTh: "ใช้ graphify แทน grep",
+        order: 11,
+        contentEn: `This repo ships a knowledge graph precisely so you don't hand-search for the next stop. It's the primary tool — raw grep/Read is the fallback.
+
+| You want | Run |
+| --- | --- |
+| Who calls this class / what does it call | \`graphify explain "EventController"\` |
+| Trace a route → controller → usecase chain | chain \`explain\` per hop — **not** \`graphify path\` (the graph has too many disconnected components) |
+| Architecture overview | \`graphify-out/GRAPH_REPORT.md\` |
+| Find files by pattern | \`graphify query "<pattern>"\` |
+| Why a decision was made (ADR) | \`graphify explain "<X>" --graph graphify-out-docs/graph.json\` |
+
+## Conclusion
+
+\`graphify\` answers "who calls this / what does this call" and "why was this decided" faster than grepping blind — reach for it first, and fall back to raw grep/Read only when the graph doesn't cover the question.`,
+        contentTh: `repo นี้มี knowledge graph มาให้ เพื่อไม่ต้อง grep หาสถานีถัดไปด้วยมือเอง ถือเป็นเครื่องมือหลักที่ควรใช้ก่อน — grep/Read แบบดิบๆ เป็นแค่ตัวสำรอง
+
+| ต้องการ | คำสั่ง |
+| --- | --- |
+| ใครเรียก class นี้ / class นี้เรียกอะไร | \`graphify explain "EventController"\` |
+| ไล่ route → controller → usecase | ไล่ \`explain\` ทีละ hop — **ห้าม** ใช้ \`graphify path\` (graph มี component แยกจากกันเยอะ) |
+| ภาพรวมสถาปัตยกรรม | \`graphify-out/GRAPH_REPORT.md\` |
+| หาไฟล์ตาม pattern | \`graphify query "<pattern>"\` |
+| ทำไมถึงตัดสินใจแบบนี้ (ADR) | \`graphify explain "<X>" --graph graphify-out-docs/graph.json\` |
+
+## สรุป
+
+\`graphify\` ตอบคำถาม "ใครเรียกสิ่งนี้ / สิ่งนี้เรียกอะไร" และ "ทำไมถึงตัดสินใจแบบนี้" ได้เร็วกว่าการ grep แบบเดาสุ่ม — ใช้มันก่อนเสมอ แล้วค่อยพึ่ง grep/Read แบบดิบๆ เฉพาะตอนที่ graph ไม่ครอบคลุมคำถามนั้น`,
+      },
+      {
+        slug: "the-reusable-method-api",
+        titleEn: "The Reusable Method",
+        titleTh: "วิธีการที่ใช้ซ้ำได้",
+        order: 12,
+        contentEn: `Apply this to any endpoint in the repo, front to back.
+
+1. Find the URL prefix's mount line in \`src/routes/v1/index.ts\` — tells you the route file and which middleware/role guards it.
+2. Open that route file — match HTTP verb + path to one controller method name.
+3. Open the controller — read only the Zod schema name and the \`new <X>UseCase(...)\` line. Skip the validation boilerplate, it's identical everywhere.
+4. Open the UseCase — read \`execute()\`. Every \`this.<X>Service.<method>\` call is a named next stop.
+5. Open the Service — usually a thin pass-through to one Repository method. If it's not thin, that's where real domain logic lives.
+6. Open the Repository — the actual SQL/Sequelize query and the model it targets. Check \`secinsightModel\` vs \`mispModel\` import to know which database.
+7. If it's a destructive/write op, check the extras: is there a password-gate? does authz compare DB values, not JWT? does the mutation validate affected-count/result?
+8. Model file is schema only — you don't need to read it unless a field is confusing.
+
+## Conclusion
+
+Eight steps, applied identically to every endpoint in this repo: mount → route → controller → usecase → service → repository → (destructive-op extras) → model-as-reference-only. This is the whole method this course has been building toward — everything in the earlier lessons was learning to do each step fast.`,
+        contentTh: `ใช้ขั้นตอนนี้ไล่ endpoint ไหนก็ได้ใน repo ตั้งแต่ต้นจนจบ
+
+1. หาบรรทัด mount ของ URL prefix ใน \`src/routes/v1/index.ts\` — บอกไฟล์ route และ middleware/role guard ที่ครอบอยู่
+2. เปิดไฟล์ route — จับคู่ HTTP verb + path กับ method controller หนึ่งตัว
+3. เปิด controller — อ่านแค่ชื่อ Zod schema กับบรรทัด \`new <X>UseCase(...)\` ข้าม boilerplate validate ที่เหมือนกันทุกที่ไปได้เลย
+4. เปิด UseCase — อ่าน \`execute()\` ทุก \`this.<X>Service.<method>\` คือสถานีถัดไปที่มีชื่อชัดอยู่แล้ว
+5. เปิด Service — ส่วนใหญ่ pass-through บางๆ ไป Repository หนึ่งตัว ถ้าไม่บาง นั่นแหละคือจุดที่ domain logic จริงอยู่
+6. เปิด Repository — ดู query Sequelize/SQL จริง และ model ที่มันเล็งไปหา เช็ก import \`secinsightModel\` หรือ \`mispModel\` เพื่อรู้ว่าใช้ DB ไหน
+7. ถ้าเป็น destructive/write op ให้เช็กเพิ่ม: password-gate มีไหม, authorize เทียบกับค่า DB ไม่ใช่ JWT, และ mutation เช็ก affected-count/result หรือไม่
+8. Model ไม่ต้องอ่าน เว้นแต่ field ไหนงงจริงๆ — เป็นแค่ schema
+
+## สรุป
+
+แปดขั้นตอน ใช้แบบเดียวกันกับทุก endpoint ใน repo นี้: mount → route → controller → usecase → service → repository → (ส่วนเพิ่มสำหรับ destructive op) → model-ไว้อ้างอิงเท่านั้น นี่คือวิธีการทั้งหมดที่บทเรียนก่อนหน้าทั้งคอร์สค่อยๆ สร้างขึ้นมา — ทุกอย่างที่เรียนมาก่อนหน้านี้คือการฝึกทำแต่ละขั้นตอนให้เร็วขึ้น`,
+      },
+    ],
+  },
+  {
+    slug: "secinsight-ui-layers",
+    title: "SecInsight UI: Tracing the Codebase by Layers",
+    descriptionEn: `The frontend counterpart to the SecInsight API course (Nuxt 3 / Vue 3 / Pinia). Every path, snippet, and line number was checked against real source -- nothing guessed. The first 8 lessons are onboarding; the last 5 are advanced (CSR-only architecture, the module-level modal resolver, the reCAPTCHA load sequence, and a real security boundary + debt audit, not just theory).`,
+    descriptionTh: `คู่ฉบับของคอร์ส SecInsight API สำหรับฝั่ง frontend (Nuxt 3 / Vue 3 / Pinia) ทุกข้อความ, path, บรรทัดโค้ดเช็กกับ source จริงมาแล้ว -- ไม่มีอะไรเดา 8 บทเรียนแรกคือ onboarding ส่วน 5 บทเรียนสุดท้ายคือ advanced (CSR-only architecture, modal resolver ระดับ module, ลำดับการโหลด reCAPTCHA, และ security boundary + audit หาหนี้ทางเทคนิคจริงในโค้ด ไม่ใช่แค่ทฤษฎี)`,
+    published: false,
+    lessons: [
+      {
+        slug: "the-fixed-chain-ui",
+        titleEn: "The Fixed Chain",
+        titleTh: "The Fixed Chain (สายที่ตายตัว)",
+        order: 1,
+        contentEn: `Nuxt has no separate route-config layer — the \`pages/\` folder is the router (file-based routing). From there, data flows through the same 6 stops, always — starting from the component that actually renders, not just the page.
+
+**Component → Page → Composable → Service → $api plugin → Backend**
+
+| Layer | Job | Why it exists | What breaks if you skip it | Directory |
+| --- | --- | --- | --- | --- |
+| Component | Renders UI from props, emits an event up for the Page to handle — or sometimes calls a composable directly itself | UI reuses across pages (e.g. \`EventTable\` is used at both \`/events\` and \`/system-admin/events\`) — the Page never needs to know rendering detail | The Page bloats with render logic, cross-page reuse becomes impossible, markup gets copy-pasted | \`components/\` |
+| Page | Renders the route, owns page-level state (filters, pagination, sort), wires composables to template events | The folder path under \`pages/\` IS the URL — no separate route-config file to go hunting through | Composables would need to know about routes/params directly; multiple pages needing the same data duplicate fetch+loading logic inline | \`pages/\` |
+| Composable | Owns the standard \`data\`/\`isLoading\`/\`pagination\` ref trio for one operation, calls one Service method, exposes state + a trigger function | Lets multiple pages share the same fetch operation without re-writing the try/finally + isLoading boilerplate | Every page duplicates its own \`isLoading\` ref and try/finally around a raw service call — easy to forget the reset | \`composables/\` |
+| Service | A thin class wrapping \`this.api\` (= \`useNuxtApp().$api\`), one method per endpoint, holds only the URL prefix | Endpoint paths + HTTP verbs live in exactly one place per domain — composables never hardcode a URL string | URL strings scatter into composables/pages and silently drift from the real backend routes | \`services/\` |
+| $api plugin | The app's one global \`$fetch\` instance — attaches the Authorization header, unwraps the success envelope, translates any error response into a thrown \`ApiError\` | Every Service method gets auth + envelope handling for free — no composable ever touches a raw Response itself | Auth-header and envelope-unwrap logic would be copy-pasted into every Service, error handling would fragment across composables | \`plugins/api.ts\` |
+
+**Note: the Pinia Store is not part of this chain.** \`authStore\` (Pinia) doesn't sit in-line — both the Component and the Page read/write it directly, in parallel with calling composables (\`authStore.isSystemAdmin\` is read in \`pages/events/index.vue\` and inside \`EventTable.vue:269\` itself — the Page doesn't monopolize the read), and \`plugins/api.ts\` itself reads \`authStore.getAccessToken\` directly to set the header. It's cross-cutting state, not a chain node — forcing it into the sequence would misrepresent the real code.
+
+## Conclusion
+
+Six stops, starting from the Component that actually renders (not just the Page): Component → Page → Composable → Service → \`$api\` → Backend. The Pinia auth store sits outside this chain entirely — it's read directly by several layers in parallel, which is a deliberate exception worth remembering rather than a gap in the model.`,
+        contentTh: `Nuxt ไม่มี "route config" แยกต่างหาก — โฟลเดอร์ \`pages/\` คือ router (file-based routing) จากนั้นข้อมูลไหลผ่าน 6 สถานีเสมอ เริ่มจาก component ที่ render จริง (ไม่ใช่แค่ page)
+
+**Component → Page → Composable → Service → $api plugin → Backend**
+
+| Layer | หน้าที่ | ทำไมต้องมีเลเยอร์นี้ | ถ้าข้ามเลเยอร์นี้ จะพังตรงไหน | Directory |
+| --- | --- | --- | --- | --- |
+| Component | render UI จาก props, emit event ขึ้นให้ Page จัดการ — หรือบางครั้งเรียก composable ตรงเองเลย | reuse UI ข้ามหน้าได้ (เช่น \`EventTable\` ใช้ทั้งที่ \`/events\` และ \`/system-admin/events\`) — Page ไม่ต้องรู้ markup รายละเอียด | Page บวม logic การ render เอง reuse ข้ามหน้าไม่ได้ ต้อง copy markup | \`components/\` |
+| Page | render route, ถือ state ระดับหน้า (filter/pagination/sort), ผูก composable เข้ากับ template event | โฟลเดอร์ใน \`pages/\` = URL ตรงตัว (file-based routing) — ไม่มี route-config ให้ไล่หาแยก | composable ต้องรู้เรื่อง route/param เอง หลายหน้าที่ใช้ data เดียวกันต้อง copy fetch+loading logic ซ้ำ | \`pages/\` |
+| Composable | ถือ ref สามตัวมาตรฐาน (data/isLoading/pagination) ของ operation เดียว เรียก Service หนึ่งตัว คืน state + trigger function | ให้หลายหน้าใช้ fetch operation เดียวกันได้โดยไม่ต้อง copy try/finally + isLoading ซ้ำทุกที่ | ทุกหน้า copy \`isLoading\` ref + try/finally รอบ raw service call เอง เสี่ยงลืม reset | \`composables/\` |
+| Service | class บางๆ ห่อ \`this.api\` (= \`useNuxtApp().$api\`) หนึ่ง method ต่อหนึ่ง endpoint ถือแค่ URL prefix | path + HTTP verb ของแต่ละ domain อยู่จุดเดียว — composable ไม่ hardcode URL string เอง | URL string กระจายเข้าไปใน composable/page เอง ไดร์ฟจาก backend route จริงได้เงียบๆ | \`services/\` |
+| $api plugin | \`$fetch\` instance เดียวของทั้งแอป — ใส่ Authorization header, แกะ envelope ตอนสำเร็จ, แปลง error response เป็น \`ApiError\` ที่ throw ได้ | ทุก Service method ได้ auth + envelope handling ฟรี ไม่มี composable ไหนต้องแตะ raw Response เอง | auth header + envelope-unwrap logic ต้อง copy ไปทุก Service, error handling กระจัดกระจาย | \`plugins/api.ts\` |
+
+**หมายเหตุ: Pinia Store ไม่ได้อยู่ใน chain นี้** \`authStore\` (Pinia) ไม่ได้เรียงต่อในสายนี้ — ทั้ง Component และ Page อ่าน/เขียนมันตรงๆ ขนานไปกับการเรียก composable (\`authStore.isSystemAdmin\` ถูกอ่านทั้งใน \`pages/events/index.vue\` และใน \`EventTable.vue:269\` เอง — ไม่ใช่ Page ผูกขาดการอ่าน) และ \`plugins/api.ts\` เองก็อ่าน \`authStore.getAccessToken\` ตรงๆ เพื่อใส่ header ถือเป็น cross-cutting state ไม่ใช่ node ในสาย — ใส่เป็น node ให้ดูเป็นสายเดียวจะไม่ตรงกับโค้ดจริง
+
+## สรุป
+
+หกสถานี เริ่มจาก Component ที่ render จริง (ไม่ใช่แค่ Page): Component → Page → Composable → Service → \`$api\` → Backend Pinia auth store อยู่นอกสายนี้ทั้งหมด — ถูกอ่านตรงๆ จากหลาย layer พร้อมกัน ซึ่งเป็นข้อยกเว้นที่ตั้งใจ ควรจำไว้ ไม่ใช่ช่องโหว่ของโมเดล`,
+      },
+      {
+        slug: "how-to-jump-one-stop-ui",
+        titleEn: "How to Jump One Stop, at Each Layer",
+        titleTh: "วิธีกระโดดข้ามสถานี ทีละ Layer",
+        order: 2,
+        contentEn: `Each stop hands off with a predictable, greppable signal.
+
+| Hop | Signal |
+| --- | --- |
+| Component → Page | Grep \`defineEmits\` in the component file — the declared event names are exactly what the page must listen for with \`@kebab-case-event\` in its template (Vue auto-converts camelCase → kebab-case). Not every component just emits — some call a composable directly themselves (\`EventDetailCard.vue\`, see the security-boundary lesson). Always check for an \`import { use...\` in the component file first. |
+| Page → Composable | Page destructures straight from \`use<Domain><Op>()\` near the top of \`<script setup>\` — the composable name already states domain + operation. Grep for \`const { ... } = use\`. |
+| Composable → Service | The composable does \`new services.<Domain>Service()\` then calls one method — the class name is the file name in \`services/<Domain>Service.ts\`, directly. |
+| Service → $api | Every Service constructor does \`this.api = useNuxtApp().$api\`, then each method calls \`this.api<T>(url, { method })\` — same single destination, \`plugins/api.ts\`. |
+
+**try/finally, never try/catch.** \`$api\` already handles errors globally — a composable only needs to reset \`isLoading\` in \`finally\`. A \`catch\` wrapping a service call anywhere is a wrong signal. Confirmed real in both \`useEventService.ts\` and \`useSystemAdminService.ts\`.
+
+## Conclusion
+
+Every hand-off has one greppable signal: \`defineEmits\`, a destructured \`use<Domain><Op>()\`, a \`new services.<X>Service()\`, or \`this.api<T>(...)\`. And a composable wrapping a service call in \`try/finally\` — never \`try/catch\` — is the tell that it's correctly trusting \`$api\`'s global error handling instead of re-implementing it.`,
+        contentTh: `แต่ละสถานีส่งไม้ต่อด้วยสัญญาณที่ grep เจอได้แน่นอน
+
+| การกระโดด | สัญญาณ |
+| --- | --- |
+| Component → Page | grep \`defineEmits\` ในไฟล์ component — ชื่อ event ที่ประกาศคือสิ่งที่ page ต้องฟังด้วย \`@kebab-case-event\` ใน template (Vue แปลง camelCase → kebab-case ให้อัตโนมัติ) ไม่ใช่ทุก component จบที่ emit — บางตัวเรียก composable เองตรงๆ เลย (\`EventDetailCard.vue\`, ดูบทเรียนเรื่อง security boundary) เช็ก \`import { use...\` ในไฟล์ component ก่อนเสมอ |
+| Page → Composable | Page destructure ค่าจาก \`use<Domain><Op>()\` ตรงๆ ในต้น \`<script setup>\` — ชื่อ composable บอกทั้ง domain และ operation อยู่แล้ว grep หา \`const { ... } = use\` |
+| Composable → Service | composable ทำ \`new services.<Domain>Service()\` แล้วเรียก method เดียว — ชื่อ class คือชื่อไฟล์ \`services/<Domain>Service.ts\` ตรงตัว |
+| Service → $api | constructor ของ Service ทุกตัวทำ \`this.api = useNuxtApp().$api\` แล้ว method เรียก \`this.api<T>(url, { method })\` — ปลายทางเดียวกันหมดคือ \`plugins/api.ts\` |
+
+**try/finally เท่านั้น ไม่ใช่ try/catch** \`$api\` เป็น global error handler อยู่แล้ว composable แค่ต้อง reset \`isLoading\` ใน \`finally\` — เห็น \`catch\` รอบ service call ที่ไหนคือผิดสัญญาณ ยืนยันจริงทั้ง \`useEventService.ts\` และ \`useSystemAdminService.ts\`
+
+## สรุป
+
+ทุกการส่งไม้ต่อมีสัญญาณที่ grep เจอได้หนึ่งอย่าง: \`defineEmits\`, \`use<Domain><Op>()\` ที่ destructure ไว้, \`new services.<X>Service()\`, หรือ \`this.api<T>(...)\` และ composable ที่ห่อ service call ด้วย \`try/finally\` — ไม่ใช่ \`try/catch\` — คือสัญญาณว่ามันเชื่อใจ global error handling ของ \`$api\` ถูกทาง ไม่ได้เขียนมันขึ้นมาเองซ้ำ`,
+      },
+      {
+        slug: "worked-example-a-read-path-ui",
+        titleEn: "Worked Example A — Read Path (Events List Page)",
+        titleTh: "ตัวอย่างจริง A — เส้นทางอ่าน (หน้ารายการ Events)",
+        order: 3,
+        contentEn: `One real endpoint: the \`/events\` page loading the event list.
+
+**1 - Component** — \`pages/events/index.vue:10-32\` (template). Two real components alternate by role — a \`v-if\` picks the right one. Both share the same \`:dataList="events"\` prop, sourced from the composable (next step).
+
+\`\`\`html
+<div v-if="!isAdmin">
+  <EventUserList :dataList="events" :isLoading="isEventListLoading"
+    :pagination="pagination" @update-page="handlePaginationChange" />
+</div>
+<div v-else>
+  <EventTable :dataList="events" :isLoading="isEventListLoading"
+    :pagination="pagination" @delete-event="handleDeleteEvent" />
+</div>
+\`\`\`
+
+The Component only renders — it doesn't call the composable itself, data flows down purely via props (contrast with a Component calling a composable directly, see the security-boundary lesson's \`EventDetailCard.vue\`).
+
+**2 - Page** — \`pages/events/index.vue:50-58\`. Destructures straight from the composable, calls it in \`onMounted\`.
+
+\`\`\`ts
+const {
+  listEvents: events,
+  isEventListLoading,
+  pagination,
+  fetchEvents,
+} = useEventList();
+// ...later:
+onMounted(() => { fetchAllEvents(); });
+\`\`\`
+
+**3 - Composable** — \`composables/event/useEventService.ts:9-33\`. Owns \`listEvents\`, \`isEventListLoading\`, \`pagination\` — creates \`new services.EventService()\` once at setup, calls \`eventService.getAll(params)\`.
+
+\`\`\`ts
+export const useEventList = () => {
+  const listEvents = ref<IEvent[]>([]);
+  const isEventListLoading = ref(false);
+  const pagination = reactive<IPaginationState>(createPaginationState());
+  const eventService = new services.EventService();
+  const fetchEvents = async (params) => {
+    isEventListLoading.value = true;
+    try {
+      const response = await eventService.getAll(params);
+      listEvents.value = response.rows;
+      pagination.total = response.pagination.totalItems;
+    } finally {
+      isEventListLoading.value = false;
+    }
+  };
+  return { listEvents, isEventListLoading, pagination, fetchEvents };
+};
+\`\`\`
+
+**4 - Service** — \`services/EventService.ts:10-32\`. Holds only the \`/events\` prefix — \`getAll\` forwards query params straight through \`this.api\`.
+
+\`\`\`ts
+class EventService {
+  private readonly prefix: string = '/events';
+  private readonly api;
+  constructor() {
+    this.api = useNuxtApp().$api;
+  }
+  async getAll(params?: IGetEventsRequest): Promise<IEventsResponse> {
+    return await this.api<IEventsResponse>(this.prefix, {
+      method: 'GET',
+      params: params,
+    });
+  }
+}
+\`\`\`
+
+**5 - $api plugin → Backend** — \`plugins/api.ts\`. \`$fetch.create\` at \`baseURL: config.public.apiURL + '/api/v1'\` attaches the header and actually fires \`GET /api/v1/events\` against secinsight-api (a separate repo) — the success envelope is unwrapped in \`onResponse\` before it reaches the Service.
+
+## Conclusion
+
+Five hops for a read: Component (renders via props) → Page (\`onMounted\` + destructured composable) → Composable (owns loading state, calls one Service method) → Service (thin, one prefix) → \`$api\` (auth + envelope, then the real HTTP call). This exact shape repeats for every read page in the app.`,
+        contentTh: `endpoint จริงหนึ่งเส้น: หน้า \`/events\` ดึงรายการ event
+
+**1 · Component** — \`pages/events/index.vue:10-32\` (template) มี 2 component จริงสลับกันตาม role — \`v-if\` เลือกให้ตรง ทั้งคู่ใช้ prop \`:dataList="events"\` เดียวกัน ที่มาจาก composable (step ถัดไป)
+
+\`\`\`html
+<div v-if="!isAdmin">
+  <EventUserList :dataList="events" :isLoading="isEventListLoading"
+    :pagination="pagination" @update-page="handlePaginationChange" />
+</div>
+<div v-else>
+  <EventTable :dataList="events" :isLoading="isEventListLoading"
+    :pagination="pagination" @delete-event="handleDeleteEvent" />
+</div>
+\`\`\`
+
+Component แค่ render ไม่เรียก composable เอง — ข้อมูลไหลลงมาทาง prop เท่านั้น (contrast กับ Component ที่เรียก composable ตรง ดูบทเรียนเรื่อง security boundary ของ \`EventDetailCard.vue\`)
+
+**2 · Page** — \`pages/events/index.vue:50-58\` destructure ตรงจาก composable แล้วเรียกใน \`onMounted\`
+
+\`\`\`ts
+const {
+  listEvents: events,
+  isEventListLoading,
+  pagination,
+  fetchEvents,
+} = useEventList();
+// ...later:
+onMounted(() => { fetchAllEvents(); });
+\`\`\`
+
+**3 · Composable** — \`composables/event/useEventService.ts:9-33\` ถือ \`listEvents\`, \`isEventListLoading\`, \`pagination\` — ตั้ง \`new services.EventService()\` ครั้งเดียวตอน setup แล้วเรียก \`eventService.getAll(params)\`
+
+\`\`\`ts
+export const useEventList = () => {
+  const listEvents = ref<IEvent[]>([]);
+  const isEventListLoading = ref(false);
+  const pagination = reactive<IPaginationState>(createPaginationState());
+  const eventService = new services.EventService();
+  const fetchEvents = async (params) => {
+    isEventListLoading.value = true;
+    try {
+      const response = await eventService.getAll(params);
+      listEvents.value = response.rows;
+      pagination.total = response.pagination.totalItems;
+    } finally {
+      isEventListLoading.value = false;
+    }
+  };
+  return { listEvents, isEventListLoading, pagination, fetchEvents };
+};
+\`\`\`
+
+**4 · Service** — \`services/EventService.ts:10-32\` holds แค่ prefix \`/events\` — \`getAll\` ส่ง query params ตรงๆ ผ่าน \`this.api\`
+
+\`\`\`ts
+class EventService {
+  private readonly prefix: string = '/events';
+  private readonly api;
+  constructor() {
+    this.api = useNuxtApp().$api;
+  }
+  async getAll(params?: IGetEventsRequest): Promise<IEventsResponse> {
+    return await this.api<IEventsResponse>(this.prefix, {
+      method: 'GET',
+      params: params,
+    });
+  }
+}
+\`\`\`
+
+**5 · $api plugin → Backend** — \`plugins/api.ts\` \`$fetch.create\` ที่ \`baseURL: config.public.apiURL + '/api/v1'\` ต่อ header แล้วยิงจริงไปที่ \`GET /api/v1/events\` บน secinsight-api (คนละ repo) — envelope สำเร็จถูกแกะใน \`onResponse\` ก่อนคืนให้ Service
+
+## สรุป
+
+ห้าจุดสำหรับการอ่าน: Component (render ผ่าน prop) → Page (\`onMounted\` + composable ที่ destructure ไว้) → Composable (ถือ loading state, เรียก Service method เดียว) → Service (บางๆ, prefix เดียว) → \`$api\` (auth + envelope แล้วค่อยยิง HTTP จริง) รูปแบบนี้ซ้ำเหมือนกันทุกหน้าที่เป็นการอ่านข้อมูลในแอป`,
+      },
+      {
+        slug: "worked-example-b-write-destructive-path-ui",
+        titleEn: "Worked Example B — Write + Destructive Path (Delete Event)",
+        titleTh: "ตัวอย่างจริง B — เส้นทางเขียน/ทำลาย (Delete Event)",
+        order: 4,
+        contentEn: `The delete-event button in the admin table — a path with a password-confirmation modal gating the composable call.
+
+**1 - Component — where the action actually starts** — \`components/Shared/Event/EventTable.vue:403-409\`. A row's delete click really starts here — the component owns \`selectedEventIds\` itself (checkbox multi-select) and decides whether to emit a single ID or an array based on the selection, then hands it up to the Page via an event.
+
+\`\`\`ts
+const emit = defineEmits<{
+  (e: 'deleteEvent', eventId: number | number[]): void;
+  // ...sortChange, rowClick, selectTag, update:pagination
+}>();
+const handleOpenDeleteEventModal = (eventId) => {
+  if (selectedEventIds.value.length > 1) {
+    emit('deleteEvent', selectedEventIds.value); // bulk delete
+  } else {
+    emit('deleteEvent', eventId); // single delete
+  }
+};
+\`\`\`
+
+The script emits \`deleteEvent\` (camelCase) but the page's template listens with \`@delete-event\` (kebab-case) — Vue converts this automatically, matching \`naming-conventions.md\` ("component event names use kebab-case").
+
+**2 - Page — confirm before act** — \`pages/events/index.vue:126-152\`. \`handleDeleteEvent\` opens \`UserModal\` via \`useAppModal().open<string>()\` to collect \`actorPassword\` from the user first — no confirm, nothing happens (\`if (!confirmed) return;\`).
+
+\`\`\`ts
+const handleDeleteEvent = async (eventId) => {
+  const ids = Array.isArray(eventId) ? eventId : [eventId];
+  if (!ids.length) return;
+  const { confirmed, data: password } = await modal.open<string>({
+    component: UserModal,
+    props: { title: t('...deleteEvent.title'), type: 'warning' /*...*/ },
+  });
+  if (!confirmed) return;
+  try {
+    modal.setLoading(true);
+    await Promise.all(ids.map((id) => deleteEvent({ id, actorPassword: password })));
+    await fetchAllEvents();
+    toast.success(t('...deleteEventSuccess'));
+    modal.close();
+  } finally {
+    modal.setLoading(false);
+  }
+};
+\`\`\`
+
+**3 - Composable** — \`composables/systemAdmin/useSystemAdminService.ts:27-41\`. \`useSystemAdminDeleteEvent\` is very thin — it knows nothing about the modal/password, only forwards the request to the Service.
+
+\`\`\`ts
+export const useSystemAdminDeleteEvent = () => {
+  const isLoading = ref(false);
+  const systemAdminService = new services.SystemAdminService();
+  const deleteEvent = async (request: IDeleteEventRequest): Promise<void> => {
+    isLoading.value = true;
+    try {
+      await systemAdminService.deleteEvent(request);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  return { isLoading, deleteEvent };
+};
+\`\`\`
+
+**4 - Service → $api → Backend** — \`services/SystemAdminService.ts:297-305\`. \`DELETE /system-admin/events/:id\` sends \`actorPassword\` in the body — the actual password check happens on the backend (secinsight-api's \`DeleteEventUseCase\`), not this repo. The UI only collects the value from the modal and forwards it — it never validates or verifies it itself.
+
+\`\`\`ts
+async deleteEvent(request: IDeleteEventRequest): Promise<IMessageResponse> {
+  return await this.api<IMessageResponse>(
+    \`\${this.prefix}/events/\${request.id}\`,
+    { method: 'DELETE', body: { actorPassword: request.actorPassword } }
+  );
+}
+\`\`\`
+
+## Conclusion
+
+A destructive UI path adds one thing a read path never needs: a confirmation modal gating the composable call, living at the Page (or Component) layer, never inside the composable itself. The composable and Service stay exactly as thin as the read path — the UI never validates the password, it just collects and forwards it; the real check happens on the backend.`,
+        contentTh: `ปุ่มลบ event ในตาราง admin — เส้นทางที่มี modal ยืนยันรหัสผ่านคั่นก่อนเรียก composable
+
+**1 · Component — จุดที่ action เริ่มจริงๆ** — \`components/Shared/Event/EventTable.vue:403-409\` แถวในตารางกด delete จริงๆ เริ่มที่นี่ — component เก็บ \`selectedEventIds\` เอง (multi-select checkbox) แล้วตัดสินใจว่าจะ emit ID เดียวหรือ array ตาม selection แล้วส่งขึ้นให้ Page ผ่าน event
+
+\`\`\`ts
+const emit = defineEmits<{
+  (e: 'deleteEvent', eventId: number | number[]): void;
+  // ...sortChange, rowClick, selectTag, update:pagination
+}>();
+const handleOpenDeleteEventModal = (eventId) => {
+  if (selectedEventIds.value.length > 1) {
+    emit('deleteEvent', selectedEventIds.value); // bulk delete
+  } else {
+    emit('deleteEvent', eventId); // single delete
+  }
+};
+\`\`\`
+
+script ใช้ \`deleteEvent\` (camelCase) แต่ template ของ page ฟังด้วย \`@delete-event\` (kebab-case) — Vue แปลงให้อัตโนมัติ ตรงตาม \`naming-conventions.md\` ("component event names ใช้ kebab-case")
+
+**2 · Page — confirm ก่อนลงมือทำ** — \`pages/events/index.vue:126-152\` \`handleDeleteEvent\` เปิด \`UserModal\` ผ่าน \`useAppModal().open<string>()\` เพื่อเก็บ \`actorPassword\` จากผู้ใช้ก่อน — ไม่กด confirm ก็ไม่มีอะไรเกิดขึ้น (\`if (!confirmed) return;\`)
+
+\`\`\`ts
+const handleDeleteEvent = async (eventId) => {
+  const ids = Array.isArray(eventId) ? eventId : [eventId];
+  if (!ids.length) return;
+  const { confirmed, data: password } = await modal.open<string>({
+    component: UserModal,
+    props: { title: t('...deleteEvent.title'), type: 'warning' /*...*/ },
+  });
+  if (!confirmed) return;
+  try {
+    modal.setLoading(true);
+    await Promise.all(ids.map((id) => deleteEvent({ id, actorPassword: password })));
+    await fetchAllEvents();
+    toast.success(t('...deleteEventSuccess'));
+    modal.close();
+  } finally {
+    modal.setLoading(false);
+  }
+};
+\`\`\`
+
+**3 · Composable** — \`composables/systemAdmin/useSystemAdminService.ts:27-41\` \`useSystemAdminDeleteEvent\` บางๆ มาก — ไม่รู้เรื่อง modal/password เลย รู้แค่ forward request ไป Service
+
+\`\`\`ts
+export const useSystemAdminDeleteEvent = () => {
+  const isLoading = ref(false);
+  const systemAdminService = new services.SystemAdminService();
+  const deleteEvent = async (request: IDeleteEventRequest): Promise<void> => {
+    isLoading.value = true;
+    try {
+      await systemAdminService.deleteEvent(request);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  return { isLoading, deleteEvent };
+};
+\`\`\`
+
+**4 · Service → $api → Backend** — \`services/SystemAdminService.ts:297-305\` \`DELETE /system-admin/events/:id\` ส่ง \`actorPassword\` เป็น body — การตรวจรหัสผ่านจริงเกิดที่ backend (secinsight-api, \`DeleteEventUseCase\`) ไม่ใช่ repo นี้ ฝั่ง UI แค่เก็บค่าจาก modal แล้วส่งต่อ ไม่ validate/verify เอง
+
+\`\`\`ts
+async deleteEvent(request: IDeleteEventRequest): Promise<IMessageResponse> {
+  return await this.api<IMessageResponse>(
+    \`\${this.prefix}/events/\${request.id}\`,
+    { method: 'DELETE', body: { actorPassword: request.actorPassword } }
+  );
+}
+\`\`\`
+
+## สรุป
+
+เส้นทาง UI แบบทำลายข้อมูลเพิ่มสิ่งเดียวที่เส้นทางอ่านไม่มี: modal ยืนยันที่คั่นก่อนเรียก composable อยู่ที่ layer ของ Page (หรือ Component) ไม่เคยอยู่ใน composable เอง composable และ Service ยังคงบางเท่าเดิมเหมือนเส้นทางอ่าน — ฝั่ง UI ไม่เคย validate password เอง แค่เก็บค่าแล้วส่งต่อ การตรวจจริงเกิดที่ backend`,
+      },
+      {
+        slug: "error-and-security-propagation-ui",
+        titleEn: "Error & Security Propagation",
+        titleTh: "การไหลของ Error และ Security",
+        order: 5,
+        contentEn: `These flow across the layers, not down the chain.
+
+### Error: one place formats every error
+
+\`plugins/api.ts\` is the one place that turns an HTTP error into an \`ApiError\` (a real class — \`utils/errors.ts:3\`). Composables never catch it, they let the page decide (and in the worked example above, the page doesn't catch either — it propagates to Nuxt's error boundary).
+
+\`\`\`ts
+async onResponseError({ response }) {
+  if (response._data?.status === RESPONSE_STATUS.ERROR) {
+    if (response.status === 401) {
+      await authStore.logout();
+    }
+    throw createApiError(response._data.result.message, response.status);
+  }
+  throw createApiError('An error occurred, Please try again later.', response.status);
+}
+\`\`\`
+
+### Security: where the token lives, what the route guard checks
+
+\`authStore\` (Pinia) persists exactly the fields listed in \`pick\` — confirming \`accessToken\`/\`refreshToken\` really do sit in \`localStorage\` (not an httpOnly cookie). That's why this repo's \`v-html\`/DOMPurify rule is strict — XSS means the token is directly stealable.
+
+\`\`\`ts
+// stores/auth.ts:17-31
+persist: {
+  pick: ['roleId', 'userId', 'orgId', 'teamId', 'mfaVerified',
+    'mfaEnrolled', 'isConsent', 'accessToken', 'refreshToken', 'type'],
+  storage: piniaPluginPersistedstate.localStorage(),
+}
+\`\`\`
+
+\`middleware/auth.ts\` checks exactly 2 things before letting a page load: is there an \`accessToken\`, and is MFA enrolled+verified — no role/permission check lives here (role gating is split into separate \`system-admin.ts\`/\`org-admin.ts\`/\`team-admin.ts\` middleware files).
+
+\`\`\`ts
+export default defineNuxtRouteMiddleware(async (to) => {
+  const authStore = useAuthStore();
+  if (!authStore.accessToken) return navigateTo('/login');
+  if (!authStore.isMfaEnrolled || !authStore.isMfaVerified) {
+    return navigateTo({ path: '/login', query: { redirect: to.fullPath } });
+  }
+  return;
+});
+\`\`\`
+
+## Conclusion
+
+Every HTTP error becomes an \`ApiError\` in exactly one place — \`plugins/api.ts\` — and a 401 specifically triggers an immediate logout, not a silent retry. Auth tokens live in \`localStorage\` (not an httpOnly cookie), which is the real reason the app's \`v-html\` sanitization rule is strict; and the base \`auth\` route guard checks only session-presence and MFA status, with role-based gating deliberately split into its own separate middleware files.`,
+        contentTh: `สองเรื่องนี้ไหลข้ามเลเยอร์ ไม่ได้ไหลลงตามสาย
+
+### Error: จุดเดียวที่ format error ทั้งแอป
+
+\`plugins/api.ts\` คือจุดเดียวที่แปลง HTTP error เป็น \`ApiError\` (จริง — \`utils/errors.ts:3\`) composable ไม่เคย catch มัน แค่ปล่อยให้ page จัดการ (page เองก็ไม่ catch เช่นกันในตัวอย่างข้างบน — error หลุดไปให้ Nuxt error boundary)
+
+\`\`\`ts
+async onResponseError({ response }) {
+  if (response._data?.status === RESPONSE_STATUS.ERROR) {
+    if (response.status === 401) {
+      await authStore.logout();
+    }
+    throw createApiError(response._data.result.message, response.status);
+  }
+  throw createApiError('An error occurred, Please try again later.', response.status);
+}
+\`\`\`
+
+### Security: token อยู่ใน localStorage, route guard คืออะไร
+
+\`authStore\` (Pinia) persist เฉพาะ field ที่ระบุใน \`pick\` — เห็นชัดว่า \`accessToken\`/\`refreshToken\` ลง \`localStorage\` จริง (ไม่ใช่ httpOnly cookie) นี่คือเหตุผลที่กฎ \`v-html\`/DOMPurify ของ repo นี้เข้มงวด (XSS = ขโมย token ได้ตรงๆ)
+
+\`\`\`ts
+// stores/auth.ts:17-31
+persist: {
+  pick: ['roleId', 'userId', 'orgId', 'teamId', 'mfaVerified',
+    'mfaEnrolled', 'isConsent', 'accessToken', 'refreshToken', 'type'],
+  storage: piniaPluginPersistedstate.localStorage(),
+}
+\`\`\`
+
+\`middleware/auth.ts\` เช็กแค่ 2 อย่างก่อนปล่อยเข้าเพจ: มี \`accessToken\` ไหม และ MFA enroll+verify แล้วหรือยัง — ไม่มีการเช็ก role/permission ในนี้ (role gate แยกไปที่ \`system-admin.ts\`/\`org-admin.ts\`/\`team-admin.ts\` middleware คนละไฟล์)
+
+\`\`\`ts
+export default defineNuxtRouteMiddleware(async (to) => {
+  const authStore = useAuthStore();
+  if (!authStore.accessToken) return navigateTo('/login');
+  if (!authStore.isMfaEnrolled || !authStore.isMfaVerified) {
+    return navigateTo({ path: '/login', query: { redirect: to.fullPath } });
+  }
+  return;
+});
+\`\`\`
+
+## สรุป
+
+HTTP error ทุกตัวกลายเป็น \`ApiError\` ที่จุดเดียวเท่านั้น — \`plugins/api.ts\` — และ 401 โดยเฉพาะจะสั่ง logout ทันที ไม่ใช่ silent retry auth token อยู่ใน \`localStorage\` (ไม่ใช่ httpOnly cookie) ซึ่งเป็นเหตุผลจริงที่กฎ sanitize \`v-html\` ของแอปเข้มงวด และ middleware \`auth\` พื้นฐานเช็กแค่ว่ามี session กับสถานะ MFA เท่านั้น ส่วนการเช็ก role ถูกแยกไปเป็น middleware คนละไฟล์โดยตั้งใจ`,
+      },
+      {
+        slug: "naming-conventions-real-gap",
+        titleEn: "Naming Conventions — Real, Plus One Real Gap",
+        titleTh: "Naming Conventions — ของจริง พร้อมช่องว่างจริงหนึ่งจุด",
+        order: 6,
+        contentEn: `Table pulled from \`.claude/rules/naming-conventions.md\`, matched against real examples from the events flow traced in earlier lessons.
+
+| Prefix | Usage | Real example found |
+| --- | --- | --- |
+| \`handle*\` | UI event handler | \`handleDeleteEvent\`, \`handleSearch\` (\`pages/events/index.vue\`) |
+| \`fetch*\` | Data fetch from API | \`fetchEvents\` (\`useEventService.ts\`), \`fetchAllEvents\` (page-local wrapper) |
+| \`is*\` | Boolean flag | \`isEventListLoading\` (ref), \`isAdmin\` (computed) |
+| \`list*\` | Array of entities | \`listEvents\` (\`useEventService.ts:10\`) — the page then aliases it: \`listEvents: events\` |
+| \`*State\` | Grouped state object | \`filterState\`, \`sortState\` (\`pages/events/index.vue\`) |
+| \`use<Domain><Op>\` | Composable — never carries "Service" | \`useEventList\`, \`useSystemAdminDeleteEvent\` |
+
+**Where the real code doesn't 100% match the rule on a fast read.** The rule's own example composable file is named \`event/useEventService.ts\` (has "Service" in it), while the Function Naming rule says a composable function must never carry "Service." Real code satisfies both simultaneously: the file is \`useEventService.ts\` (grouped by service domain), but every exported function — \`useEventList\`, \`useEventDetail\`, \`useThaiEventList\` — carries zero "Service" in its name. Not a real contradiction, just two different naming rules (file vs. function) that read as conflicting at a glance.
+
+## Conclusion
+
+Six real prefixes with real examples: \`handle*\`, \`fetch*\`, \`is*\`, \`list*\`, \`*State\`, \`use<Domain><Op>\`. The one place a fast read looks contradictory — a composable *file* named \`useEventService.ts\` next to a rule banning "Service" from composable *function* names — resolves once you notice the rule is about the function, not the file grouping it lives in.`,
+        contentTh: `ตารางจาก \`.claude/rules/naming-conventions.md\` จับคู่กับตัวอย่างจริงจาก events flow ที่ไล่มาในบทเรียนก่อนหน้า
+
+| Prefix | ใช้กับ | ตัวอย่างจริงที่เจอ |
+| --- | --- | --- |
+| \`handle*\` | UI event handler | \`handleDeleteEvent\`, \`handleSearch\` (\`pages/events/index.vue\`) |
+| \`fetch*\` | ดึงข้อมูลจาก API | \`fetchEvents\` (\`useEventService.ts\`), \`fetchAllEvents\` (page-local wrapper) |
+| \`is*\` | boolean flag | \`isEventListLoading\` (ref), \`isAdmin\` (computed) |
+| \`list*\` | array ของ entity | \`listEvents\` (\`useEventService.ts:10\`) — page then aliases it: \`listEvents: events\` |
+| \`*State\` | grouped state object | \`filterState\`, \`sortState\` (\`pages/events/index.vue\`) |
+| \`use<Domain><Op>\` | composable, ไม่มีคำว่า "Service" ต่อท้าย | \`useEventList\`, \`useSystemAdminDeleteEvent\` |
+
+**จุดที่โค้ดจริงไม่ตรงกับกฎ 100% เมื่ออ่านเร็วๆ** กฎบอกไฟล์ composable ตัวอย่างคือ \`event/useEventService.ts\` เอง (ชื่อไฟล์มีคำว่า "Service") ในขณะที่กฎ Function Naming บอกให้ composable function ห้ามมีคำ "Service" — โค้ดจริงทำถูกทั้งคู่พร้อมกัน: ไฟล์ชื่อ \`useEventService.ts\` (กลุ่มไฟล์ตาม service) แต่ function ที่ export ชื่อ \`useEventList\`, \`useEventDetail\`, \`useThaiEventList\` ไม่มีคำ "Service" เลยสักตัว — ไม่ใช่ข้อขัดแย้ง แค่เป็นคนละกฎ (ไฟล์ vs. function) ที่อ่านเร็วๆ อาจเข้าใจผิดว่าขัดกัน
+
+## สรุป
+
+หก prefix จริงพร้อมตัวอย่างจริง: \`handle*\`, \`fetch*\`, \`is*\`, \`list*\`, \`*State\`, \`use<Domain><Op>\` จุดเดียวที่อ่านเร็วๆ แล้วดูเหมือนขัดแย้งกัน — ไฟล์ composable ชื่อ \`useEventService.ts\` อยู่ข้างๆ กฎที่ห้ามคำว่า "Service" ใน function ของ composable — คลี่คลายได้ทันทีที่สังเกตว่ากฎพูดถึง function ไม่ใช่ไฟล์ที่จัดกลุ่มมันไว้`,
+      },
+      {
+        slug: "use-graphify-instead-of-grep-ui",
+        titleEn: "Use graphify Instead of grep",
+        titleTh: "ใช้ graphify แทน grep",
+        order: 7,
+        contentEn: `\`secinsight-ui\` ships \`graphify-out/\` just like \`secinsight-api\` — same command set, per the org-shared convention.
+
+| You want | Run |
+| --- | --- |
+| Who calls this component / what does it call | \`graphify explain "EventTable"\` |
+| Trace a page → composable → service chain | chain \`explain\` per hop — **not** \`graphify path\` |
+| Find files by pattern | \`graphify query "<pattern>"\` |
+
+## Conclusion
+
+Same tool, same reasoning as the sibling API guide: \`graphify explain\` answers "who calls this / what does it call" faster than grepping blind, across both repos in this org.`,
+        contentTh: `\`secinsight-ui\` มี \`graphify-out/\` เหมือน \`secinsight-api\` — คำสั่งชุดเดียวกันตาม org-shared convention
+
+| ต้องการ | คำสั่ง |
+| --- | --- |
+| ใครเรียกคอมโพเนนต์นี้ / เรียกอะไรต่อ | \`graphify explain "EventTable"\` |
+| ไล่ page → composable → service | ไล่ \`explain\` ทีละ hop — **ไม่ใช้** \`graphify path\` |
+| หาไฟล์ตาม pattern | \`graphify query "<pattern>"\` |
+
+## สรุป
+
+เครื่องมือเดียวกัน เหตุผลเดียวกันกับคู่มือฝั่ง API — \`graphify explain\` ตอบคำถาม "ใครเรียกสิ่งนี้ / สิ่งนี้เรียกอะไร" ได้เร็วกว่าการ grep แบบเดาสุ่ม ใช้ได้ทั้งสอง repo ในองค์กรนี้`,
+      },
+      {
+        slug: "the-reusable-method-ui",
+        titleEn: "The Reusable Method",
+        titleTh: "วิธีการที่ใช้ซ้ำได้",
+        order: 8,
+        contentEn: `Apply this to any page in the project, front to back.
+
+1. Find the folder under \`pages/\` matching the URL — folder path IS the URL, \`[id]\` is a dynamic segment.
+2. Open the page's \`<script setup>\` — find the composable(s) destructured near the top; skip the template on the first pass.
+3. Go back to the page's template — which component actually renders (often a \`v-if\` switching by role) — then check whether that component emits an event up to the page or calls a composable directly itself (both real patterns coexist).
+4. Open the composable file (\`composables/<domain>/use<Domain>Service.ts\`) — read the specific hook used; see which refs it owns and which Service method it calls.
+5. Open the Service class (\`services/<Domain>Service.ts\`) — confirm the real URL prefix + HTTP verb; that's the actual endpoint contract.
+6. Skip \`plugins/api.ts\` unless debugging the auth header or error shape — it's identical for every call.
+7. If it's a write/destructive action, check whether the handler has a \`useAppModal().open(...)\` gate before the composable call — confirmation/password UI usually lives at the component or page layer, not the composable.
+8. Check for \`try/finally\` (not \`try/catch\`) around the service call — the signal that \`$api\`'s global error handling is being trusted correctly.
+9. Backend behavior (validation, authz, password verify) is out of scope for this repo — cross-reference the sibling SecInsight API course.
+
+Everything below this lesson is the advanced tier — assumes lessons 1-8 have been read.
+
+## Conclusion
+
+Nine steps, applied identically to every page in this repo: folder-as-URL → page composables → template component pattern → composable → Service → (skip \`$api\` unless debugging) → modal-gate check for writes → \`try/finally\` check → cross-reference the backend course for anything server-side. This closes out the onboarding tier — the remaining lessons cover architecture decisions specific to this app, not the general method.`,
+        contentTh: `ใช้ขั้นตอนนี้กับหน้าไหนก็ได้ในโปรเจกต์
+
+1. หาโฟลเดอร์ใน \`pages/\` ที่ตรง URL — folder path = URL ตรงตัว, \`[id]\` = dynamic segment
+2. เปิด \`<script setup>\` ของ page — หา composable ที่ destructure ไว้ต้นไฟล์ ข้าม template ไปก่อนรอบแรก
+3. กลับไปดู template ของ page — component ไหน render จริง (มักมี \`v-if\` สลับตาม role) แล้วเช็กว่า component นั้น emit event ขึ้นมาให้ page หรือเรียก composable เองตรงๆ (2 pattern จริง อยู่คู่กัน)
+4. เปิดไฟล์ composable (\`composables/<domain>/use<Domain>Service.ts\`) — อ่าน hook ที่ใช้จริง ดูว่าถือ ref อะไรบ้างและเรียก Service method ไหน
+5. เปิด Service class (\`services/<Domain>Service.ts\`) — ยืนยัน URL prefix + HTTP verb จริง นั่นคือ endpoint contract ตัวจริง
+6. ข้าม \`plugins/api.ts\` ได้ถ้าไม่ได้ debug auth header/error shape — มันเหมือนกันทุก call อยู่แล้ว
+7. ถ้าเป็น write/destructive action เช็กว่า handler มี \`useAppModal().open(...)\` คั่นก่อน composable call ไหม — UI ยืนยัน/รหัสผ่านมักอยู่ที่ component หรือ page layer ไม่ใช่ composable
+8. เช็ก \`try/finally\` (ไม่ใช่ \`try/catch\`) รอบ service call — เป็นสัญญาณว่า global error handling ของ \`$api\` ถูกใช้ถูกทาง
+9. พฤติกรรม backend (validate/authz/verify password) อยู่นอกขอบเขต repo นี้ — ดูคู่ฉบับคอร์ส SecInsight API แทน
+
+ต่อจากนี้คือระดับ advanced — สมมุติว่าอ่านบทเรียนที่ 1–8 มาแล้ว
+
+## สรุป
+
+เก้าขั้นตอน ใช้แบบเดียวกันกับทุกหน้าใน repo นี้: folder-คือ-URL → composable ของ page → pattern ของ component ใน template → composable → Service → (ข้าม \`$api\` ถ้าไม่ได้ debug) → เช็ก modal-gate สำหรับ write → เช็ก \`try/finally\` → อ้างอิงคอร์ส backend สำหรับสิ่งที่เกิดฝั่ง server บทเรียนนี้ปิดท้ายระดับ onboarding — บทเรียนที่เหลือพูดถึงการตัดสินใจด้านสถาปัตยกรรมเฉพาะของแอปนี้ ไม่ใช่วิธีการทั่วไปอีกต่อไป`,
+      },
+      {
+        slug: "csr-only-ssr-false",
+        titleEn: "The App Is CSR-Only — ssr: false",
+        titleTh: "แอปนี้เป็น CSR-Only — ssr: false",
+        order: 9,
+        contentEn: `Before assuming this is a typical SSR app (Nuxt's default) — check first. This repo sets \`ssr: false\` directly. Everything in the onboarding lessons (Component → Page → Composable → Service → \`$api\` → Backend) runs entirely client-side — there's no real server render.
+
+\`\`\`ts
+// nuxt.config.ts:16
+export default defineNuxtConfig({
+  // ...
+  ssr: false,
+  // ...
+});
+\`\`\`
+
+**The consequence — confirmed by grep, not assumed.** \`useAsyncData\`/\`useFetch\` (Nuxt's SSR-aware data-fetching APIs) have zero real usages across \`pages/\` — consistent with \`ssr: false\`, since there's no server-side hydration to actually sync. Every page instead uses a plain composable + \`onMounted\` (see the worked-example lessons). This is a deliberate architectural choice, not an incomplete one.
+
+Meaning: SEO/first-paint content never comes from a server here. If new code starts reaching for \`useAsyncData\`, that's a signal someone assumed this was an SSR app — worth asking before following it.
+
+## Conclusion
+
+\`ssr: false\` is set directly in \`nuxt.config.ts\`, and a zero-usage grep for \`useAsyncData\`/\`useFetch\` across the whole \`pages/\` directory confirms the app actually behaves that way — no page secretly relies on server hydration. Any new code reaching for those APIs is worth questioning before merging, since it would contradict a confirmed, deliberate architectural choice.`,
+        contentTh: `ก่อนเชื่อว่าเป็น SSR app ทั่วไป (Nuxt default) เช็กก่อน — repo นี้ตั้ง \`ssr: false\` ตรงๆ ทุกอย่างในบทเรียน onboarding (Component → Page → Composable → Service → \`$api\` → Backend) รันฝั่ง client ล้วน ไม่มี server-side render จริง
+
+\`\`\`ts
+// nuxt.config.ts:16
+export default defineNuxtConfig({
+  // ...
+  ssr: false,
+  // ...
+});
+\`\`\`
+
+**ผลที่ตามมา — ยืนยันด้วย grep จริง** \`useAsyncData\`/\`useFetch\` (Nuxt's SSR-aware data-fetching APIs) มี 0 จุดใช้งาน ทั่ว \`pages/\` — สอดคล้องกับ \`ssr: false\` เพราะไม่มี server-side hydration ให้ต้อง sync ด้วยจริง ทุกหน้าจึงใช้ composable ธรรมดา + \`onMounted\` (ดูบทเรียน worked example) แทน — นี่คือทางเลือกทางสถาปัตยกรรมที่ตั้งใจ ไม่ใช่ความไม่สมบูรณ์
+
+แปลว่า: SEO/first-paint content ไม่ได้มาจาก server เลย ถ้าเห็นโค้ดใหม่เริ่มใช้ \`useAsyncData\` นั่นคือสัญญาณว่าใครบางคนคิดว่านี่เป็น SSR app — ควรถามก่อนทำตาม
+
+## สรุป
+
+\`ssr: false\` ถูกตั้งตรงๆ ใน \`nuxt.config.ts\` และการ grep หา \`useAsyncData\`/\`useFetch\` ทั่ว \`pages/\` แล้วเจอ 0 จุด ยืนยันว่าแอปทำงานตามนั้นจริง — ไม่มีหน้าไหนแอบพึ่งพา server hydration โค้ดใหม่ที่เริ่มใช้ API เหล่านั้นควรถูกตั้งคำถามก่อน merge เพราะมันขัดกับทางเลือกทางสถาปัตยกรรมที่ยืนยันแล้วว่าตั้งใจ`,
+      },
+      {
+        slug: "state-management-advanced-single-modal",
+        titleEn: "State Management, Advanced — The Single In-Flight Modal",
+        titleTh: "State Management ขั้นสูง — Modal ที่เปิดได้ทีละอันเท่านั้น",
+        order: 10,
+        contentEn: `\`useAppModal\` is not just an open/close wrapper — it enforces "only one modal can be in-flight for the whole app" through a single module-level resolver, not store state.
+
+\`\`\`ts
+// composables/useAppModal.ts:1-36
+type TModalResolver<T> = (result: TModalResult<T>) => void;
+let resolver: TModalResolver<unknown> | null = null; // module-level, not inside useAppModal()
+const CANCEL_RESULT: TModalResult<never> = { confirmed: false, data: null };
+
+export const useAppModal = () => {
+  const store = useModalStore();
+  function open<T>(config): Promise<TModalResult<T>> {
+    return new Promise((resolve) => {
+      resolver?.(CANCEL_RESULT); // cancel whatever modal was still open
+      resolver = resolve;
+      store.open(config.component, config.props ?? {});
+    });
+  }
+  const submit = <T>(data: T): void => {
+    resolver?.({ confirmed: true, data });
+    resolver = null;
+  };
+  // cancel/close both resolve CANCEL_RESULT then null the resolver
+};
+\`\`\`
+
+**What this one line prevents:** \`resolver?.(CANCEL_RESULT);\`. If code path A opens a modal and it's still unresolved (user hasn't clicked yet), then code path B opens another modal on top — A's promise would otherwise hang forever (a leaked, never-resolving \`await\`). It gets resolved to \`CANCEL_RESULT\` immediately when B opens, because the resolver is one module-level variable, not per-modal — opening a new one always auto-cancels the old one.
+
+**Why it must be module-level, not a ref inside \`useAppModal()\`:** every component calling \`useAppModal()\` needs to share the exact same resolver, not get its own per-instance one — the same pattern as \`scriptLoaded\` in \`useRecaptcha.ts\` (see the next lesson).
+
+## Conclusion
+
+A single module-level \`resolver\` variable — not a ref, not store state — is what guarantees at most one modal's promise is ever pending at a time. Opening a second modal auto-cancels the first rather than leaving its promise to hang forever, and this only works because every caller of \`useAppModal()\` shares the same module-scoped variable instead of getting a private one.`,
+        contentTh: `\`useAppModal\` ไม่ใช่แค่ wrapper เปิด/ปิด modal — มันคุม "มี modal ได้ทีละ 1 อันเท่านั้นทั้งแอป" ผ่าน resolver ตัวเดียวระดับ module ไม่ใช่ store state
+
+\`\`\`ts
+// composables/useAppModal.ts:1-36
+type TModalResolver<T> = (result: TModalResult<T>) => void;
+let resolver: TModalResolver<unknown> | null = null; // module-level, not inside useAppModal()
+const CANCEL_RESULT: TModalResult<never> = { confirmed: false, data: null };
+
+export const useAppModal = () => {
+  const store = useModalStore();
+  function open<T>(config): Promise<TModalResult<T>> {
+    return new Promise((resolve) => {
+      resolver?.(CANCEL_RESULT); // cancel whatever modal was still open
+      resolver = resolve;
+      store.open(config.component, config.props ?? {});
+    });
+  }
+  const submit = <T>(data: T): void => {
+    resolver?.({ confirmed: true, data });
+    resolver = null;
+  };
+  // cancel/close both resolve CANCEL_RESULT then null the resolver
+};
+\`\`\`
+
+**สิ่งที่บรรทัดเดียวนี้ป้องกัน:** \`resolver?.(CANCEL_RESULT);\` ถ้า code path A เปิด modal แล้วยังไม่ resolve (user ยังไม่กด) แล้ว code path B เปิด modal อีกอันทับ — promise ของ A จะไม่ค้างตลอดไป (memory leak / await ที่ไม่มีวัน resolve) มันถูก resolve เป็น \`CANCEL_RESULT\` ทันทีตอน B เปิด เพราะ resolver เป็นตัวแปรเดียวระดับ module ไม่ใช่ per-modal — เปิดอันใหม่ = auto-cancel อันเก่าเสมอ
+
+**เหตุผลที่ต้องเป็น module-level ไม่ใช่ ref ภายใน \`useAppModal()\`:** ทุก component ที่เรียก \`useAppModal()\` ต้องแชร์ resolver ตัวเดียวกัน ไม่ใช่คนละตัวต่อ instance — เหมือน pattern เดียวกับ \`scriptLoaded\` ใน \`useRecaptcha.ts\` (ดูบทเรียนถัดไป)
+
+## สรุป
+
+ตัวแปร \`resolver\` เดียวระดับ module — ไม่ใช่ ref ไม่ใช่ store state — คือสิ่งที่การันตีว่ามี promise ของ modal ค้างอยู่ได้อย่างมากทีละหนึ่งตัว การเปิด modal ที่สองจะ auto-cancel ตัวแรกแทนที่จะปล่อยให้ promise ของมันค้างตลอดไป และมันทำงานได้เพราะทุกคนที่เรียก \`useAppModal()\` แชร์ตัวแปรเดียวกันระดับ module ไม่ได้รับตัวส่วนตัวของตัวเอง`,
+      },
+      {
+        slug: "browser-integration-recaptcha",
+        titleEn: "Browser Integration, Advanced — reCAPTCHA Enterprise Load Sequence",
+        titleTh: "Browser Integration ขั้นสูง — ลำดับการโหลด reCAPTCHA Enterprise",
+        order: 11,
+        contentEn: `The 5 pages most exposed to bot abuse (login, forgot-password, reset, mfa enroll/verify) all call \`useRecaptcha()\` before real use — trace how vanilla script injection mixes with the Vue lifecycle.
+
+**Sequence:** \`onMounted\` → \`installStub\` → \`loadScript\` → \`scriptLoaded\` → \`getRecaptchaToken\`
+
+**Real call sites — verified.** \`pages/login/index.vue:30\`, \`pages/account/forgot-password/index.vue:22\`, \`pages/account/reset/index.vue:30\`, \`pages/account/mfa/enroll/index.vue:45\`, \`pages/account/mfa/verify/index.vue:24\` — all 5 call \`useRecaptcha()\` directly in \`setup\`, not through another wrapper.
+
+## Conclusion
+
+Every bot-exposed page in the app calls \`useRecaptcha()\` directly in its own \`setup()\`, not through a shared wrapper component — the five real call sites are the actual, verified source of truth for where reCAPTCHA gets wired in, not an assumption from the feature list.`,
+        contentTh: `endpoint ที่เสี่ยง bot abuse ที่สุด 5 หน้า (login, forgot-password, reset, mfa enroll/verify) เรียก \`useRecaptcha()\` ก่อนใช้งานจริง — ไล่ทีละสเต็ปว่า vanilla script injection ผสมกับ Vue lifecycle ยังไง
+
+**ลำดับ:** \`onMounted\` → \`installStub\` → \`loadScript\` → \`scriptLoaded\` → \`getRecaptchaToken\`
+
+**real call sites — ตรวจแล้ว** \`pages/login/index.vue:30\`, \`pages/account/forgot-password/index.vue:22\`, \`pages/account/reset/index.vue:30\`, \`pages/account/mfa/enroll/index.vue:45\`, \`pages/account/mfa/verify/index.vue:24\` — ทั้ง 5 จุดเรียก \`useRecaptcha()\` ตรงๆ ใน setup ไม่ใช่ผ่าน wrapper อื่น
+
+## สรุป
+
+ทุกหน้าที่เสี่ยง bot ในแอปเรียก \`useRecaptcha()\` ตรงๆ ใน \`setup()\` ของตัวเอง ไม่ได้ผ่าน wrapper component ที่ใช้ร่วมกัน — ห้า call site จริงคือแหล่งความจริงที่ตรวจสอบแล้วว่า reCAPTCHA ถูกต่อเข้าไปตรงไหน ไม่ใช่การเดาจากรายการฟีเจอร์`,
+      },
+      {
+        slug: "security-boundary-debt-audit",
+        titleEn: "Security Boundary + An Exhaustive Debt Audit",
+        titleTh: "Security Boundary + การ Audit หนี้ทางเทคนิคแบบละเอียด",
+        order: 12,
+        contentEn: `The final onboarding-adjacent lesson: the one real place raw HTML enters the app, followed by two real audits — not just theory from \`security.md\`.
+
+### The one v-html in the whole repo — and it follows the rule
+
+Grepping \`v-html\` across \`components/\` + \`pages/\` finds exactly one: \`EventDetailCard.vue\` — rendering an event's markdown description as HTML.
+
+\`\`\`ts
+// components/Shared/Event/EventDetailCard.vue:89-112
+import MarkdownIt from 'markdown-it';
+import DOMPurify from 'dompurify';
+const md = new MarkdownIt({ breaks: true, linkify: true });
+const descriptionHtml = computed(() => {
+  if (!props.eventDetail.description) return '';
+  return DOMPurify.sanitize(md.render(props.eventDetail.description));
+});
+\`\`\`
+
+This matches the pattern \`security.md\` sanctions exactly: sanitized inside a \`computed\`, never inline in the template, never binding raw markdown directly — the HTML originates from a MISP event description (data from an external threat-intel feed, so it must be treated as untrusted).
+
+### Audit 1 — modal pattern migration, quantified
+
+\`CLAUDE.md\` bans per-modal \`isOpen*\` refs, mandating \`useAppModal()\` instead — the real repo-wide grep:
+
+| Pattern | Files found |
+| --- | --- |
+| \`useAppModal()\` (compliant) | 9 |
+| \`isOpen*Modal = ref(...)\` (legacy) | 4 — \`OrgAdminFormUserUpdate.vue\`, \`SystemAdminFormUserMultiple.vue\`, \`SystemAdminFormUserSingle.vue\`, \`EventDetailCard.vue\` |
+
+69% (9/13) already migrated to the new pattern — the remaining 4 aren't "silently breaking the rule," they're debt not yet touched under rename-on-touch (whoever next touches these files should migrate them then).
+
+### Audit 2 — a getter with zero callers
+
+\`authStore.getRefreshToken\` (\`stores/auth.ts:58\`) really exists, really persists (\`refreshToken\` is in the \`pick\` list) — but grepping \`getRefreshToken\` across the whole repo (outside its own definition) finds zero call sites.
+
+**What this actually means:** a refresh token is captured and persisted to \`localStorage\` on every login — but no logic in the app ever reads it back. When a token expires (401), \`plugins/api.ts\` responds with a direct \`authStore.logout()\` (see the error-propagation lesson), not a silent refresh — so the stored refresh token is dead data. Not a bug that breaks anything, but an attack surface (a secret sitting in \`localStorage\`) paying for zero functionality.
+
+## Conclusion
+
+The one real \`v-html\` in the codebase follows the security rule exactly — sanitized inside a \`computed\`, on genuinely untrusted external data. Two honest audits went further than that single check: the modal-pattern migration is 69% complete with 4 named files still owing the rename-on-touch debt, and a persisted \`refreshToken\` is captured on every login but read by zero lines of code — a real attack surface earning nothing in return. Auditing what the code actually does beats trusting what the docs claim it does.`,
+        contentTh: `บทเรียนสุดท้ายในกลุ่มใกล้เคียง onboarding: จุดเดียวที่ HTML ดิบเข้าแอปจริงๆ แล้วตามด้วยการ audit สองเรื่อง ไม่ใช่แค่ทฤษฎีจาก \`security.md\`
+
+### v-html จุดเดียวในทั้ง repo — และมันทำถูกตามกฎ
+
+grep \`v-html\` ทั่ว \`components/\` + \`pages/\` เจอที่เดียว: \`EventDetailCard.vue\` — render markdown description ของ event เป็น HTML
+
+\`\`\`ts
+// components/Shared/Event/EventDetailCard.vue:89-112
+import MarkdownIt from 'markdown-it';
+import DOMPurify from 'dompurify';
+const md = new MarkdownIt({ breaks: true, linkify: true });
+const descriptionHtml = computed(() => {
+  if (!props.eventDetail.description) return '';
+  return DOMPurify.sanitize(md.render(props.eventDetail.description));
+});
+\`\`\`
+
+ตรงตาม pattern ที่ \`security.md\` อนุญาต 100%: sanitize อยู่ใน \`computed\`, ไม่ inline ใน template, ไม่ bind markdown ดิบตรงๆ — HTML ที่มาจาก MISP event description (ข้อมูลจาก threat intel feed ภายนอก จึงต้องถือว่า untrusted)
+
+### Audit 1 — modal pattern migration, วัดผลจริง
+
+\`CLAUDE.md\` บอกห้าม per-modal \`isOpen*\` ref แล้วให้ใช้ \`useAppModal()\` เท่านั้น — grep จริงทั้ง repo:
+
+| Pattern | ไฟล์ที่เจอ |
+| --- | --- |
+| \`useAppModal()\` (ตามกฎ) | 9 |
+| \`isOpen*Modal = ref(...)\` (legacy) | 4 — \`OrgAdminFormUserUpdate.vue\`, \`SystemAdminFormUserMultiple.vue\`, \`SystemAdminFormUserSingle.vue\`, \`EventDetailCard.vue\` |
+
+69% (9/13) migrated ไปที่ pattern ใหม่แล้ว — 4 ไฟล์ที่เหลือไม่ได้ "ผิดกฎเงียบๆ" มันคือ debt ที่ยังไม่ถูก touch ตาม rename-on-touch (touch ไฟล์นี้เมื่อไหร่ ต้อง migrate ไปด้วย)
+
+### Audit 2 — getter ที่ไม่มีใครเรียกเลย
+
+\`authStore.getRefreshToken\` (\`stores/auth.ts:58\`) มีอยู่จริง, persist จริง (\`refreshToken\` อยู่ใน \`pick\` list) — แต่ grep \`getRefreshToken\` ทั้ง repo (นอกไฟล์ definition) เจอ 0 จุดเรียกใช้
+
+**แปลว่าอะไรจริงๆ:** refresh token ถูกเก็บและ persist ลง \`localStorage\` ทุกครั้งที่ login — แต่ไม่มี logic ไหนในแอปเคยอ่านมันไปใช้จริง เมื่อ token หมดอายุ (401) \`plugins/api.ts\` ตอบด้วย \`authStore.logout()\` ตรงๆ (ดูบทเรียนเรื่อง error propagation) ไม่ใช่ silent refresh — refresh token ที่เก็บไว้จึงเป็น dead data ไม่ใช่ bug ที่พังอะไร แต่เป็นพื้นผิวโจมตี (attack surface) ที่ไม่มีประโยชน์อะไรตอบแทน — เก็บ secret ไว้เฉยๆ โดยไม่มีใครใช้
+
+## สรุป
+
+\`v-html\` จุดเดียวจริงในโค้ดทำตามกฎ security เป๊ะ — sanitize ใน \`computed\` บนข้อมูลภายนอกที่ untrusted จริงๆ การ audit สองเรื่องไปไกลกว่าการเช็กจุดเดียวนั้น: modal-pattern migration เสร็จไปแล้ว 69% เหลือ 4 ไฟล์ที่ยังติดหนี้ rename-on-touch และ \`refreshToken\` ที่ persist ทุกครั้งที่ login แต่ไม่มีโค้ดบรรทัดไหนอ่านมันเลย — เป็นพื้นผิวโจมตีจริงที่ไม่ได้อะไรตอบแทนมา การ audit ว่าโค้ดทำอะไรจริงๆ ดีกว่าการเชื่อว่าเอกสารพูดถูก`,
+      },
+      {
+        slug: "end-to-end-first-login",
+        titleEn: "End-to-End — First Login to a Protected Page",
+        titleTh: "End-to-End — จาก Login ครั้งแรกถึงหน้าที่ป้องกันไว้",
+        order: 13,
+        contentEn: `Every lesson before this traced one piece in isolation — one chain, one middleware, one composable. This is the whole picture: a user who's never logged in pastes the \`/events\` URL directly — how many real files does that hit before the actual page renders? Traced hop by hop across 11 real files.
+
+**1 - Blocked at the target page** — \`pages/events/index.vue:45-47\` → \`middleware/auth.ts\`. The route requires \`middleware: 'auth'\` first — \`authStore.accessToken\` is empty (never logged in) → immediately bounced to \`/login\`. Nothing in the events page ever renders.
+
+\`\`\`ts
+if (!authStore.accessToken) {
+  return navigateTo('/login');
+}
+\`\`\`
+
+**2 - The login page has its own gate, too** — \`pages/login/index.vue:19-22\` → \`middleware/unauthenticated.ts\`. \`/login\` is not a wide-open page — it carries its own \`middleware: ['unauthenticated']\`. If the user already had every token (a redundant login), they'd be bounced straight back to \`/\`. In this case (no token at all), it just lets the login form render.
+
+\`\`\`ts
+if (!authStore.accessToken) {
+  await authStore.logout(); // clears any stale partial state
+  return; // let the login page render
+}
+// ...else: already has a token -> bounce to mfa-enroll / mfa-verify / '/' depending on state
+\`\`\`
+
+**3 - Submit credentials** — \`pages/login/index.vue:34-40\` → \`composables/auth/useAuthService.ts:12-26\`. Login succeeds → \`authStore.setInitialToken(result)\` stores the token — it doesn't go straight to \`/\`, it always routes through \`/account/mfa/verify\` via \`useGuardRedirect\` (it doesn't yet know if this user has MFA enrolled).
+
+\`\`\`ts
+const handleLogin = async (formUserLogin) => {
+  const result = await login(formUserLogin);
+  await authStore.setInitialToken(result);
+  toast.success(/*...*/);
+  await useGuardRedirect('/account/mfa/verify');
+};
+\`\`\`
+
+**4 - mfa-verify gate detours a first-timer** — \`middleware/mfaVerify.ts\`. This user never enrolled MFA (\`isMfaEnrolled === false\`) — the verify page's own middleware catches this and redirects to \`/account/mfa/enroll\` instead, rather than showing a verify form that couldn't work anyway.
+
+\`\`\`ts
+if (!authStore.isMfaEnrolled) {
+  return navigateTo('/account/mfa/enroll');
+}
+\`\`\`
+
+**5 - Enroll — QR code, then one OTP does double duty** — \`pages/account/mfa/enroll/index.vue:44-66\` → \`composables/auth/useAuthService.ts:62-98\`. On mount it fetches the QR code (\`getEnrollMfa\`); the user scans it and submits the first OTP — one response sets both \`mfaVerified\` and \`mfaEnrolled\` at once (first-time enroll counts as verify too, no second OTP needed).
+
+\`\`\`ts
+const handleVerifyMfaEnroll = async (enrollOtp) => {
+  const result = await enrollVerifyMfa({ otp: enrollOtp });
+  if (result) {
+    authStore.setMfaVerified(result.mfaVerified);
+    authStore.setMfaEnabled(result.mfaEnabled); // note: sets state.mfaEnrolled -- method name says "Enabled"
+  }
+  await useGuardRedirect('/');
+};
+\`\`\`
+
+A small real detail: the method is named \`setMfaEnabled\` but mutates the \`state.mfaEnrolled\` field — the name doesn't fully sync with the field. No behavior impact, just real naming drift found while tracing.
+
+**6 - Back through the gate — this time it passes** — \`middleware/auth.ts\` (re-run on the redirected navigation). \`useGuardRedirect('/')\` sends the user to \`/\` (or the original blocked path, if a \`?redirect=\` query survived the whole chain) — \`authMiddleware\` runs again: \`accessToken\` ✓, \`isMfaEnrolled\` ✓, \`isMfaVerified\` ✓ — every check now passes.
+
+**7 - One more gate before content — the consent dialog** — \`layouts/default.vue:10-24\`. \`authMiddleware\`'s own comment says it directly: "consent dialog will overlay if needed" — \`layouts/default.vue\` calls \`checkConsent()\` from \`useUserServiceConsent()\` on mount, showing \`<AppConsentDialog>\` if the user hasn't accepted yet — only after that does the real events page appear.
+
+**The 11 real files this journey touches:** \`pages/events/index.vue\` · \`middleware/auth.ts\` · \`pages/login/index.vue\` · \`middleware/unauthenticated.ts\` · \`composables/auth/useAuthService.ts\` · \`composables/auth/useGuardRedirect.ts\` · \`middleware/mfaVerify.ts\` · \`pages/account/mfa/enroll/index.vue\` · \`stores/auth.ts\` · \`layouts/default.vue\` · the \`useUserServiceConsent\` composable — no single file "knows" the whole journey. Each one only knows its own rule, checked against \`authStore\`'s current state. The full journey is an emergent result of several small independent rules firing in sequence, not one script driving every step.
+
+## Conclusion
+
+A first-time visit to a protected page touches 11 real files and crosses 7 distinct gates — none of which knows about the others. \`middleware/auth.ts\` checks session + MFA status only; role gating, consent, and the MFA enrollment flow all live in separate files, each checking \`authStore\`'s current state independently. The user's actual journey is what emerges when all of them fire in sequence, not a single controller orchestrating the whole thing — which is exactly the same "no single file knows the whole picture" property this course's fixed-chain lessons kept demonstrating one layer at a time.`,
+        contentTh: `ทุกบทเรียนก่อนหน้าคือชิ้นส่วนแยกกัน — chain เดียว, middleware ตัวเดียว, composable ตัวเดียว บทเรียนนี้คือภาพเต็ม: user ที่ไม่เคย login มาก่อน กด URL หน้า \`/events\` ตรงๆ ต้องผ่านกี่ไฟล์จริงกว่าจะเห็นหน้าจริง — ไล่ทีละ hop ข้าม 11 ไฟล์จริง
+
+**1 · Blocked at the target page** — \`pages/events/index.vue:45-47\` → \`middleware/auth.ts\` route ต้องผ่าน \`middleware: 'auth'\` ก่อน — \`authStore.accessToken\` ว่างเปล่า (ไม่เคย login) → เด้งไป \`/login\` ทันที ไม่มีอะไรใน events page render เลย
+
+\`\`\`ts
+if (!authStore.accessToken) {
+  return navigateTo('/login');
+}
+\`\`\`
+
+**2 · The login page has its own gate, too** — \`pages/login/index.vue:19-22\` → \`middleware/unauthenticated.ts\` \`/login\` ไม่ใช่หน้าเปิดโล่งๆ — มี \`middleware: ['unauthenticated']\` เอง ถ้า user มี token ครบทุกอย่างอยู่แล้ว (login ซ้ำ) จะเด้งกลับ \`/\` ทันที ในเคสนี้ (ไม่มี token เลย) มันแค่ปล่อยให้ฟอร์ม login render
+
+\`\`\`ts
+if (!authStore.accessToken) {
+  await authStore.logout(); // clears any stale partial state
+  return; // let the login page render
+}
+// ...else: already has a token -> bounce to mfa-enroll / mfa-verify / '/' depending on state
+\`\`\`
+
+**3 · Submit credentials** — \`pages/login/index.vue:34-40\` → \`composables/auth/useAuthService.ts:12-26\` login สำเร็จ → \`authStore.setInitialToken(result)\` เก็บ token — ไม่ไปหน้า \`/\` ตรงๆ แต่ส่งไป \`/account/mfa/verify\` ผ่าน \`useGuardRedirect\` เสมอ (ยังไม่รู้ว่า user เคย enroll MFA รึยัง)
+
+\`\`\`ts
+const handleLogin = async (formUserLogin) => {
+  const result = await login(formUserLogin);
+  await authStore.setInitialToken(result);
+  toast.success(/*...*/);
+  await useGuardRedirect('/account/mfa/verify');
+};
+\`\`\`
+
+**4 · mfa-verify gate detours a first-timer** — \`middleware/mfaVerify.ts\` user คนนี้ไม่เคย enroll MFA มาก่อน (\`isMfaEnrolled === false\`) — middleware ของหน้า verify เองตรวจแล้วเด้งไป \`/account/mfa/enroll\` แทน ไม่ให้เห็นฟอร์ม verify ที่ใช้งานไม่ได้
+
+\`\`\`ts
+if (!authStore.isMfaEnrolled) {
+  return navigateTo('/account/mfa/enroll');
+}
+\`\`\`
+
+**5 · Enroll — QR code, then one OTP does double duty** — \`pages/account/mfa/enroll/index.vue:44-66\` → \`composables/auth/useAuthService.ts:62-98\` \`onMounted\` ดึง QR code (\`getEnrollMfa\`) user scan แล้วกรอก OTP ครั้งแรก — response เดียวตั้งค่าทั้ง \`mfaVerified\` และ \`mfaEnrolled\` พร้อมกัน (enroll ครั้งแรกนับเป็น verify ไปในตัว ไม่ต้องกรอกซ้ำ)
+
+\`\`\`ts
+const handleVerifyMfaEnroll = async (enrollOtp) => {
+  const result = await enrollVerifyMfa({ otp: enrollOtp });
+  if (result) {
+    authStore.setMfaVerified(result.mfaVerified);
+    authStore.setMfaEnabled(result.mfaEnabled); // note: sets state.mfaEnrolled -- method name says "Enabled"
+  }
+  await useGuardRedirect('/');
+};
+\`\`\`
+
+รายละเอียดเล็กๆ ที่จริง: method ชื่อ \`setMfaEnabled\` แต่แก้ field \`state.mfaEnrolled\` — ชื่อไม่ sync กับ field 100% ไม่กระทบ behavior แต่เป็น naming drift จริงที่เจอระหว่างไล่โค้ด
+
+**6 · Back through the gate — this time it passes** — \`middleware/auth.ts\` (re-run on the redirected navigation) \`useGuardRedirect('/')\` พา user กลับไป \`/\` (หรือ path เดิมที่โดนบล็อกครั้งแรก ถ้ามี \`?redirect=\` ติดมาตลอดทาง) — \`authMiddleware\` รันใหม่: \`accessToken\` ✓, \`isMfaEnrolled\` ✓, \`isMfaVerified\` ✓ — ผ่านหมดแล้ว
+
+**7 · One more gate before content — the consent dialog** — \`layouts/default.vue:10-24\` \`authMiddleware\`'s comment เองบอกไว้ตรงๆ: "consent dialog will overlay if needed" — \`layouts/default.vue\` เรียก \`checkConsent()\` จาก \`useUserServiceConsent()\` ตอน mount แสดง \`<AppConsentDialog>\` ถ้ายังไม่เคยกด accept — แล้วถึงจะเห็นหน้า events จริงๆ
+
+**11 ไฟล์จริงที่ journey นี้แตะ:** \`pages/events/index.vue\` · \`middleware/auth.ts\` · \`pages/login/index.vue\` · \`middleware/unauthenticated.ts\` · \`composables/auth/useAuthService.ts\` · \`composables/auth/useGuardRedirect.ts\` · \`middleware/mfaVerify.ts\` · \`pages/account/mfa/enroll/index.vue\` · \`stores/auth.ts\` · \`layouts/default.vue\` · composables ของ \`useUserServiceConsent\` — ไม่มีสักไฟล์เดียวที่ "รู้" journey ทั้งเส้น แต่ละไฟล์รู้แค่กติกาของตัวเอง (เทียบกับ state ปัจจุบันของ \`authStore\`) journey ทั้งหมดคือผลลัพธ์ที่โผล่ขึ้นเองจากกติกาเล็กๆ หลายอันทำงานพร้อมกัน ไม่ใช่ script เดียวที่ควบคุมทุกก้าว
+
+## สรุป
+
+การเข้าหน้าที่ป้องกันไว้ครั้งแรกแตะไฟล์จริง 11 ไฟล์ และผ่านด่านที่แยกกัน 7 จุด — ไม่มีด่านไหนรู้จักด่านอื่นเลย \`middleware/auth.ts\` เช็กแค่ session + สถานะ MFA เท่านั้น; role gating, consent, และ flow การ enroll MFA ต่างอยู่คนละไฟล์ แต่ละไฟล์เช็ก state ปัจจุบันของ \`authStore\` แยกกันเอง journey จริงของ user คือสิ่งที่โผล่ขึ้นเองเมื่อทุกด่านทำงานเรียงกัน ไม่ใช่ controller ตัวเดียวคุมทั้งหมด — ซึ่งเป็นคุณสมบัติ "ไม่มีไฟล์ไหนรู้ภาพรวม" แบบเดียวกับที่บทเรียนเรื่อง fixed chain ของคอร์สนี้แสดงให้เห็นทีละ layer มาตลอด`,
       },
     ],
   },
