@@ -33,9 +33,11 @@ export async function findFeaturedWithLessonCounts(): Promise<FeaturedCourseRow[
   }));
 }
 
-export function findAllWithLessons() {
+// `includeUnpublished` exists so a SYSTEM_ADMIN can browse their own draft
+// courses — the default (false) keeps the public catalog behavior unchanged.
+export function findAllWithLessons(includeUnpublished = false) {
   return Course.findAll({
-    where: { published: true },
+    where: includeUnpublished ? {} : { published: true },
     include: [
       {
         model: Lesson,

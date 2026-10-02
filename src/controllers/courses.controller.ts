@@ -13,20 +13,21 @@ export async function getFeaturedCourses(_req: Request, res: Response, next: Nex
   }
 }
 
-// GET /api/courses
-export async function listCourses(_req: Request, res: Response, next: NextFunction): Promise<void> {
+// GET /api/courses — public, but a logged-in SYSTEM_ADMIN also sees their own
+// unpublished draft courses (optionalAuth populates req.user when present).
+export async function listCourses(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const courses = await listCoursesUseCase();
+    const courses = await listCoursesUseCase(req.user?.role === "SYSTEM_ADMIN");
     res.json(courses);
   } catch (err) {
     next(err);
   }
 }
 
-// GET /api/lessons/:id
+// GET /api/lessons/:id — same SYSTEM_ADMIN bypass as listCourses.
 export async function getLessonById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const lesson = await getLessonByIdUseCase(req.params.id!);
+    const lesson = await getLessonByIdUseCase(req.params.id!, req.user?.role === "SYSTEM_ADMIN");
     res.json(lesson);
   } catch (err) {
     next(err);

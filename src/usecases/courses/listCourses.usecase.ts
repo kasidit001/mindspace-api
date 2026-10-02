@@ -1,5 +1,5 @@
 import * as courseService from "../../services/course.service";
 
-export function listCourses() {
-  return courseService.listCourses();
+export function listCourses(isSystemAdmin = false) {
+  return courseService.listCourses(isSystemAdmin);
 }

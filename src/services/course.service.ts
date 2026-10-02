@@ -4,6 +4,6 @@ export function getFeaturedCourses() {
   return courseRepository.findFeaturedWithLessonCounts();
 }
 
-export function listCourses() {
-  return courseRepository.findAllWithLessons();
+export function listCourses(includeUnpublished = false) {
+  return courseRepository.findAllWithLessons(includeUnpublished);
 }
