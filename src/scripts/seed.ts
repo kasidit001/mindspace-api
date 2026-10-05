@@ -18,6 +18,7 @@ const COURSE_TAGS: Record<string, string[]> = {
   "go-microservices": ["Go"],
   "claude-agent-skills": ["Claude", "AI Agents"],
   "nuxt-for-vue-developers": ["Nuxt", "Vue"],
+  "harness-agent-for-software-engineers": ["AI Agents", "DevOps"],
 };
 
 async function main() {
