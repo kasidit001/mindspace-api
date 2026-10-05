@@ -8346,7 +8346,9 @@ Setting up Claude Code for a real project isn't a one-time checklist you finish 
         titleEn: "What Is a Harness Agent, and How Does It Work?",
         titleTh: "Harness Agent คืออะไร และทำงานอย่างไร",
         order: 1,
-        contentEn: `Harness AI is an intelligence layer Harness (the CI/CD/DevOps platform company) builds into its product, described in its own documentation as bringing "intelligence to every stage of the software delivery lifecycle." It isn't a separate app you install standalone -- it's a capability layered onto the Harness platform you (or your team) already run pipelines, deployments, and infrastructure-as-code through.
+        contentEn: `![What Is a Harness Agent diagram](/images/courses/harness-agent-for-software-engineers/what-is-a-harness-agent.png)
+
+Harness AI is an intelligence layer Harness (the CI/CD/DevOps platform company) builds into its product, described in its own documentation as bringing "intelligence to every stage of the software delivery lifecycle." It isn't a separate app you install standalone -- it's a capability layered onto the Harness platform you (or your team) already run pipelines, deployments, and infrastructure-as-code through.
 
 Under the hood, Harness AI defaults to Claude Opus as its model, served through AWS Bedrock or Google Vertex AI -- though which model actually runs is configurable per agent (more on that in a later lesson).
 
@@ -8388,7 +8390,9 @@ Keep this answer close by -- lesson 3 has you turn it into an actual agent confi
 ## Conclusion
 
 A Harness Agent is not one thing: it's either a narrowly-scoped Worker Agent running as a pipeline step (Autofix, Code Review, Code Coverage, Feature Flag Cleanup, Manifest Remediation, IaCM Remediation), or the conversational DevOps Agent in the UI. Both run on Claude Opus by default via Bedrock/Vertex, with the model itself swappable per agent. Everything from here forward in this course is about the Worker Agent side -- configuring, prompting, and governing one against a real project.`,
-        contentTh: `Harness AI คือ "ชั้นความฉลาด" (intelligence layer) ที่ Harness (บริษัทแพลตฟอร์ม CI/CD/DevOps) สร้างเข้าไปในผลิตภัณฑ์ของตัวเอง เอกสารของ Harness เองอธิบายว่ามันนำ "ความฉลาดมาสู่ทุกขั้นตอนของ software delivery lifecycle" มันไม่ใช่แอปแยกต่างหากที่ติดตั้งเดี่ยวๆ -- แต่เป็นความสามารถที่ซ้อนทับอยู่บนแพลตฟอร์ม Harness ที่ทีมคุณ (หรือคุณเอง) ใช้รัน pipeline, deployment, และ infrastructure-as-code อยู่แล้ว
+        contentTh: `![What Is a Harness Agent diagram](/images/courses/harness-agent-for-software-engineers/what-is-a-harness-agent.png)
+
+Harness AI คือ "ชั้นความฉลาด" (intelligence layer) ที่ Harness (บริษัทแพลตฟอร์ม CI/CD/DevOps) สร้างเข้าไปในผลิตภัณฑ์ของตัวเอง เอกสารของ Harness เองอธิบายว่ามันนำ "ความฉลาดมาสู่ทุกขั้นตอนของ software delivery lifecycle" มันไม่ใช่แอปแยกต่างหากที่ติดตั้งเดี่ยวๆ -- แต่เป็นความสามารถที่ซ้อนทับอยู่บนแพลตฟอร์ม Harness ที่ทีมคุณ (หรือคุณเอง) ใช้รัน pipeline, deployment, และ infrastructure-as-code อยู่แล้ว
 
 เบื้องหลัง Harness AI ใช้ Claude Opus เป็นโมเดลเริ่มต้น รันผ่าน AWS Bedrock หรือ Google Vertex AI -- แต่โมเดลที่รันจริงปรับได้ต่อ agent (รายละเอียดอยู่ในบทเรียนถัดๆ ไป)
 
@@ -8436,7 +8440,9 @@ Harness Agent ไม่ใช่สิ่งเดียว: มันคือ 
         titleEn: "Architecture and Workflow",
         titleTh: "Architecture และ Workflow ของ Harness Agent",
         order: 2,
-        contentEn: `A Worker Agent is a pipeline step, but it's not an unrestricted one. Harness builds each run inside a specific set of guardrails, and understanding that shape -- before you ever write a configuration -- explains almost everything about why agents behave the way they do later in this course.
+        contentEn: `![Harness Agent Architecture and Workflow diagram](/images/courses/harness-agent-for-software-engineers/harness-agent-architecture-and-workflow.png)
+
+A Worker Agent is a pipeline step, but it's not an unrestricted one. Harness builds each run inside a specific set of guardrails, and understanding that shape -- before you ever write a configuration -- explains almost everything about why agents behave the way they do later in this course.
 
 ### What happens when an agent runs
 
@@ -8472,7 +8478,9 @@ Using the pain point and agent you picked in lesson 1's exercise, write out, in 
 ## Conclusion
 
 An agent run is a fixed sequence, not a black box: trigger, Knowledge Graph context, sandboxed execution, RBAC-intersected credentials, three-point policy checks, full audit logging. And the agent's own definition -- what it's allowed to do -- lives as a reviewable YAML file in source control, not a setting you'd have to go hunting for in a UI. Next lesson, we turn this into an actual running agent.`,
-        contentTh: `Worker Agent คือ pipeline step ตัวหนึ่ง แต่ไม่ใช่แบบไร้ขอบเขต Harness สร้างแต่ละการรันไว้ในชุด guardrail ที่ชัดเจน และการเข้าใจรูปร่างนี้ -- ก่อนที่จะเขียน configuration จริง -- จะอธิบายเกือบทุกอย่างว่าทำไม agent ถึงทำงานแบบที่เห็นในบทเรียนถัดๆ ไปของคอร์สนี้
+        contentTh: `![Harness Agent Architecture and Workflow diagram](/images/courses/harness-agent-for-software-engineers/harness-agent-architecture-and-workflow.png)
+
+Worker Agent คือ pipeline step ตัวหนึ่ง แต่ไม่ใช่แบบไร้ขอบเขต Harness สร้างแต่ละการรันไว้ในชุด guardrail ที่ชัดเจน และการเข้าใจรูปร่างนี้ -- ก่อนที่จะเขียน configuration จริง -- จะอธิบายเกือบทุกอย่างว่าทำไม agent ถึงทำงานแบบที่เห็นในบทเรียนถัดๆ ไปของคอร์สนี้
 
 ### เกิดอะไรขึ้นตอน agent รัน
 
@@ -8514,7 +8522,9 @@ An agent run is a fixed sequence, not a black box: trigger, Knowledge Graph cont
         titleEn: "Installing and Configuring Your First Agent",
         titleTh: "การติดตั้งและตั้งค่า Agent ตัวแรกของคุณ",
         order: 3,
-        contentEn: `Harness's own framing for setup is "three steps: create, configure, run" -- let's make that concrete with the real schema.
+        contentEn: `![Installing and Configuring an Agent diagram](/images/courses/harness-agent-for-software-engineers/installing-and-configuring-an-agent.png)
+
+Harness's own framing for setup is "three steps: create, configure, run" -- let's make that concrete with the real schema.
 
 ### The YAML shape
 
@@ -8608,7 +8618,9 @@ Keep this file. Lesson 5 (codebase context) and lesson 11 (the end-to-end exerci
 ## Conclusion
 
 An agent's configuration is one YAML block with a fixed, documented shape: \`prompt\`, \`connector\`, \`mcp\`, \`allowed_domains\`, \`env\`, \`max_turns\`, \`workdir\`, and declared \`inputs\` referenced inside the prompt via \`<+inputs.x>\`. The UI's required fields (Name, Instructions, Model Connector) are the same three load-bearing pieces underneath. Setup really is close to Harness's own "three steps" framing -- the actual work, as the next lesson covers, is writing a \`prompt\` that's worth running.`,
-        contentTh: `คำอธิบายการตั้งค่าของ Harness เองคือ "สามขั้นตอน: create, configure, run" -- มาทำให้เป็นรูปธรรมด้วย schema จริง
+        contentTh: `![Installing and Configuring an Agent diagram](/images/courses/harness-agent-for-software-engineers/installing-and-configuring-an-agent.png)
+
+คำอธิบายการตั้งค่าของ Harness เองคือ "สามขั้นตอน: create, configure, run" -- มาทำให้เป็นรูปธรรมด้วย schema จริง
 
 ### รูปร่างของ YAML
 
@@ -8708,7 +8720,9 @@ configuration ของ agent คือ YAML บล็อกเดียวท�
         titleEn: "Using an Agent on a Real Project",
         titleTh: "การใช้งาน Agent กับโปรเจกต์จริง",
         order: 4,
-        contentEn: `Configuration on paper is one thing; a Worker Agent earning its keep on a real, running project is another. This lesson walks through what that actually looks like for several of the six managed agents, using the scenarios Harness's own documentation describes.
+        contentEn: `![Using an Agent on a Real Project diagram](/images/courses/harness-agent-for-software-engineers/using-an-agent-on-a-real-project.png)
+
+Configuration on paper is one thing; a Worker Agent earning its keep on a real, running project is another. This lesson walks through what that actually looks like for several of the six managed agents, using the scenarios Harness's own documentation describes.
 
 ### Autofix -- the build-failure-to-fix loop
 
@@ -8745,7 +8759,9 @@ If you can't fill in all three concretely, that's useful information too -- it u
 ## Conclusion
 
 A Worker Agent earning its keep looks like Autofix tracing a build failure to a specific test assertion, Code Review catching a regression because it remembers a past incident, or IaCM Remediation naming the exact resources that drifted -- each one producing something concrete for a human to approve, not a silent commit. The DevOps Agent's conversational pipeline-creation is a different shape of the same platform, useful for comparison but not what the rest of this course focuses on.`,
-        contentTh: `การตั้งค่าบนกระดาษเป็นเรื่องหนึ่ง การที่ Worker Agent ทำงานคุ้มค่าจริงบนโปรเจกต์ที่รันอยู่จริงเป็นอีกเรื่อง บทเรียนนี้ไล่ดูว่าหน้าตาจริงๆ เป็นอย่างไรสำหรับ managed agent หลายตัวในหกตัว โดยใช้สถานการณ์ที่เอกสารของ Harness เองอธิบายไว้
+        contentTh: `![Using an Agent on a Real Project diagram](/images/courses/harness-agent-for-software-engineers/using-an-agent-on-a-real-project.png)
+
+การตั้งค่าบนกระดาษเป็นเรื่องหนึ่ง การที่ Worker Agent ทำงานคุ้มค่าจริงบนโปรเจกต์ที่รันอยู่จริงเป็นอีกเรื่อง บทเรียนนี้ไล่ดูว่าหน้าตาจริงๆ เป็นอย่างไรสำหรับ managed agent หลายตัวในหกตัว โดยใช้สถานการณ์ที่เอกสารของ Harness เองอธิบายไว้
 
 ### Autofix -- วงจรจาก build ล้มเหลวไปถึงการแก้ไข
 
@@ -8788,7 +8804,9 @@ Worker Agent ที่ทำงานคุ้มค่าจริงๆ หน
         titleEn: "Writing Prompts and Instructions That Actually Work",
         titleTh: "การเขียน Prompt/Instruction ให้ Agent ทำงานได้มีประสิทธิภาพ",
         order: 5,
-        contentEn: `The \`prompt\` field (or **Instructions** in the UI) is the one piece of an agent definition that's entirely up to you -- everything else in the YAML is plumbing. Get the prompt wrong and a perfectly-configured agent still does the wrong thing, or the right thing too broadly.
+        contentEn: `![Writing Effective Agent Instructions diagram](/images/courses/harness-agent-for-software-engineers/writing-effective-agent-instructions.png)
+
+The \`prompt\` field (or **Instructions** in the UI) is the one piece of an agent definition that's entirely up to you -- everything else in the YAML is plumbing. Get the prompt wrong and a perfectly-configured agent still does the wrong thing, or the right thing too broadly.
 
 ### Start from the managed agents' own shape
 
@@ -8826,7 +8844,9 @@ Rewrite the prompt, then write one sentence comparing the before and after -- wh
 ## Conclusion
 
 A good agent instruction reads like the six managed agents' own names: scoped to one job, with a definition of done precise enough that a human reviewer can actually check it. Parameters that vary between runs go in \`inputs\` and get referenced via \`<+inputs.x>\`, not hardcoded into prose. And because Harness doesn't have a separate output-declaration mechanism, anything the agent needs to hand off has to be named explicitly, in plain language, inside the prompt itself.`,
-        contentTh: `field \`prompt\` (หรือ **Instructions** ในหน้า UI) คือส่วนเดียวของ agent definition ที่ขึ้นอยู่กับคุณทั้งหมด -- ที่เหลือใน YAML เป็นแค่ท่อน้ำ ถ้าเขียน prompt ผิด agent ที่ตั้งค่าได้สมบูรณ์แบบก็ยังทำผิดอยู่ดี หรือทำถูกแต่กว้างเกินไป
+        contentTh: `![Writing Effective Agent Instructions diagram](/images/courses/harness-agent-for-software-engineers/writing-effective-agent-instructions.png)
+
+field \`prompt\` (หรือ **Instructions** ในหน้า UI) คือส่วนเดียวของ agent definition ที่ขึ้นอยู่กับคุณทั้งหมด -- ที่เหลือใน YAML เป็นแค่ท่อน้ำ ถ้าเขียน prompt ผิด agent ที่ตั้งค่าได้สมบูรณ์แบบก็ยังทำผิดอยู่ดี หรือทำถูกแต่กว้างเกินไป
 
 ### เริ่มจากรูปร่างของ managed agent เอง
 
@@ -8870,7 +8890,9 @@ instruction ที่ดีสำหรับ agent มีหน้าตาเ�
         titleEn: "Letting the Agent Read and Understand Your Codebase",
         titleTh: "การให้ Agent อ่านและทำความเข้าใจ Codebase",
         order: 6,
-        contentEn: `Every example in lesson 4 depended on the agent knowing something about your system beyond the diff in front of it -- Code Review remembering a past incident, Autofix tracing a failure to the exact change that caused it. This lesson is about where that understanding actually comes from, and how to make sure your agent has what it needs.
+        contentEn: `![Agent Reading Your Codebase diagram](/images/courses/harness-agent-for-software-engineers/agent-reading-your-codebase.png)
+
+Every example in lesson 4 depended on the agent knowing something about your system beyond the diff in front of it -- Code Review remembering a past incident, Autofix tracing a failure to the exact change that caused it. This lesson is about where that understanding actually comes from, and how to make sure your agent has what it needs.
 
 ### Two separate sources of context, not one
 
@@ -8899,7 +8921,9 @@ Go back to the agent you've been building across lessons 1, 3, and 5. Answer con
 ## Conclusion
 
 An agent's understanding of your codebase comes from two separate places: the Harness Knowledge Graph (ambient, accumulated, about your delivery history) and MCP connectors (explicit grants to specific external systems like Git, Jira, or Slack). Both operate inside the same sandboxed, RBAC-scoped execution from lesson 2 -- granting an agent more context never means granting it more authority than the person who triggered it already has.`,
-        contentTh: `ทุกตัวอย่างในบทเรียนที่ 4 ต้องอาศัย agent รู้อะไรบางอย่างเกี่ยวกับระบบของคุณที่มากกว่า diff ตรงหน้า -- Code Review ที่จำ incident ในอดีตได้, Autofix ที่ไล่ความล้มเหลวไปถึงการเปลี่ยนแปลงที่แท้จริงที่ทำให้เกิดมัน บทเรียนนี้พูดถึงว่าความเข้าใจนั้นมาจากไหนจริงๆ และจะมั่นใจได้อย่างไรว่า agent ของคุณมีสิ่งที่มันต้องการ
+        contentTh: `![Agent Reading Your Codebase diagram](/images/courses/harness-agent-for-software-engineers/agent-reading-your-codebase.png)
+
+ทุกตัวอย่างในบทเรียนที่ 4 ต้องอาศัย agent รู้อะไรบางอย่างเกี่ยวกับระบบของคุณที่มากกว่า diff ตรงหน้า -- Code Review ที่จำ incident ในอดีตได้, Autofix ที่ไล่ความล้มเหลวไปถึงการเปลี่ยนแปลงที่แท้จริงที่ทำให้เกิดมัน บทเรียนนี้พูดถึงว่าความเข้าใจนั้นมาจากไหนจริงๆ และจะมั่นใจได้อย่างไรว่า agent ของคุณมีสิ่งที่มันต้องการ
 
 ### สองแหล่ง context ที่แยกกัน ไม่ใช่แหล่งเดียว
 
@@ -8934,7 +8958,9 @@ Knowledge Graph คือ context แวดล้อมเกี่ยวกั�
         titleEn: "Planning Before Editing",
         titleTh: "การวางแผนงานก่อนลงมือแก้ไขโค้ด",
         order: 7,
-        contentEn: `Every real example from lesson 4 followed the same shape, even though they were different agents doing different jobs: trace/diagnose first, explain the finding in specific terms, *then* propose a change -- never edit first and explain later. This lesson makes that shape explicit, because it's the single most important habit to carry into configuring any new agent.
+        contentEn: `![Planning Before Editing diagram](/images/courses/harness-agent-for-software-engineers/planning-before-editing.png)
+
+Every real example from lesson 4 followed the same shape, even though they were different agents doing different jobs: trace/diagnose first, explain the finding in specific terms, *then* propose a change -- never edit first and explain later. This lesson makes that shape explicit, because it's the single most important habit to carry into configuring any new agent.
 
 ### The shape, named
 
@@ -8962,7 +8988,9 @@ Reread the result: does it read like Autofix's trace-explain-validate-propose sh
 ## Conclusion
 
 Every real agent example in this course so far traces a root cause, explains it in specific terms, validates its fix, and only then proposes a change for a human to review -- never the reverse. That discipline isn't automatic; it comes from what you put in the prompt. If you want an agent to plan before it edits, say so explicitly -- the next lesson covers what to do with the output once it arrives.`,
-        contentTh: `ทุกตัวอย่างจริงจากบทเรียนที่ 4 มีรูปร่างเดียวกัน แม้จะเป็น agent คนละตัวทำงานคนละอย่าง: ไล่หา/วินิจฉัยก่อน อธิบายสิ่งที่พบด้วยคำเจาะจง *แล้วค่อย* เสนอการเปลี่ยนแปลง -- ไม่เคยแก้ก่อนแล้วค่อยอธิบายทีหลัง บทเรียนนี้ทำให้รูปร่างนั้นชัดเจน เพราะมันคือนิสัยที่สำคัญที่สุดที่ควรติดตัวไปใช้ตอนตั้งค่า agent ตัวใหม่ๆ
+        contentTh: `![Planning Before Editing diagram](/images/courses/harness-agent-for-software-engineers/planning-before-editing.png)
+
+ทุกตัวอย่างจริงจากบทเรียนที่ 4 มีรูปร่างเดียวกัน แม้จะเป็น agent คนละตัวทำงานคนละอย่าง: ไล่หา/วินิจฉัยก่อน อธิบายสิ่งที่พบด้วยคำเจาะจง *แล้วค่อย* เสนอการเปลี่ยนแปลง -- ไม่เคยแก้ก่อนแล้วค่อยอธิบายทีหลัง บทเรียนนี้ทำให้รูปร่างนั้นชัดเจน เพราะมันคือนิสัยที่สำคัญที่สุดที่ควรติดตัวไปใช้ตอนตั้งค่า agent ตัวใหม่ๆ
 
 ### รูปร่างนั้น เรียกชื่อให้ชัด
 
@@ -8996,7 +9024,9 @@ Every real agent example in this course so far traces a root cause, explains it 
         titleEn: "Reviewing Agent Output and Fixing Problems",
         titleTh: "การตรวจสอบผลลัพธ์และแก้ไขปัญหาจาก Agent",
         order: 8,
-        contentEn: `Lesson 7 established that a well-prompted agent stops and proposes rather than silently applying a change. This lesson is about what you, the human on the other end, actually do with that proposal -- and what to do when the agent got it wrong.
+        contentEn: `![Reviewing Agent Output diagram](/images/courses/harness-agent-for-software-engineers/reviewing-agent-output.png)
+
+Lesson 7 established that a well-prompted agent stops and proposes rather than silently applying a change. This lesson is about what you, the human on the other end, actually do with that proposal -- and what to do when the agent got it wrong.
 
 ### What you're actually looking at
 
@@ -9025,7 +9055,9 @@ Using the agent you've built across this course, write a short checklist (3-5 it
 ## Conclusion
 
 Reviewing an agent's output means treating its proposal like a junior engineer's PR: check the specific diff/explanation it gave you against reality, consult the audit trail when something looks off rather than guessing, and when it's genuinely wrong, trace the cause to an ambiguous prompt, missing context, or an agent that's trying to do too much -- then fix the versioned template itself, not just this one output.`,
-        contentTh: `บทเรียนที่ 7 สรุปไว้ว่า agent ที่ถูกสั่งมาดีจะหยุดและเสนอ แทนที่จะลงมือแก้ไขแบบเงียบๆ บทเรียนนี้พูดถึงว่าคุณ -- มนุษย์ฝั่งตรงข้าม -- ทำอะไรกับข้อเสนอนั้นจริงๆ และต้องทำอะไรเมื่อ agent ทำผิด
+        contentTh: `![Reviewing Agent Output diagram](/images/courses/harness-agent-for-software-engineers/reviewing-agent-output.png)
+
+บทเรียนที่ 7 สรุปไว้ว่า agent ที่ถูกสั่งมาดีจะหยุดและเสนอ แทนที่จะลงมือแก้ไขแบบเงียบๆ บทเรียนนี้พูดถึงว่าคุณ -- มนุษย์ฝั่งตรงข้าม -- ทำอะไรกับข้อเสนอนั้นจริงๆ และต้องทำอะไรเมื่อ agent ทำผิด
 
 ### สิ่งที่คุณกำลังดูอยู่จริงๆ
 
@@ -9060,7 +9092,9 @@ Reviewing an agent's output means treating its proposal like a junior engineer's
         titleEn: "Best Practices for Software Engineers",
         titleTh: "Best Practices สำหรับ Software Engineer",
         order: 9,
-        contentEn: `This lesson pulls together the habits from lessons 1 through 8 into a single working checklist -- the things worth doing by default, every time, rather than relearning under pressure when an agent's output is already in front of you and something's gone wrong.
+        contentEn: `![Best Practices for Software Engineers diagram](/images/courses/harness-agent-for-software-engineers/best-practices-for-software-engineers.png)
+
+This lesson pulls together the habits from lessons 1 through 8 into a single working checklist -- the things worth doing by default, every time, rather than relearning under pressure when an agent's output is already in front of you and something's gone wrong.
 
 ### Keep agents narrow, the way Harness's own six are
 
@@ -9097,7 +9131,9 @@ Any "fail" here is worth fixing before this agent touches a real project.
 ## Conclusion
 
 The best practices worth carrying forward are, in short: keep agents as narrow as Harness's own six managed ones, review template changes like real code because they are real code, match the model to the actual job instead of defaulting to the biggest one, grant MCP context deliberately rather than defensively, and write prompts specific enough that their output can actually be reviewed. None of this is a new idea on top of the previous eight lessons -- it's those same eight lessons, as a checklist you run before trusting an agent with a real project.`,
-        contentTh: `บทเรียนนี้รวมนิสัยจากบทเรียนที่ 1 ถึง 8 เข้าเป็น checklist เดียวที่ใช้งานได้จริง -- สิ่งที่ควรทำเป็นค่าเริ่มต้นทุกครั้ง แทนที่จะมาเรียนรู้ใหม่ภายใต้แรงกดดันตอนที่ผลลัพธ์ของ agent อยู่ตรงหน้าแล้วและมีอะไรผิดพลาดไปแล้ว
+        contentTh: `![Best Practices for Software Engineers diagram](/images/courses/harness-agent-for-software-engineers/best-practices-for-software-engineers.png)
+
+บทเรียนนี้รวมนิสัยจากบทเรียนที่ 1 ถึง 8 เข้าเป็น checklist เดียวที่ใช้งานได้จริง -- สิ่งที่ควรทำเป็นค่าเริ่มต้นทุกครั้ง แทนที่จะมาเรียนรู้ใหม่ภายใต้แรงกดดันตอนที่ผลลัพธ์ของ agent อยู่ตรงหน้าแล้วและมีอะไรผิดพลาดไปแล้ว
 
 ### ให้ agent แคบ แบบหกตัวของ Harness เอง
 
@@ -9140,7 +9176,9 @@ best practice ที่ควรติดตัวไปใช้ สรุป�
         titleEn: "Guardrails: What Not to Delegate to an Agent",
         titleTh: "ข้อควรระวังและสิ่งที่ไม่ควรให้ Agent ทำ",
         order: 10,
-        contentEn: `Every lesson so far has shown agents stopping short of the riskiest action and handing the decision to a human. This lesson makes that boundary explicit -- both the guardrails Harness bakes in by default, and the judgment calls that are still yours to make.
+        contentEn: `![Guardrails: What Not to Delegate diagram](/images/courses/harness-agent-for-software-engineers/guardrails-what-not-to-delegate.png)
+
+Every lesson so far has shown agents stopping short of the riskiest action and handing the decision to a human. This lesson makes that boundary explicit -- both the guardrails Harness bakes in by default, and the judgment calls that are still yours to make.
 
 ### What's already enforced, whether you think about it or not
 
@@ -9178,7 +9216,9 @@ For the agent you've built across this course, answer directly:
 ## Conclusion
 
 The platform enforces real limits by default -- RBAC-intersected credentials, three-point policy checks, sandboxed execution -- and its own examples show destructive database changes, production promotions, and infrastructure remediation all gated behind human approval rather than auto-applied. What the platform can't decide for you is how narrow to scope each agent, which connectors a job actually needs, whether the triggering user's own permissions are still too broad for a given agent to inherit, and where your own line sits between "safe to auto-apply" and "needs a human." Those four are yours to draw, deliberately, before an agent touches a real project.`,
-        contentTh: `ทุกบทเรียนจนถึงตอนนี้แสดงให้เห็นว่า agent หยุดก่อนการกระทำที่เสี่ยงที่สุด แล้วส่งการตัดสินใจให้มนุษย์ บทเรียนนี้ทำให้เส้นแบ่งนั้นชัดเจน -- ทั้ง guardrail ที่ Harness ฝังไว้เป็นค่าเริ่มต้น และการตัดสินใจที่ยังเป็นหน้าที่ของคุณเอง
+        contentTh: `![Guardrails: What Not to Delegate diagram](/images/courses/harness-agent-for-software-engineers/guardrails-what-not-to-delegate.png)
+
+ทุกบทเรียนจนถึงตอนนี้แสดงให้เห็นว่า agent หยุดก่อนการกระทำที่เสี่ยงที่สุด แล้วส่งการตัดสินใจให้มนุษย์ บทเรียนนี้ทำให้เส้นแบ่งนั้นชัดเจน -- ทั้ง guardrail ที่ Harness ฝังไว้เป็นค่าเริ่มต้น และการตัดสินใจที่ยังเป็นหน้าที่ของคุณเอง
 
 ### สิ่งที่ถูกบังคับใช้อยู่แล้ว ไม่ว่าคุณจะคิดถึงมันหรือไม่
 
@@ -9222,7 +9262,9 @@ guardrail ของแพลตฟอร์มจัดการเรื่อ�
         titleEn: "End-to-End Workflow: Ticket → Analyze → Plan → Implement → Test → Review",
         titleTh: "ตัวอย่าง Workflow ตั้งแต่รับ Jira Ticket → วิเคราะห์ → Plan → Implement → Test → Review",
         order: 11,
-        contentEn: `This closing lesson is a composite exercise, not a single pre-packaged Harness feature -- it walks through a realistic ticket-to-review workflow by combining the real, individually-documented capabilities from every lesson so far. Being honest about that distinction matters: you're assembling this from genuine building blocks, not following one button Harness ships labeled "do the whole ticket."
+        contentEn: `![End-to-End Ticket to Review Workflow diagram](/images/courses/harness-agent-for-software-engineers/end-to-end-ticket-to-review-workflow.png)
+
+This closing lesson is a composite exercise, not a single pre-packaged Harness feature -- it walks through a realistic ticket-to-review workflow by combining the real, individually-documented capabilities from every lesson so far. Being honest about that distinction matters: you're assembling this from genuine building blocks, not following one button Harness ships labeled "do the whole ticket."
 
 ### The six stops, and which lesson each one draws on
 
@@ -9257,7 +9299,9 @@ There's no single correct answer here -- the point of this exercise is that you 
 ## Conclusion
 
 A realistic ticket-to-review workflow is six stops -- ticket intake, analysis, planning, implementation, testing, review -- each one drawing on a specific, real Harness capability covered earlier in this course: MCP connectors for Jira, the Knowledge Graph for delivery history, the trace-explain-validate-propose planning shape, diff-based implementation, pre-surface test validation, and a human review gated by RBAC, policy, and your own judgment about what's actually safe to automate. It's assembled, deliberately, from parts you can each name and justify -- which is exactly what makes it trustworthy enough to run against a real project.`,
-        contentTh: `บทเรียนปิดท้ายนี้เป็นแบบฝึกหัดแบบผสมผสาน ไม่ใช่ feature สำเร็จรูปตัวเดียวของ Harness -- มันไล่ผ่าน workflow ตั้งแต่รับ ticket ถึงรีวิวที่สมจริง โดยรวมความสามารถจริงที่มีเอกสารแยกไว้ชัดเจนจากทุกบทเรียนที่ผ่านมาเข้าด้วยกัน การซื่อตรงกับความแตกต่างนี้สำคัญ: คุณกำลังประกอบสิ่งนี้จากชิ้นส่วนจริง ไม่ใช่กดปุ่มเดียวที่ Harness มีป้ายว่า "ทำทั้ง ticket ให้เลย"
+        contentTh: `![End-to-End Ticket to Review Workflow diagram](/images/courses/harness-agent-for-software-engineers/end-to-end-ticket-to-review-workflow.png)
+
+บทเรียนปิดท้ายนี้เป็นแบบฝึกหัดแบบผสมผสาน ไม่ใช่ feature สำเร็จรูปตัวเดียวของ Harness -- มันไล่ผ่าน workflow ตั้งแต่รับ ticket ถึงรีวิวที่สมจริง โดยรวมความสามารถจริงที่มีเอกสารแยกไว้ชัดเจนจากทุกบทเรียนที่ผ่านมาเข้าด้วยกัน การซื่อตรงกับความแตกต่างนี้สำคัญ: คุณกำลังประกอบสิ่งนี้จากชิ้นส่วนจริง ไม่ใช่กดปุ่มเดียวที่ Harness มีป้ายว่า "ทำทั้ง ticket ให้เลย"
 
 ### หกจุดแวะ และแต่ละจุดอิงบทเรียนไหน
 
