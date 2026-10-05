@@ -7596,7 +7596,9 @@ external client ทุกตัวในบทเรียนก่อนหน�
         titleEn: "What Is an \"Agent Harness\"?",
         titleTh: "Agent Harness คืออะไร",
         order: 1,
-        contentEn: `"Agent harness" is a term of art in the AI tooling world, not a brand name -- it describes a category of software, and Claude Code (the CLI tool you're reading this lesson in, if you're following along hands-on) is one real, working example of it.
+        contentEn: `![What Is an Agent Harness diagram](/images/courses/claude-code-agent-harness/what-is-an-agent-harness.png)
+
+"Agent harness" is a term of art in the AI tooling world, not a brand name -- it describes a category of software, and Claude Code (the CLI tool you're reading this lesson in, if you're following along hands-on) is one real, working example of it.
 
 ### The definition, broken into four parts
 
@@ -7629,7 +7631,9 @@ Before moving to the next lesson, pick one other AI coding tool or assistant you
 ## Conclusion
 
 An agent harness is defined by four parts working together: an agent loop, a tool interface, context management, and control mechanisms. Claude Code is a real, running instance of this category -- the model and the harness are separable, and almost everything this course covers from here (CLAUDE.md, Plan Mode, subagents, hooks, permissions) is really just a deeper look at how Claude Code implements these same four parts.`,
-        contentTh: `"Agent harness" เป็นศัพท์เฉพาะในวงการเครื่องมือ AI ไม่ใช่ชื่อแบรนด์ -- มันอธิบายหมวดหมู่ของซอฟต์แวร์ และ Claude Code (เครื่องมือ CLI ที่คุณกำลังอ่านบทเรียนนี้อยู่ ถ้ากำลังเรียนไปด้วยลงมือทำไปด้วย) คือตัวอย่างจริงที่ทำงานได้จริงตัวหนึ่งของหมวดหมู่นี้
+        contentTh: `![What Is an Agent Harness diagram](/images/courses/claude-code-agent-harness/what-is-an-agent-harness.png)
+
+"Agent harness" เป็นศัพท์เฉพาะในวงการเครื่องมือ AI ไม่ใช่ชื่อแบรนด์ -- มันอธิบายหมวดหมู่ของซอฟต์แวร์ และ Claude Code (เครื่องมือ CLI ที่คุณกำลังอ่านบทเรียนนี้อยู่ ถ้ากำลังเรียนไปด้วยลงมือทำไปด้วย) คือตัวอย่างจริงที่ทำงานได้จริงตัวหนึ่งของหมวดหมู่นี้
 
 ### นิยาม แยกเป็นสี่ส่วน
 
@@ -7668,7 +7672,9 @@ Agent harness นิยามด้วยสี่ส่วนที่ทำง
         titleEn: "The Agentic Loop — How Claude Code Actually Runs",
         titleTh: "Agentic Loop — Claude Code ทำงานจริงอย่างไร",
         order: 2,
-        contentEn: `Lesson 1 named "an agent loop" as the first of the four required parts of a harness. This lesson is entirely about that loop -- the mechanical cycle that turns "fix this bug" into actual edited files and a passing test suite, without you supplying each individual step yourself.
+        contentEn: `![The Agentic Loop diagram](/images/courses/claude-code-agent-harness/the-agentic-loop.png)
+
+Lesson 1 named "an agent loop" as the first of the four required parts of a harness. This lesson is entirely about that loop -- the mechanical cycle that turns "fix this bug" into actual edited files and a passing test suite, without you supplying each individual step yourself.
 
 ### The cycle, step by step
 
@@ -7697,7 +7703,9 @@ Pick one small, genuinely multi-step task in your own project (not something you
 ## Conclusion
 
 The agentic loop is decide → execute → observe → decide again, repeated until the goal is met or a limit stops it. Its value over a single prompt/response is entirely in that observe step: each decision is grounded in the real result of the previous action, not a guess. Everything else this course covers -- CLAUDE.md, Plan Mode, subagents, hooks, permissions, context management -- is really about shaping what happens inside and around this one loop.`,
-        contentTh: `บทเรียนที่ 1 ระบุ "agent loop" เป็นส่วนแรกในสี่ส่วนที่จำเป็นของ harness บทเรียนนี้พูดถึง loop นั้นทั้งหมด -- วงจรเชิงกลไกที่เปลี่ยน "แก้บั๊กนี้ให้หน่อย" ให้กลายเป็นไฟล์ที่ถูกแก้ไขจริงและ test suite ที่ผ่านจริง โดยไม่ต้องให้คุณป้อนแต่ละขั้นตอนเอง
+        contentTh: `![The Agentic Loop diagram](/images/courses/claude-code-agent-harness/the-agentic-loop.png)
+
+บทเรียนที่ 1 ระบุ "agent loop" เป็นส่วนแรกในสี่ส่วนที่จำเป็นของ harness บทเรียนนี้พูดถึง loop นั้นทั้งหมด -- วงจรเชิงกลไกที่เปลี่ยน "แก้บั๊กนี้ให้หน่อย" ให้กลายเป็นไฟล์ที่ถูกแก้ไขจริงและ test suite ที่ผ่านจริง โดยไม่ต้องให้คุณป้อนแต่ละขั้นตอนเอง
 
 ### วงจร ทีละขั้น
 
@@ -7732,7 +7740,9 @@ Agentic loop คือ ตัดสินใจ → ลงมือทำ → �
         titleEn: "CLAUDE.md — Giving the Agent Durable Project Memory",
         titleTh: "CLAUDE.md — การให้ Agent มีความจำที่คงอยู่ของโปรเจกต์",
         order: 3,
-        contentEn: `Lesson 2's agentic loop runs inside a single session -- it has no memory of your project before you started talking, unless something supplies that memory. \`CLAUDE.md\` is the mechanism: a plain Markdown file, read automatically at the start of a session, that gives the agent durable, project-specific context it would otherwise have to be told fresh every single time.
+        contentEn: `![CLAUDE.md: Durable Memory diagram](/images/courses/claude-code-agent-harness/claude-md-durable-memory.png)
+
+Lesson 2's agentic loop runs inside a single session -- it has no memory of your project before you started talking, unless something supplies that memory. \`CLAUDE.md\` is the mechanism: a plain Markdown file, read automatically at the start of a session, that gives the agent durable, project-specific context it would otherwise have to be told fresh every single time.
 
 ### What actually belongs in it
 
@@ -7764,7 +7774,9 @@ For your own project:
 ## Conclusion
 
 \`CLAUDE.md\` gives the agentic loop from lesson 2 something it has no other way to get: durable, project-specific context that persists across sessions, authored once by a human rather than rediscovered every time. Its value is concentrated entirely in what isn't obvious from the code itself -- commands, conventions, workflow rules, and deliberate gotchas -- not in restating what a file already says.`,
-        contentTh: `Agentic loop จากบทเรียนที่ 2 ทำงานอยู่ข้างในเซสชันเดียว -- มันไม่มีความจำเกี่ยวกับโปรเจกต์ของคุณก่อนที่จะเริ่มคุยกัน เว้นแต่จะมีอะไรป้อนความจำนั้นให้ \`CLAUDE.md\` คือกลไกนั้น: ไฟล์ Markdown ธรรมดา ที่ถูกอ่านอัตโนมัติตอนเริ่มเซสชัน ให้ context ที่คงอยู่ เจาะจงกับโปรเจกต์ ที่ไม่งั้นต้องบอกใหม่ทุกครั้ง
+        contentTh: `![CLAUDE.md: Durable Memory diagram](/images/courses/claude-code-agent-harness/claude-md-durable-memory.png)
+
+Agentic loop จากบทเรียนที่ 2 ทำงานอยู่ข้างในเซสชันเดียว -- มันไม่มีความจำเกี่ยวกับโปรเจกต์ของคุณก่อนที่จะเริ่มคุยกัน เว้นแต่จะมีอะไรป้อนความจำนั้นให้ \`CLAUDE.md\` คือกลไกนั้น: ไฟล์ Markdown ธรรมดา ที่ถูกอ่านอัตโนมัติตอนเริ่มเซสชัน ให้ context ที่คงอยู่ เจาะจงกับโปรเจกต์ ที่ไม่งั้นต้องบอกใหม่ทุกครั้ง
 
 ### อะไรที่ควรอยู่ในนั้นจริงๆ
 
@@ -7802,7 +7814,9 @@ For your own project:
         titleEn: "Plan Mode — Proposing Before Acting",
         titleTh: "Plan Mode — การเสนอแผนก่อนลงมือทำ",
         order: 4,
-        contentEn: `Lesson 2's agentic loop, left to run freely, goes straight from "decide" to "execute" every time -- useful for a quick fix, risky for a large or ambiguous change where the *wrong* first step might be expensive to undo. Plan Mode is a control mechanism (lesson 1's fourth required part) that inserts a checkpoint between deciding and executing: the agent researches and proposes a plan first, and nothing gets changed until a human approves it.
+        contentEn: `![Plan Mode diagram](/images/courses/claude-code-agent-harness/plan-mode.png)
+
+Lesson 2's agentic loop, left to run freely, goes straight from "decide" to "execute" every time -- useful for a quick fix, risky for a large or ambiguous change where the *wrong* first step might be expensive to undo. Plan Mode is a control mechanism (lesson 1's fourth required part) that inserts a checkpoint between deciding and executing: the agent researches and proposes a plan first, and nothing gets changed until a human approves it.
 
 ### What actually happens differently in Plan Mode
 
@@ -7829,7 +7843,9 @@ Think of two tasks from your own current project: one small and well-specified (
 ## Conclusion
 
 Plan Mode is a control mechanism that separates proposing from executing as a structural property of the harness, not just a prompting habit -- research continues freely, but changes wait for explicit approval of an actual plan. It earns its slower pace specifically on large, ambiguous, or expensive-to-unwind tasks, and costs more than it's worth on small, well-specified ones.`,
-        contentTh: `Agentic loop จากบทเรียนที่ 2 ถ้าปล่อยให้รันอิสระ จะไปจาก "ตัดสินใจ" สู่ "ลงมือทำ" ทันทีทุกครั้ง -- มีประโยชน์สำหรับการแก้ไขเร็วๆ แต่เสี่ยงสำหรับการเปลี่ยนแปลงใหญ่หรือคลุมเครือ ที่ขั้นตอนแรกที่ *ผิด* อาจแพงที่จะย้อนกลับ Plan Mode คือ control mechanism (ส่วนที่สี่ที่จำเป็นจากบทเรียนที่ 1) ที่แทรกจุดเช็คระหว่างการตัดสินใจกับการลงมือทำ: agent ค้นคว้าและเสนอแผนก่อน และไม่มีอะไรถูกเปลี่ยนจนกว่ามนุษย์จะอนุมัติ
+        contentTh: `![Plan Mode diagram](/images/courses/claude-code-agent-harness/plan-mode.png)
+
+Agentic loop จากบทเรียนที่ 2 ถ้าปล่อยให้รันอิสระ จะไปจาก "ตัดสินใจ" สู่ "ลงมือทำ" ทันทีทุกครั้ง -- มีประโยชน์สำหรับการแก้ไขเร็วๆ แต่เสี่ยงสำหรับการเปลี่ยนแปลงใหญ่หรือคลุมเครือ ที่ขั้นตอนแรกที่ *ผิด* อาจแพงที่จะย้อนกลับ Plan Mode คือ control mechanism (ส่วนที่สี่ที่จำเป็นจากบทเรียนที่ 1) ที่แทรกจุดเช็คระหว่างการตัดสินใจกับการลงมือทำ: agent ค้นคว้าและเสนอแผนก่อน และไม่มีอะไรถูกเปลี่ยนจนกว่ามนุษย์จะอนุมัติ
 
 ### อะไรที่ต่างออกไปจริงๆ ใน Plan Mode
 
@@ -7862,7 +7878,9 @@ Plan Mode คือ control mechanism ที่แยกการเสนออ
         titleEn: "Subagents — Forking and Spawning Specialized Agents",
         titleTh: "Subagents — การ Fork และสร้าง Agent เฉพาะทาง",
         order: 5,
-        contentEn: `A single agentic loop (lesson 2) handles one thread of work at a time, in one context. Subagents are how a harness runs additional, separate instances of that same loop -- each with its own context, sometimes its own specialized configuration -- either in parallel with the main session or to handle a piece of work the main session doesn't need to see in full detail.
+        contentEn: `![Subagents diagram](/images/courses/claude-code-agent-harness/subagents.png)
+
+A single agentic loop (lesson 2) handles one thread of work at a time, in one context. Subagents are how a harness runs additional, separate instances of that same loop -- each with its own context, sometimes its own specialized configuration -- either in parallel with the main session or to handle a piece of work the main session doesn't need to see in full detail.
 
 ### Two different reasons to use a subagent
 
@@ -7885,7 +7903,9 @@ Think of one task from your own project that currently takes several back-and-fo
 ## Conclusion
 
 Subagents run additional, separate instances of the same agentic loop from lesson 2 -- useful for keeping exploratory work out of the main session's context, or for handling a task with specialized, narrower instructions. Whether a subagent inherits the main session's context or starts fresh is a real design choice, not a default to ignore. And subagents don't bypass control mechanisms -- they're still bound by the same category of rules covered in the next two lessons.`,
-        contentTh: `Agentic loop เดียว (บทเรียนที่ 2) จัดการงานหนึ่งสายในหนึ่ง context ในแต่ละครั้ง Subagent คือวิธีที่ harness รัน instance เพิ่มเติม แยกต่างหากของ loop เดียวกันนั้น -- แต่ละตัวมี context ของตัวเอง บางครั้งมีการตั้งค่าเฉพาะทางของตัวเอง -- ทั้งแบบขนานไปกับเซสชันหลัก หรือจัดการงานชิ้นหนึ่งที่เซสชันหลักไม่จำเป็นต้องเห็นรายละเอียดทั้งหมด
+        contentTh: `![Subagents diagram](/images/courses/claude-code-agent-harness/subagents.png)
+
+Agentic loop เดียว (บทเรียนที่ 2) จัดการงานหนึ่งสายในหนึ่ง context ในแต่ละครั้ง Subagent คือวิธีที่ harness รัน instance เพิ่มเติม แยกต่างหากของ loop เดียวกันนั้น -- แต่ละตัวมี context ของตัวเอง บางครั้งมีการตั้งค่าเฉพาะทางของตัวเอง -- ทั้งแบบขนานไปกับเซสชันหลัก หรือจัดการงานชิ้นหนึ่งที่เซสชันหลักไม่จำเป็นต้องเห็นรายละเอียดทั้งหมด
 
 ### สองเหตุผลต่างกันที่ใช้ subagent
 
@@ -7914,7 +7934,9 @@ Subagent รัน instance เพิ่มเติม แยกต่างห
         titleEn: "Hooks — Intercepting and Controlling Agent Behavior",
         titleTh: "Hooks — การดักจับและควบคุมพฤติกรรมของ Agent",
         order: 6,
-        contentEn: `Lesson 2's agentic loop is: decide, execute, observe, repeat. Hooks are a control mechanism (lesson 1's fourth part) that let you attach your own shell commands to specific points in that cycle -- most usefully, around the moment a tool is about to execute -- so your own logic, not just the model's judgment, gets a say in what actually happens.
+        contentEn: `![Hooks diagram](/images/courses/claude-code-agent-harness/hooks.png)
+
+Lesson 2's agentic loop is: decide, execute, observe, repeat. Hooks are a control mechanism (lesson 1's fourth part) that let you attach your own shell commands to specific points in that cycle -- most usefully, around the moment a tool is about to execute -- so your own logic, not just the model's judgment, gets a say in what actually happens.
 
 ### What a hook actually is
 
@@ -7939,7 +7961,9 @@ Think of one rule your team already follows informally around your codebase -- "
 ## Conclusion
 
 Hooks attach your own shell commands to specific points in the agentic loop, able to block an action outright rather than merely requesting the model avoid it -- the same structural upgrade from "asked nicely" to "mechanically enforced" that you saw with Plan Mode. A hook's feedback should be treated as a real signal to reconsider, not an obstacle to route around, and hooks work alongside Plan Mode and permissions as different tools for the same underlying concern: keeping a human-defined boundary reliable regardless of the model's in-the-moment judgment.`,
-        contentTh: `Agentic loop จากบทเรียนที่ 2 คือ: ตัดสินใจ, ลงมือทำ, สังเกต, ทำซ้ำ Hook คือ control mechanism (ส่วนที่สี่จากบทเรียนที่ 1) ที่ให้คุณผูกคำสั่ง shell ของตัวเองเข้ากับจุดเจาะจงในวงจรนั้น -- มีประโยชน์ที่สุดคือรอบๆ ช่วงเวลาที่ tool กำลังจะลงมือทำ -- เพื่อให้ logic ของคุณเอง ไม่ใช่แค่วิจารณญาณของโมเดล มีสิทธิ์พูดว่าอะไรจะเกิดขึ้นจริง
+        contentTh: `![Hooks diagram](/images/courses/claude-code-agent-harness/hooks.png)
+
+Agentic loop จากบทเรียนที่ 2 คือ: ตัดสินใจ, ลงมือทำ, สังเกต, ทำซ้ำ Hook คือ control mechanism (ส่วนที่สี่จากบทเรียนที่ 1) ที่ให้คุณผูกคำสั่ง shell ของตัวเองเข้ากับจุดเจาะจงในวงจรนั้น -- มีประโยชน์ที่สุดคือรอบๆ ช่วงเวลาที่ tool กำลังจะลงมือทำ -- เพื่อให้ logic ของคุณเอง ไม่ใช่แค่วิจารณญาณของโมเดล มีสิทธิ์พูดว่าอะไรจะเกิดขึ้นจริง
 
 ### Hook คืออะไรจริงๆ
 
@@ -7970,7 +7994,9 @@ Hook ผูกคำสั่ง shell ของคุณเองเข้า�
         titleEn: "Permissions — What the Agent Can and Can't Do Without Asking",
         titleTh: "Permissions — สิ่งที่ Agent ทำได้และทำไม่ได้โดยไม่ต้องถาม",
         order: 7,
-        contentEn: `Lesson 6 covered hooks as a way to attach custom, mechanical rules to the loop. Permissions are the harness's built-in version of the same underlying concern -- which categories of action require your explicit approval before they run -- without you having to write a hook for every single case yourself.
+        contentEn: `![Permissions diagram](/images/courses/claude-code-agent-harness/permissions.png)
+
+Lesson 6 covered hooks as a way to attach custom, mechanical rules to the loop. Permissions are the harness's built-in version of the same underlying concern -- which categories of action require your explicit approval before they run -- without you having to write a hook for every single case yourself.
 
 ### The baseline split
 
@@ -7995,7 +8021,9 @@ For your own project, list three kinds of action an agent working on it might at
 ## Conclusion
 
 Permissions govern which categories of action get to run automatically versus which require your explicit, scoped approval first -- a configurable policy, not a fixed wall, built around the same principle you'd apply to any consequential decision: low cost to pause and confirm, potentially high cost to get an irreversible action wrong. Together with Plan Mode (lesson 4) and hooks (lesson 6), this is the third tool this course covers for the same underlying job: keeping a human in the loop exactly where it matters.`,
-        contentTh: `บทเรียนที่ 6 พูดถึง hook เป็นวิธีผูกกฎที่กำหนดเองเชิงกลไกเข้ากับ loop Permission คือเวอร์ชันในตัวของ harness สำหรับความกังวลพื้นฐานเดียวกัน -- action ประเภทไหนที่ต้องการการอนุมัติชัดเจนจากคุณก่อนที่จะรัน -- โดยไม่ต้องเขียน hook เองสำหรับทุกกรณี
+        contentTh: `![Permissions diagram](/images/courses/claude-code-agent-harness/permissions.png)
+
+บทเรียนที่ 6 พูดถึง hook เป็นวิธีผูกกฎที่กำหนดเองเชิงกลไกเข้ากับ loop Permission คือเวอร์ชันในตัวของ harness สำหรับความกังวลพื้นฐานเดียวกัน -- action ประเภทไหนที่ต้องการการอนุมัติชัดเจนจากคุณก่อนที่จะรัน -- โดยไม่ต้องเขียน hook เองสำหรับทุกกรณี
 
 ### การแบ่งพื้นฐาน
 
@@ -8026,7 +8054,9 @@ Permission กำหนดว่า action ประเภทไหนรัน�
         titleEn: "Context Management — Memory, Compaction, and the Scratchpad",
         titleTh: "Context Management — Memory, Compaction, และ Scratchpad",
         order: 8,
-        contentEn: `Lesson 1 named context management as the third required part of an agent harness: deciding what the model actually sees at each step, since every model has a finite window and a long task generates far more history than fits. This lesson looks at the different mechanisms Claude Code uses to manage that, beyond the one you already met in lesson 3.
+        contentEn: `![Context Management diagram](/images/courses/claude-code-agent-harness/context-management.png)
+
+Lesson 1 named context management as the third required part of an agent harness: deciding what the model actually sees at each step, since every model has a finite window and a long task generates far more history than fits. This lesson looks at the different mechanisms Claude Code uses to manage that, beyond the one you already met in lesson 3.
 
 ### CLAUDE.md is the one piece you author; the rest are managed for you
 
@@ -8055,7 +8085,9 @@ Think of a real, multi-day piece of work on your own project (not a single-sessi
 ## Conclusion
 
 Context management is more than one mechanism: \`CLAUDE.md\` (lesson 3) is durable, human-authored, project-wide context; automatic summarization keeps a long session going past what the raw transcript could hold; persistent memory carries facts and preferences forward across sessions; and a scratchpad keeps genuinely temporary work from cluttering either the project or anything meant to last. All of them answer the same question from lesson 1 -- what should the model actually see right now -- just at different timescales and for different kinds of information.`,
-        contentTh: `บทเรียนที่ 1 ระบุ context management เป็นส่วนที่สามที่จำเป็นของ agent harness: การตัดสินใจว่าโมเดลเห็นอะไรจริงๆ ในแต่ละขั้น เพราะทุกโมเดลมี window จำกัด และงานที่ยาวสร้างประวัติมากกว่าที่จะใส่พอดี บทเรียนนี้ดูกลไกต่างๆ ที่ Claude Code ใช้จัดการเรื่องนี้ นอกเหนือจากตัวที่เจอไปแล้วในบทเรียนที่ 3
+        contentTh: `![Context Management diagram](/images/courses/claude-code-agent-harness/context-management.png)
+
+บทเรียนที่ 1 ระบุ context management เป็นส่วนที่สามที่จำเป็นของ agent harness: การตัดสินใจว่าโมเดลเห็นอะไรจริงๆ ในแต่ละขั้น เพราะทุกโมเดลมี window จำกัด และงานที่ยาวสร้างประวัติมากกว่าที่จะใส่พอดี บทเรียนนี้ดูกลไกต่างๆ ที่ Claude Code ใช้จัดการเรื่องนี้ นอกเหนือจากตัวที่เจอไปแล้วในบทเรียนที่ 3
 
 ### CLAUDE.md คือชิ้นเดียวที่คุณเขียนเอง ที่เหลือถูกจัดการให้
 
@@ -8090,7 +8122,9 @@ Context management มีมากกว่าหนึ่งกลไก: \`CLA
         titleEn: "Putting It Together: A Real Agent Workflow",
         titleTh: "ประกอบร่างทั้งหมด: Agent Workflow จริง",
         order: 9,
-        contentEn: `Lessons 2 through 8 covered the agent loop and six distinct mechanisms around it, one at a time. In a real task, you don't reach for them one at a time -- they combine, and this lesson walks through one realistic, multi-step task end to end, naming exactly which mechanism is doing what at each point.
+        contentEn: `![A Real Agent Workflow diagram](/images/courses/claude-code-agent-harness/a-real-agent-workflow.png)
+
+Lessons 2 through 8 covered the agent loop and six distinct mechanisms around it, one at a time. In a real task, you don't reach for them one at a time -- they combine, and this lesson walks through one realistic, multi-step task end to end, naming exactly which mechanism is doing what at each point.
 
 ### A worked scenario: "add input validation to this API endpoint, and make sure it's actually tested"
 
@@ -8117,7 +8151,9 @@ Before your next genuinely multi-step task in your own project, pause before sta
 ## Conclusion
 
 A real task combines these mechanisms rather than using them one at a time: \`CLAUDE.md\` supplies standing context before anything starts, Plan Mode gates a multi-part change behind an approved plan, a subagent keeps self-contained research out of the main thread, permissions and hooks enforce boundaries regardless of how well-planned the task is, and context management keeps the whole thing running without hitting a hard wall. The actual skill is recognizing which of these a given task calls for -- not applying all six by rote every time.`,
-        contentTh: `บทเรียนที่ 2 ถึง 8 ครอบคลุม agent loop และกลไกหกอย่างที่แยกกันรอบๆ มัน ทีละอัน ในงานจริง คุณไม่ได้หยิบมาใช้ทีละอัน -- มันรวมกัน และบทเรียนนี้ไล่ดูงานจริงที่สมจริง มีหลายขั้นตอน ตั้งแต่ต้นจนจบ ระบุชัดเจนว่ากลไกไหนทำอะไรตรงจุดไหน
+        contentTh: `![A Real Agent Workflow diagram](/images/courses/claude-code-agent-harness/a-real-agent-workflow.png)
+
+บทเรียนที่ 2 ถึง 8 ครอบคลุม agent loop และกลไกหกอย่างที่แยกกันรอบๆ มัน ทีละอัน ในงานจริง คุณไม่ได้หยิบมาใช้ทีละอัน -- มันรวมกัน และบทเรียนนี้ไล่ดูงานจริงที่สมจริง มีหลายขั้นตอน ตั้งแต่ต้นจนจบ ระบุชัดเจนว่ากลไกไหนทำอะไรตรงจุดไหน
 
 ### สถานการณ์ตัวอย่าง: "เพิ่ม input validation ให้ API endpoint นี้ และให้แน่ใจว่ามีเทสรองรับจริง"
 
@@ -8150,7 +8186,9 @@ A real task combines these mechanisms rather than using them one at a time: \`CL
         titleEn: "Designing a Harness That Keeps Up With the Model",
         titleTh: "ออกแบบ Harness ให้ตามทันโมเดลที่พัฒนาไป",
         order: 10,
-        contentEn: `Every mechanism this course has covered so far -- \`CLAUDE.md\`, Plan Mode, subagents, hooks, permissions, context management -- is scaffolding built around a model at a specific point in its capability. This lesson, grounded directly in Anthropic's own published guidance on harness design, covers a fact that's easy to miss while you're focused on getting any one of those mechanisms working: the assumptions baked into that scaffolding go stale as the model improves, and a harness that never revisits them accumulates dead weight.
+        contentEn: `![Designing a Harness That Keeps Up With the Model diagram](/images/courses/claude-code-agent-harness/designing-a-harness-that-keeps-up-with-the-model.png)
+
+Every mechanism this course has covered so far -- \`CLAUDE.md\`, Plan Mode, subagents, hooks, permissions, context management -- is scaffolding built around a model at a specific point in its capability. This lesson, grounded directly in Anthropic's own published guidance on harness design, covers a fact that's easy to miss while you're focused on getting any one of those mechanisms working: the assumptions baked into that scaffolding go stale as the model improves, and a harness that never revisits them accumulates dead weight.
 
 ### The definition, restated by Anthropic itself
 
@@ -8187,7 +8225,9 @@ Go back to the \`CLAUDE.md\`, Plan Mode defaults, hooks, and permission categori
 ## Conclusion
 
 A harness encodes assumptions about a model's current limitations, and those assumptions age -- the discipline worth building, straight from Anthropic's own guidance, is periodically asking what scaffolding has become unnecessary rather than only ever adding more. Lean on general tools the model already knows well before reaching for a bespoke one; simplify through self-orchestration, self-managed context, and self-persisting memory where the model can be trusted to handle more itself; and keep deliberate, dedicated boundaries specifically where UX, observability, or security genuinely require them -- re-evaluated on a schedule, not assumed permanent just because they were right once.`,
-        contentTh: `ทุกกลไกที่คอร์สนี้ครอบคลุมมาจนถึงตอนนี้ -- \`CLAUDE.md\`, Plan Mode, subagent, hook, permission, context management -- คือ scaffolding ที่สร้างขึ้นรอบโมเดล ณ จุดหนึ่งของความสามารถมัน บทเรียนนี้ อิงตรงจากคำแนะนำการออกแบบ harness ที่ Anthropic เองเผยแพร่ ครอบคลุมข้อเท็จจริงที่พลาดง่ายตอนโฟกัสอยู่กับการทำให้กลไกใดกลไกหนึ่งทำงาน: สมมุติฐานที่ฝังอยู่ใน scaffolding นั้นล้าสมัยไปตามที่โมเดลพัฒนาขึ้น และ harness ที่ไม่เคยกลับมาทบทวนมันเลย จะสะสม "น้ำหนักตาย" (dead weight) ไปเรื่อยๆ
+        contentTh: `![Designing a Harness That Keeps Up With the Model diagram](/images/courses/claude-code-agent-harness/designing-a-harness-that-keeps-up-with-the-model.png)
+
+ทุกกลไกที่คอร์สนี้ครอบคลุมมาจนถึงตอนนี้ -- \`CLAUDE.md\`, Plan Mode, subagent, hook, permission, context management -- คือ scaffolding ที่สร้างขึ้นรอบโมเดล ณ จุดหนึ่งของความสามารถมัน บทเรียนนี้ อิงตรงจากคำแนะนำการออกแบบ harness ที่ Anthropic เองเผยแพร่ ครอบคลุมข้อเท็จจริงที่พลาดง่ายตอนโฟกัสอยู่กับการทำให้กลไกใดกลไกหนึ่งทำงาน: สมมุติฐานที่ฝังอยู่ใน scaffolding นั้นล้าสมัยไปตามที่โมเดลพัฒนาขึ้น และ harness ที่ไม่เคยกลับมาทบทวนมันเลย จะสะสม "น้ำหนักตาย" (dead weight) ไปเรื่อยๆ
 
 ### นิยาม ที่ Anthropic เองพูดซ้ำ
 
@@ -8230,7 +8270,9 @@ Harness ฝังสมมุติฐานเกี่ยวกับข้อ
         titleEn: "Hands-On: Setting Up Claude Code for Your Own Project",
         titleTh: "ลงมือทำ: ตั้งค่า Claude Code สำหรับโปรเจกต์ของคุณเอง",
         order: 11,
-        contentEn: `Every lesson in this course has ended with an exercise about your own project. This closing lesson ties those answers together into one real setup pass -- the thing you'd actually do once, for real, before using Claude Code seriously on a codebase you care about.
+        contentEn: `![Setting Up for Your Own Project diagram](/images/courses/claude-code-agent-harness/setting-up-for-your-own-project.png)
+
+Every lesson in this course has ended with an exercise about your own project. This closing lesson ties those answers together into one real setup pass -- the thing you'd actually do once, for real, before using Claude Code seriously on a codebase you care about.
 
 ### Step 1: write the real CLAUDE.md
 
@@ -8259,7 +8301,9 @@ Not a perfect setup -- a real one, with real gaps you've noticed rather than gue
 ## Conclusion
 
 Setting up Claude Code for a real project isn't a one-time checklist you finish and forget -- it's \`CLAUDE.md\` written from genuine gaps you've noticed, a deliberate (not default) stance on Plan Mode, one real guardrail formalized before trying to cover everything, and defaults for subagents and memory based on your project's actual recurring patterns, all revised the first time real work exposes something you got wrong. That revising-as-you-go is itself the last lesson this course has to teach: the mechanisms from lessons 2 through 8 are tools, and using them well is a skill you build by actually running them against work you care about, not by reading about them once.`,
-        contentTh: `ทุกบทเรียนในคอร์สนี้จบด้วยแบบฝึกหัดเกี่ยวกับโปรเจกต์ของคุณเอง บทเรียนปิดท้ายนี้ร้อยคำตอบเหล่านั้นเข้าด้วยกันเป็นการตั้งค่าจริงครั้งเดียว -- สิ่งที่คุณจะทำจริงครั้งหนึ่ง ก่อนใช้ Claude Code อย่างจริงจังกับ codebase ที่คุณใส่ใจ
+        contentTh: `![Setting Up for Your Own Project diagram](/images/courses/claude-code-agent-harness/setting-up-for-your-own-project.png)
+
+ทุกบทเรียนในคอร์สนี้จบด้วยแบบฝึกหัดเกี่ยวกับโปรเจกต์ของคุณเอง บทเรียนปิดท้ายนี้ร้อยคำตอบเหล่านั้นเข้าด้วยกันเป็นการตั้งค่าจริงครั้งเดียว -- สิ่งที่คุณจะทำจริงครั้งหนึ่ง ก่อนใช้ Claude Code อย่างจริงจังกับ codebase ที่คุณใส่ใจ
 
 ### ขั้นที่ 1: เขียน CLAUDE.md จริง
 
