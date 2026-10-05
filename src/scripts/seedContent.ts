@@ -8146,10 +8146,90 @@ A real task combines these mechanisms rather than using them one at a time: \`CL
 งานจริงรวมกลไกเหล่านี้เข้าด้วยกัน แทนที่จะใช้ทีละอัน: \`CLAUDE.md\` ให้ context ที่ยืนพื้นก่อนอะไรจะเริ่ม, Plan Mode กั้นการเปลี่ยนแปลงหลายส่วนไว้หลังแผนที่อนุมัติแล้ว, subagent กันงานค้นคว้าที่จบในตัวเองออกจากสายหลัก, permission กับ hook บังคับใช้ขอบเขตไม่ว่างานจะวางแผนดีแค่ไหน และ context management ทำให้ทั้งหมดทำงานต่อได้โดยไม่ชนกำแพงแข็ง ทักษะจริงคือการรู้จักว่างานหนึ่งๆ ต้องการอันไหนในนี้ -- ไม่ใช่การใช้ครบทั้งหกอย่างตามพิธีกรรมทุกครั้ง`,
       },
       {
+        slug: "designing-a-harness-that-keeps-up-with-the-model",
+        titleEn: "Designing a Harness That Keeps Up With the Model",
+        titleTh: "ออกแบบ Harness ให้ตามทันโมเดลที่พัฒนาไป",
+        order: 10,
+        contentEn: `Every mechanism this course has covered so far -- \`CLAUDE.md\`, Plan Mode, subagents, hooks, permissions, context management -- is scaffolding built around a model at a specific point in its capability. This lesson, grounded directly in Anthropic's own published guidance on harness design, covers a fact that's easy to miss while you're focused on getting any one of those mechanisms working: the assumptions baked into that scaffolding go stale as the model improves, and a harness that never revisits them accumulates dead weight.
+
+### The definition, restated by Anthropic itself
+
+Anthropic's own framing lines up almost exactly with lesson 1's four-part definition: a harness is "the software scaffolding around a model: the loop, tools, context management, and guardrails that turn raw intelligence into a working agent." The useful addition here isn't a new definition -- it's the observation that follows from it: a harness encodes assumptions about what the model *can't* yet do well, and those assumptions have a shelf life.
+
+### The question worth asking repeatedly: what can I stop doing?
+
+This is the single most important habit from Anthropic's own guidance, stated plainly: as the model improves, periodically ask what compensating scaffolding has become unnecessary. A concrete, documented example of this going wrong in the other direction: a context-reset mechanism built to compensate for Sonnet 4.5's limitations became "dead weight" once Opus 4.5's improved capabilities made the original problem it compensated for mostly go away. The scaffolding didn't become actively harmful -- it just kept consuming complexity and attention for a problem that no longer existed at the same scale.
+
+### Pattern 1: Lean on what the model already knows
+
+Reaching for a highly specialized, narrow tool feels like the safe choice, but it isn't always the right one. Anthropic's own documented result: Claude 3.5 Sonnet reached 49% on the SWE-bench coding benchmark using nothing more specialized than bash and a text editor -- general-purpose tools the model already has deep, broad familiarity with, "composed into patterns that solve different problems," rather than a purpose-built tool for each specific task. The lesson isn't "never build specialized tools" -- lesson 6's hooks and lesson 7's permissions are exactly that, and for good reason, where a boundary genuinely needs mechanical enforcement. The lesson is that defaulting to a narrow, bespoke tool out of caution, when a general one the model already understands well would do, is itself a form of unnecessary scaffolding.
+
+### Pattern 2: Simplify the harness, in three specific ways
+
+Anthropic's guidance names three concrete forms this simplification takes, and two of them connect directly to mechanisms already covered in this course:
+
+- **Self-orchestration** -- letting the model express tool calls and the logic connecting them as code it writes, rather than routing every single intermediate tool result back through the model's own context window to be read and reasoned about one step at a time. This avoids paying the token cost of processing that doesn't actually need the model's attention.
+- **Self-managed context** -- this is lesson 5's subagents and lesson 8's context management, from a different angle: giving the model tools like progressive-disclosure skills, context editing, and subagents for a fresh window, and letting *it* decide when to reach for them, rather than the harness rigidly pre-loading every piece of task-specific instruction whether or not this particular task needs it.
+- **Self-persisting memory** -- this is lesson 8's persistent memory and compaction again, framed as a design choice rather than just a mechanism: give the model the tools (a memory folder, compaction) and let it decide what's worth carrying forward, instead of the harness hardcoding what should persist. The documented result is substantial: on the BrowseComp benchmark, Opus 4.6 reached 84% accuracy using compaction, compared to Sonnet 4.5's flat 43% -- a jump attributable in real part to the model, not just the harness, being trusted to manage more of this itself.
+
+### Pattern 3: Set boundaries strategically, not everywhere equally
+
+Simplifying the harness doesn't mean removing all structure -- it means being deliberate about where structure actually earns its cost:
+
+- **Design for caching.** Ordering a prompt "static first, dynamic last" -- the parts that don't change across calls before the parts that do -- is a direct, practical way to get real efficiency out of prompt caching, not an incidental detail.
+- **Keep dedicated tools for the boundaries that need them.** UX, observability, and security boundaries are the explicit exception to "prefer general tools" from Pattern 1 -- these are exactly the kind of control mechanism lessons 6 and 7 covered, and they don't go away just because the model got better at reasoning generally. A model being smarter doesn't make an unreviewed destructive action safer to leave unguarded.
+- **Re-evaluate continuously, not once.** The context-reset example from earlier in this lesson is the cautionary case for exactly this: a boundary or piece of scaffolding that was the right call for one model version needs to be revisited, not assumed permanent, as the model underneath it changes.
+
+### Hands-on: audit your own setup against "what can I stop doing?"
+
+Go back to the \`CLAUDE.md\`, Plan Mode defaults, hooks, and permission categories you built in lesson 10's setup pass. For each one, ask directly: was this added to compensate for a specific limitation, and is that limitation still real? Name one piece of your own setup that might already be the "dead weight" this lesson describes -- a rule, a reminder in \`CLAUDE.md\`, a cautious default -- that was worth it when you added it, but that you haven't actually re-checked since. You don't have to remove it today; the exercise is building the habit of asking, on a schedule, rather than only when something breaks.
+
+## Conclusion
+
+A harness encodes assumptions about a model's current limitations, and those assumptions age -- the discipline worth building, straight from Anthropic's own guidance, is periodically asking what scaffolding has become unnecessary rather than only ever adding more. Lean on general tools the model already knows well before reaching for a bespoke one; simplify through self-orchestration, self-managed context, and self-persisting memory where the model can be trusted to handle more itself; and keep deliberate, dedicated boundaries specifically where UX, observability, or security genuinely require them -- re-evaluated on a schedule, not assumed permanent just because they were right once.`,
+        contentTh: `ทุกกลไกที่คอร์สนี้ครอบคลุมมาจนถึงตอนนี้ -- \`CLAUDE.md\`, Plan Mode, subagent, hook, permission, context management -- คือ scaffolding ที่สร้างขึ้นรอบโมเดล ณ จุดหนึ่งของความสามารถมัน บทเรียนนี้ อิงตรงจากคำแนะนำการออกแบบ harness ที่ Anthropic เองเผยแพร่ ครอบคลุมข้อเท็จจริงที่พลาดง่ายตอนโฟกัสอยู่กับการทำให้กลไกใดกลไกหนึ่งทำงาน: สมมุติฐานที่ฝังอยู่ใน scaffolding นั้นล้าสมัยไปตามที่โมเดลพัฒนาขึ้น และ harness ที่ไม่เคยกลับมาทบทวนมันเลย จะสะสม "น้ำหนักตาย" (dead weight) ไปเรื่อยๆ
+
+### นิยาม ที่ Anthropic เองพูดซ้ำ
+
+กรอบที่ Anthropic เองใช้ ตรงกับนิยามสี่ส่วนจากบทเรียนที่ 1 เกือบเป๊ะ: harness คือ "software scaffolding รอบโมเดล: loop, tools, context management, และ guardrails ที่เปลี่ยนความฉลาดดิบให้เป็น agent ที่ทำงานได้จริง" สิ่งที่มีประโยชน์ตรงนี้ไม่ใช่นิยามใหม่ -- แต่คือข้อสังเกตที่ตามมาจากมัน: harness ฝังสมมุติฐานเกี่ยวกับสิ่งที่โมเดล *ยังทำได้ไม่ดี* และสมมุติฐานนั้นมีอายุการใช้งาน
+
+### คำถามที่ควรถามซ้ำๆ: อะไรที่เลิกทำได้แล้วบ้าง
+
+นี่คือนิสัยที่สำคัญที่สุดอันหนึ่งจากคำแนะนำของ Anthropic เอง พูดไว้ตรงๆ: เมื่อโมเดลพัฒนาขึ้น ให้ถามเป็นระยะว่า scaffolding ที่ชดเชยอะไรบางอย่าง กลายเป็นสิ่งที่ไม่จำเป็นแล้วหรือยัง ตัวอย่างจริงที่บันทึกไว้ของเรื่องนี้ที่ผิดพลาดไปอีกทาง: กลไก context-reset ที่สร้างมาชดเชยข้อจำกัดของ Sonnet 4.5 กลายเป็น "น้ำหนักตาย" เมื่อความสามารถที่ดีขึ้นของ Opus 4.5 ทำให้ปัญหาเดิมที่มันชดเชยหายไปเกือบหมดแล้ว scaffolding นั้นไม่ได้กลายเป็นอันตรายเชิงรุก -- มันแค่ยังคงกินความซับซ้อนและความสนใจต่อไปสำหรับปัญหาที่ไม่มีอยู่ในระดับเดิมอีกแล้ว
+
+### Pattern 1: พึ่งพาสิ่งที่โมเดลรู้อยู่แล้ว
+
+การเอื้อมไปหา tool เฉพาะทางที่แคบมากรู้สึกเหมือนเป็นทางเลือกที่ปลอดภัย แต่ไม่ใช่ทางเลือกที่ถูกต้องเสมอไป ผลลัพธ์จริงที่ Anthropic บันทึกไว้: Claude 3.5 Sonnet ได้ 49% บน SWE-bench coding benchmark โดยใช้แค่ bash กับ text editor -- tool ทั่วไปที่โมเดลคุ้นเคยลึกและกว้างอยู่แล้ว "ประกอบเข้าด้วยกันเป็นรูปแบบที่แก้ปัญหาต่างกันได้" แทนที่จะเป็น tool ที่สร้างเฉพาะสำหรับแต่ละงาน บทเรียนนี้ไม่ได้บอกว่า "ห้ามสร้าง tool เฉพาะทางเลย" -- hook จากบทเรียนที่ 6 และ permission จากบทเรียนที่ 7 คือตัวอย่างแบบนั้นพอดี และด้วยเหตุผลที่ดี ตรงจุดที่ขอบเขตต้องการการบังคับใช้เชิงกลไกจริงๆ บทเรียนคือ การเลือก tool แคบๆ ที่สร้างเฉพาะ จากความระมัดระวังเป็นค่าเริ่มต้น ทั้งที่ tool ทั่วไปที่โมเดลเข้าใจดีอยู่แล้วก็ทำได้ ตัวมันเองก็เป็น scaffolding ที่ไม่จำเป็นรูปแบบหนึ่งเหมือนกัน
+
+### Pattern 2: ลดความซับซ้อนของ harness ในสามวิธีที่เจาะจง
+
+คำแนะนำของ Anthropic ระบุสามรูปแบบที่เจาะจงของการลดความซับซ้อนนี้ และสองในนั้นเชื่อมตรงกับกลไกที่คอร์สนี้ครอบคลุมไปแล้ว:
+
+- **Self-orchestration** -- ให้โมเดลแสดง tool call และ logic ที่เชื่อมมันเข้าด้วยกันเป็นโค้ดที่มันเขียนเอง แทนที่จะส่งผลลัพธ์ tool ระหว่างทางทุกอันกลับผ่าน context window ของโมเดลเองเพื่อให้อ่านและคิดทีละขั้น วิธีนี้หลีกเลี่ยงต้นทุน token ของการประมวลผลที่จริงๆ ไม่ต้องการความสนใจของโมเดลเลย
+- **Self-managed context** -- นี่คือ subagent จากบทเรียนที่ 5 และ context management จากบทเรียนที่ 8 จากมุมที่ต่างออกไป: ให้ tool แก่โมเดลอย่าง skill แบบ progressive-disclosure, context editing, และ subagent สำหรับ window ใหม่ แล้วให้ *มันเอง* ตัดสินใจว่าจะเอื้อมไปหาเมื่อไหร่ แทนที่ harness จะ pre-load ทุกชิ้นของ instruction เฉพาะงานไว้ล่วงหน้าตายตัว ไม่ว่างานนี้จะต้องการมันจริงหรือไม่
+- **Self-persisting memory** -- นี่คือ memory ที่คงอยู่และ compaction จากบทเรียนที่ 8 อีกครั้ง แต่วางกรอบเป็นการตัดสินใจเชิงออกแบบ ไม่ใช่แค่กลไก: ให้ tool แก่โมเดล (memory folder, compaction) แล้วให้มันตัดสินใจว่าอะไรคุ้มที่จะพกต่อไป แทนที่ harness จะ hardcode ว่าอะไรควรคงอยู่ ผลลัพธ์ที่บันทึกไว้มีนัยสำคัญ: บน BrowseComp benchmark Opus 4.6 ได้ความแม่นยำ 84% ด้วย compaction เทียบกับ Sonnet 4.5 ที่ 43% คงที่ -- การกระโดดนี้ส่วนหนึ่งจริงๆ มาจากการที่โมเดล ไม่ใช่แค่ harness ได้รับความไว้วางใจให้จัดการส่วนนี้มากขึ้นด้วยตัวเอง
+
+### Pattern 3: วางขอบเขตอย่างมีกลยุทธ์ ไม่ใช่เท่ากันทุกที่
+
+การลดความซับซ้อนของ harness ไม่ได้แปลว่าตัดโครงสร้างทั้งหมดออก -- มันแปลว่าตั้งใจเลือกจุดที่โครงสร้างคุ้มต้นทุนจริงๆ:
+
+- **ออกแบบเพื่อ caching** การเรียง prompt แบบ "static ก่อน dynamic หลัง" -- ส่วนที่ไม่เปลี่ยนในแต่ละการเรียกไว้ก่อนส่วนที่เปลี่ยน -- เป็นวิธีตรงและใช้ได้จริงที่ทำให้ prompt caching มีประสิทธิภาพจริง ไม่ใช่รายละเอียดเล็กน้อยที่บังเอิญเกิดขึ้น
+- **คง dedicated tool ไว้สำหรับขอบเขตที่ต้องการมันจริง** UX, observability, และ security boundary คือข้อยกเว้นชัดเจนของ "เลือก tool ทั่วไป" จาก Pattern 1 -- นี่คือ control mechanism แบบเดียวกับที่บทเรียนที่ 6 และ 7 ครอบคลุมพอดี และมันไม่หายไปแค่เพราะโมเดลคิดได้ดีขึ้นทั่วไป โมเดลที่ฉลาดขึ้นไม่ได้ทำให้ action ที่ทำลายล้างและไม่มีใครรีวิว ปลอดภัยพอที่จะปล่อยไว้โดยไม่มีการป้องกัน
+- **ทบทวนต่อเนื่อง ไม่ใช่ครั้งเดียว** ตัวอย่าง context-reset ก่อนหน้านี้ในบทเรียนคือกรณีเตือนใจสำหรับเรื่องนี้พอดี: ขอบเขตหรือ scaffoldingชิ้นหนึ่งที่เคยเป็นการตัดสินใจที่ถูกต้องสำหรับโมเดลเวอร์ชันหนึ่ง ต้องถูกทบทวนใหม่ ไม่ใช่สมมุติว่าถาวร เมื่อโมเดลข้างใต้มันเปลี่ยนไป
+
+### ลงมือทำ: ตรวจสอบการตั้งค่าของคุณเองด้วย "อะไรที่เลิกทำได้แล้วบ้าง"
+
+กลับไปดู \`CLAUDE.md\`, ค่าเริ่มต้น Plan Mode, hook, และหมวดหมู่ permission ที่สร้างไว้ในการตั้งค่าจริงของบทเรียนที่ 10 สำหรับแต่ละอัน ถามตรงๆ: สิ่งนี้ถูกเพิ่มเข้ามาเพื่อชดเชยข้อจำกัดเจาะจงอันหนึ่งใช่ไหม และข้อจำกัดนั้นยังจริงอยู่ไหม ระบุชื่อหนึ่งชิ้นในการตั้งค่าของคุณเองที่อาจเป็น "น้ำหนักตาย" แบบที่บทเรียนนี้อธิบายไปแล้ว -- กฎหนึ่งข้อ, คำเตือนใน \`CLAUDE.md\`, ค่าเริ่มต้นที่ระมัดระวัง -- ที่คุ้มค่าตอนที่เพิ่มเข้ามา แต่ยังไม่เคยกลับไปเช็คซ้ำเลยตั้งแต่นั้น ไม่ต้องลบมันวันนี้ แบบฝึกหัดนี้คือการสร้างนิสัยที่จะถามคำถามนี้ ตามตารางเวลา ไม่ใช่แค่ตอนมีอะไรพังเท่านั้น
+
+## สรุป
+
+Harness ฝังสมมุติฐานเกี่ยวกับข้อจำกัดปัจจุบันของโมเดล และสมมุติฐานเหล่านั้นมีอายุ -- วินัยที่ควรสร้าง ตรงจากคำแนะนำของ Anthropic เอง คือการถามเป็นระยะว่า scaffolding ไหนกลายเป็นสิ่งที่ไม่จำเป็นแล้ว แทนที่จะเพิ่มมันเข้าไปเรื่อยๆ อย่างเดียว พึ่งพา tool ทั่วไปที่โมเดลรู้จักดีอยู่แล้วก่อนที่จะเอื้อมไปหา tool ที่สร้างเฉพาะ ลดความซับซ้อนผ่าน self-orchestration, self-managed context, และ self-persisting memory ตรงจุดที่ไว้ใจให้โมเดลจัดการเองได้มากขึ้น และคงขอบเขตที่ตั้งใจ เฉพาะเจาะจงไว้ตรงจุดที่ UX, observability, หรือ security ต้องการมันจริงๆ -- ทบทวนตามตารางเวลา ไม่ใช่สมมุติว่าถาวรเพียงเพราะมันเคยถูกต้องครั้งหนึ่ง`,
+      },
+      {
         slug: "setting-up-for-your-own-project",
         titleEn: "Hands-On: Setting Up Claude Code for Your Own Project",
         titleTh: "ลงมือทำ: ตั้งค่า Claude Code สำหรับโปรเจกต์ของคุณเอง",
-        order: 10,
+        order: 11,
         contentEn: `Every lesson in this course has ended with an exercise about your own project. This closing lesson ties those answers together into one real setup pass -- the thing you'd actually do once, for real, before using Claude Code seriously on a codebase you care about.
 
 ### Step 1: write the real CLAUDE.md
