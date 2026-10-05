@@ -8211,4 +8211,964 @@ Setting up Claude Code for a real project isn't a one-time checklist you finish 
       },
     ],
   },
+  {
+    slug: "harness-agent-for-software-engineers",
+    title: "Harness Agent for Software Engineers",
+    descriptionEn: `A hands-on, practical course on using Harness's real AI Agent product (Worker Agents and the DevOps Agent) on an actual software project: what the platform's own managed agents do, how to configure and prompt one, how it reads your codebase, how to plan before it edits anything, how to review its output, and where the real guardrails -- platform-enforced and your own -- belong. Every concrete fact and example is grounded in Harness's own public documentation, not invented product behavior. Ends with a composite, ticket-to-review workflow exercise tying every lesson together.`,
+    descriptionTh: `คอร์สแบบลงมือทำจริง ว่าด้วยการใช้ผลิตภัณฑ์ AI Agent จริงของ Harness (Worker Agents และ DevOps Agent) กับโปรเจกต์ซอฟต์แวร์จริง: managed agent ของแพลตฟอร์มทำอะไรได้บ้าง, การตั้งค่าและเขียน prompt ให้ agent, การให้มันอ่าน codebase ของคุณ, การวางแผนก่อนแก้โค้ด, การรีวิวผลลัพธ์ของมัน, และ guardrail ที่แท้จริง -- ทั้งที่แพลตฟอร์มบังคับใช้และที่คุณต้องตัดสินใจเอง -- อยู่ตรงไหน ทุกข้อเท็จจริงและตัวอย่างอิงเอกสารสาธารณะจริง ของ Harness เอง ไม่ใช่พฤติกรรมผลิตภัณฑ์ที่แต่งขึ้น จบด้วยแบบฝึกหัด workflow ผสมผสานตั้งแต่ ticket ถึงรีวิว ที่ร้อยทุกบทเรียนเข้าด้วยกัน`,
+    lessons: [
+      {
+        slug: "what-is-a-harness-agent",
+        titleEn: "What Is a Harness Agent, and How Does It Work?",
+        titleTh: "Harness Agent คืออะไร และทำงานอย่างไร",
+        order: 1,
+        contentEn: `Harness AI is an intelligence layer Harness (the CI/CD/DevOps platform company) builds into its product, described in its own documentation as bringing "intelligence to every stage of the software delivery lifecycle." It isn't a separate app you install standalone -- it's a capability layered onto the Harness platform you (or your team) already run pipelines, deployments, and infrastructure-as-code through.
+
+Under the hood, Harness AI defaults to Claude Opus as its model, served through AWS Bedrock or Google Vertex AI -- though which model actually runs is configurable per agent (more on that in a later lesson).
+
+### Two kinds of "agent," and they're not the same thing
+
+Harness's own docs draw a firm line between two categories, and mixing them up is the single most common point of confusion for anyone new to this:
+
+1. **Worker Agents** -- these run *inside pipelines*, as actual pipeline steps. They're autonomous: triggered by an event (a CI failure, a pull request opening, a schedule, or a chat interaction), they do a bounded piece of work -- building, deploying, testing, remediating, optimizing -- and stop. You don't talk to a Worker Agent in a chat window; you configure it once, and it runs whenever its trigger fires.
+
+2. **DevOps Agent** -- this is the UI-based conversational assistant living inside the Harness interface itself. You talk to it in natural language to create pipelines, manage resources, or troubleshoot something interactively. It's closer to what people usually picture when they hear "AI agent" -- a chat partner, not a pipeline step.
+
+This course is mostly about Worker Agents, because that's where "software engineer configures an agent to do real work on a real project" actually happens. The DevOps Agent comes up again briefly when we talk about day-to-day workflows.
+
+### The six agents Harness ships out of the box
+
+Rather than one do-everything agent, Harness ships six specific, narrowly-scoped managed Worker Agents:
+
+| Agent | What it does |
+| --- | --- |
+| **Autofix** | Reads build logs, finds the root cause of a build failure, commits a fix to the PR branch, and re-triggers the build until it passes |
+| **Code Review** | Reviews PR diffs for security, quality, and test coverage |
+| **Code Coverage** | Finds untested lines and generates tests to close the gaps |
+| **Feature Flag Cleanup** | Detects stale feature flags and validates that removing them is safe |
+| **Manifest Remediation** | Analyzes failed Kubernetes deployments and fixes manifest issues |
+| **IaCM Remediation** | Fixes configuration drift, security findings, and cloud cost issues by editing infrastructure-as-code |
+
+Notice the pattern: each one does *one* job, scoped tightly to a single kind of failure or gap. That's deliberate, and it's the same philosophy you'll see again when we get to best practices later in this course -- narrow, single-purpose agents are easier to trust, review, and govern than one broad agent with vague instructions.
+
+### Hands-on: map your own project onto this list
+
+Before moving on, do this concretely, on paper or in a notes file -- don't skip it just because it feels simple, because the next few lessons build directly on what you write down here:
+
+1. Pick one real, recurring pain point from your own project (a build that breaks the same way repeatedly, a PR review step that's always rushed, a Kubernetes manifest issue that comes back, test coverage that's chronically thin somewhere).
+2. Match it to one of the six agents above -- which one would actually touch that pain point?
+3. Write one sentence describing what "done" looks like for that agent on your project. Not "fix the build" -- something checkable, like "the agent commits a fix and the same test suite that failed now passes, with no other files touched."
+
+Keep this answer close by -- lesson 3 has you turn it into an actual agent configuration.
+
+## Conclusion
+
+A Harness Agent is not one thing: it's either a narrowly-scoped Worker Agent running as a pipeline step (Autofix, Code Review, Code Coverage, Feature Flag Cleanup, Manifest Remediation, IaCM Remediation), or the conversational DevOps Agent in the UI. Both run on Claude Opus by default via Bedrock/Vertex, with the model itself swappable per agent. Everything from here forward in this course is about the Worker Agent side -- configuring, prompting, and governing one against a real project.`,
+        contentTh: `Harness AI คือ "ชั้นความฉลาด" (intelligence layer) ที่ Harness (บริษัทแพลตฟอร์ม CI/CD/DevOps) สร้างเข้าไปในผลิตภัณฑ์ของตัวเอง เอกสารของ Harness เองอธิบายว่ามันนำ "ความฉลาดมาสู่ทุกขั้นตอนของ software delivery lifecycle" มันไม่ใช่แอปแยกต่างหากที่ติดตั้งเดี่ยวๆ -- แต่เป็นความสามารถที่ซ้อนทับอยู่บนแพลตฟอร์ม Harness ที่ทีมคุณ (หรือคุณเอง) ใช้รัน pipeline, deployment, และ infrastructure-as-code อยู่แล้ว
+
+เบื้องหลัง Harness AI ใช้ Claude Opus เป็นโมเดลเริ่มต้น รันผ่าน AWS Bedrock หรือ Google Vertex AI -- แต่โมเดลที่รันจริงปรับได้ต่อ agent (รายละเอียดอยู่ในบทเรียนถัดๆ ไป)
+
+### Agent สองแบบ ที่ไม่ใช่สิ่งเดียวกัน
+
+เอกสารของ Harness เองแบ่งเส้นชัดเจนระหว่างสองประเภท และความสับสนที่พบบ่อยที่สุดสำหรับคนที่เพิ่งเริ่มคือการปนสองอย่างนี้เข้าด้วยกัน:
+
+1. **Worker Agents** -- รันอยู่ *ข้างใน pipeline* เป็น step จริงๆ ของ pipeline เป็นแบบ autonomous: ถูก trigger ด้วย event (CI ล้มเหลว, pull request เปิด, ตามตารางเวลา, หรือการคุยผ่าน chat) ทำงานที่ขอบเขตชัดเจนอย่างหนึ่ง -- build, deploy, test, remediate, optimize -- แล้วหยุด คุณไม่ได้คุยกับ Worker Agent ผ่านหน้าต่าง chat คุณตั้งค่ามันครั้งเดียว แล้วมันจะรันทุกครั้งที่ trigger ทำงาน
+
+2. **DevOps Agent** -- คือ conversational assistant แบบ UI ที่อยู่ในหน้า Harness เอง คุณคุยกับมันด้วยภาษาธรรมชาติเพื่อสร้าง pipeline, จัดการ resource, หรือแก้ปัญหาแบบโต้ตอบ ใกล้เคียงกับภาพที่คนทั่วไปนึกถึงเวลาได้ยินคำว่า "AI agent" มากกว่า -- เป็นคู่สนทนา ไม่ใช่ step ของ pipeline
+
+คอร์สนี้ส่วนใหญ่พูดถึง Worker Agents เพราะนั่นคือจุดที่ "วิศวกรซอฟต์แวร์ตั้งค่า agent ให้ทำงานจริงกับโปรเจกต์จริง" เกิดขึ้นจริง DevOps Agent จะกลับมาพูดถึงสั้นๆ อีกครั้งตอนพูดถึง workflow ในชีวิตประจำวัน
+
+### Agent หกตัวที่ Harness มีให้ใช้ทันที
+
+แทนที่จะมี agent เดียวที่ทำทุกอย่าง Harness สร้าง managed Worker Agent ไว้ให้หกตัว แต่ละตัวมีขอบเขตแคบและชัดเจน:
+
+| Agent | ทำอะไร |
+| --- | --- |
+| **Autofix** | อ่าน build log หาสาเหตุที่แท้จริงของ build ที่ล้มเหลว commit การแก้ไขลง PR branch แล้ว re-trigger build จนผ่าน |
+| **Code Review** | รีวิว PR diff ด้านความปลอดภัย คุณภาพ และ test coverage |
+| **Code Coverage** | หาบรรทัดที่ยังไม่มีเทสครอบคลุม แล้วสร้างเทสเพื่อปิดช่องว่างนั้น |
+| **Feature Flag Cleanup** | ตรวจจับ feature flag ที่ค้างเก่า และยืนยันว่าลบออกได้อย่างปลอดภัย |
+| **Manifest Remediation** | วิเคราะห์ Kubernetes deployment ที่ล้มเหลว แล้วแก้ไขปัญหา manifest |
+| **IaCM Remediation** | แก้ปัญหา configuration drift, ช่องโหว่ความปลอดภัย, และต้นทุน cloud โดยแก้ไขไฟล์ infrastructure-as-code |
+
+สังเกตรูปแบบ: แต่ละตัวทำหน้าที่ *เดียว* ขอบเขตแคบ เจาะจงกับความล้มเหลวหรือช่องว่างแบบเดียว นี่เป็นความตั้งใจ และจะเห็นปรัชญาเดียวกันนี้อีกครั้งตอนพูดถึง best practices ท้ายคอร์ส -- agent ที่แคบและทำหน้าที่เดียวไว้ใจได้ง่ายกว่า รีวิวง่ายกว่า และควบคุมง่ายกว่า agent กว้างๆ ที่มีคำสั่งคลุมเครือ
+
+### ลงมือทำ: จับคู่โปรเจกต์ของคุณเองกับลิสต์นี้
+
+ก่อนไปต่อ ให้ทำสิ่งนี้จริงๆ บนกระดาษหรือไฟล์โน้ต -- อย่าข้ามเพราะรู้สึกว่าง่ายเกินไป เพราะบทเรียนถัดไปจะต่อยอดจากสิ่งที่เขียนไว้ตรงนี้โดยตรง:
+
+1. เลือกจุดเจ็บปวดที่เกิดซ้ำๆ จริงในโปรเจกต์ของคุณเองหนึ่งอย่าง (build ที่พังซ้ำแบบเดิม, ขั้นตอนรีวิว PR ที่เร่งรีบตลอด, ปัญหา Kubernetes manifest ที่กลับมาเรื่อยๆ, test coverage ที่บางมาตลอดในจุดเดิม)
+2. จับคู่กับ agent หนึ่งในหกตัวข้างบน -- ตัวไหนที่จะแตะจุดเจ็บปวดนั้นได้จริง
+3. เขียนหนึ่งประโยคอธิบายว่า "เสร็จแล้ว" สำหรับ agent นั้นบนโปรเจกต์ของคุณหน้าตาเป็นอย่างไร ไม่ใช่ "แก้ build ให้ได้" แต่เป็นอะไรที่ตรวจสอบได้ เช่น "agent commit การแก้ไข แล้ว test suite ชุดเดิมที่ล้มเหลวผ่านแล้ว โดยไม่แตะไฟล์อื่น"
+
+เก็บคำตอบนี้ไว้ใกล้ตัว -- บทเรียนที่ 3 จะให้เอามันไปแปลงเป็น agent configuration จริง
+
+## สรุป
+
+Harness Agent ไม่ใช่สิ่งเดียว: มันคือ Worker Agent ที่ขอบเขตแคบรันเป็น pipeline step (Autofix, Code Review, Code Coverage, Feature Flag Cleanup, Manifest Remediation, IaCM Remediation) หรือไม่ก็ DevOps Agent แบบสนทนาในหน้า UI ทั้งคู่รันบน Claude Opus เป็นค่าเริ่มต้นผ่าน Bedrock/Vertex โดยโมเดลเองปรับเปลี่ยนได้ต่อ agent จากนี้ไปทั้งคอร์สจะพูดถึงฝั่ง Worker Agent เป็นหลัก -- การตั้งค่า, การเขียน prompt, และการควบคุมมันกับโปรเจกต์จริง`,
+      },
+      {
+        slug: "harness-agent-architecture-and-workflow",
+        titleEn: "Architecture and Workflow",
+        titleTh: "Architecture และ Workflow ของ Harness Agent",
+        order: 2,
+        contentEn: `A Worker Agent is a pipeline step, but it's not an unrestricted one. Harness builds each run inside a specific set of guardrails, and understanding that shape -- before you ever write a configuration -- explains almost everything about why agents behave the way they do later in this course.
+
+### What happens when an agent runs
+
+1. **Trigger fires.** A CI failure, a pull request opening, a schedule, or a chat interaction kicks the agent off. Nothing runs without one of these.
+2. **Context loads from the Knowledge Graph.** Before the agent reasons about anything, it has access to Harness's own Knowledge Graph -- services, pipelines, deployments, and incidents -- so its decisions are grounded in what's actually true about your system right now, not just the diff in front of it.
+3. **Execution happens in a sandbox.** The agent runs in a containerized, non-root environment with a read-only filesystem *except* the workspace it's actually meant to touch. Network access is configurable per agent: unrestricted, restricted to a specific allow-list of MCP servers, or disabled entirely.
+4. **Credentials are scoped down, not up.** This is a detail worth sitting with: Harness mints an ephemeral token scoped to the *intersection* of the agent's own permissions and the triggering user's RBAC. An agent triggered by a junior engineer's PR cannot act with more authority than that engineer already has -- it can only ever have less.
+5. **Policy is checked three separate times.** OPA (Open Policy Agent) rules are evaluated when the agent template is saved, when the pipeline starts, and again when the agent attempts a governed action. A policy change doesn't just block future runs -- it can stop an in-flight one too.
+6. **Everything is logged.** Every execution captures who triggered it, which version of the template ran, every action the agent took, and the final outcome. This audit trail is what you'll lean on in the "reviewing agent output" lesson later.
+
+### The lifecycle Harness's own docs describe
+
+Harness's documentation summarizes agent setup in three words: "create, configure, run" -- and claims an agent becomes "live, governed, and available across your organization" within minutes of that. We'll walk through the actual create/configure steps hands-on in the next lesson; what matters here is the shape of the claim: there's no separate runtime to stand up. An agent is a YAML template that plugs into infrastructure you already have.
+
+### "Agent as Code" -- the part that matters most for a software engineer
+
+Every agent is defined as a YAML template, held in source control, exactly like the rest of your pipeline configuration. That means an agent definition is:
+
+- **Forkable** -- copy a managed agent (like Autofix) and adapt it rather than starting from nothing.
+- **Versioned** -- the audit trail records which template version actually ran, so a behavior change is traceable to a commit, not a mystery.
+- **PR-reviewable** -- a change to what an agent is allowed to do goes through the same review process as a change to application code. Nobody should be able to quietly widen an agent's permissions without a reviewer noticing.
+
+This is the single most important architectural fact in this whole course: an agent's behavior is not a runtime setting hidden in a dashboard somewhere. It's a file. If you can read a diff, you can review an agent's capabilities changing.
+
+### Hands-on: trace the lifecycle for your own pain point
+
+Using the pain point and agent you picked in lesson 1's exercise, write out, in order:
+
+1. What specific event should trigger this agent? (Be precise -- "a build failure" is too vague; "a failure in the \`checkout-service\` build pipeline, on the \`main\` branch only" is the right level of detail.)
+2. What does the agent need from the Knowledge Graph to make a good decision here? (Which services, which recent deployments, which past incidents, if any?)
+3. What's the smallest workspace/filesystem access this agent actually needs -- and what should explicitly stay out of reach?
+
+## Conclusion
+
+An agent run is a fixed sequence, not a black box: trigger, Knowledge Graph context, sandboxed execution, RBAC-intersected credentials, three-point policy checks, full audit logging. And the agent's own definition -- what it's allowed to do -- lives as a reviewable YAML file in source control, not a setting you'd have to go hunting for in a UI. Next lesson, we turn this into an actual running agent.`,
+        contentTh: `Worker Agent คือ pipeline step ตัวหนึ่ง แต่ไม่ใช่แบบไร้ขอบเขต Harness สร้างแต่ละการรันไว้ในชุด guardrail ที่ชัดเจน และการเข้าใจรูปร่างนี้ -- ก่อนที่จะเขียน configuration จริง -- จะอธิบายเกือบทุกอย่างว่าทำไม agent ถึงทำงานแบบที่เห็นในบทเรียนถัดๆ ไปของคอร์สนี้
+
+### เกิดอะไรขึ้นตอน agent รัน
+
+1. **Trigger ทำงาน** CI ล้มเหลว, pull request เปิด, ตามตารางเวลา, หรือการคุยผ่าน chat เป็นตัวเริ่ม ไม่มีอะไรรันได้โดยไม่มีสิ่งเหล่านี้
+2. **โหลด context จาก Knowledge Graph** ก่อนที่ agent จะคิดอะไร มันเข้าถึง Knowledge Graph ของ Harness เอง -- services, pipelines, deployments, และ incidents -- เพื่อให้การตัดสินใจอิงกับความจริงปัจจุบันของระบบคุณ ไม่ใช่แค่ diff ตรงหน้า
+3. **การทำงานอยู่ใน sandbox** agent รันในสภาพแวดล้อมแบบ containerized, non-root, filesystem เป็น read-only *ยกเว้น* workspace ที่มันตั้งใจแตะจริงๆ การเข้าถึงเครือข่ายปรับได้ต่อ agent: ไม่จำกัด, จำกัดเฉพาะ allow-list ของ MCP server ที่กำหนด, หรือปิดทั้งหมด
+4. **Credential ถูกจำกัดลง ไม่ใช่ขยายขึ้น** รายละเอียดนี้ควรจำไว้ให้ดี: Harness สร้าง ephemeral token ที่ถูกจำกัดด้วย *จุดตัด* ระหว่างสิทธิ์ของ agent เองกับ RBAC ของผู้ใช้ที่ trigger มัน agent ที่ถูก trigger จาก PR ของวิศวกรจูเนียร์จะมีอำนาจมากกว่าที่วิศวกรคนนั้นมีอยู่แล้วไม่ได้ -- มีได้แค่น้อยกว่าเท่านั้น
+5. **เช็ค policy สามจุดแยกกัน** กฎ OPA (Open Policy Agent) ถูกตรวจตอนบันทึก template, ตอน pipeline เริ่ม, และอีกครั้งตอน agent พยายามทำ governed action การเปลี่ยน policy ไม่ได้แค่บล็อกการรันในอนาคต -- มันหยุดการรันที่กำลังทำอยู่ได้ด้วย
+6. **ทุกอย่างถูกบันทึก** ทุกการรันเก็บว่าใคร trigger, template เวอร์ชันไหนที่รัน, ทุก action ที่ agent ทำ, และผลลัพธ์สุดท้าย audit trail นี้คือสิ่งที่จะใช้ในบทเรียนเรื่อง "รีวิวผลลัพธ์จาก agent" ต่อไป
+
+### Lifecycle ที่เอกสารของ Harness เองอธิบายไว้
+
+เอกสารของ Harness สรุปการตั้งค่า agent ด้วยสามคำ: "create, configure, run" -- และบอกว่า agent จะ "live, governed, และใช้ได้ทั่วองค์กร" ภายในไม่กี่นาที เราจะไล่ขั้นตอน create/configure จริงในบทเรียนถัดไป สิ่งที่สำคัญตรงนี้คือรูปร่างของข้อความนี้: ไม่มี runtime แยกที่ต้องตั้งขึ้นมาใหม่ agent คือ YAML template ที่เสียบเข้ากับ infrastructure ที่คุณมีอยู่แล้ว
+
+### "Agent as Code" -- ส่วนที่สำคัญที่สุดสำหรับวิศวกรซอฟต์แวร์
+
+ทุก agent ถูกนิยามเป็น YAML template เก็บใน source control เหมือนกับ pipeline configuration ส่วนที่เหลือ นั่นแปลว่า agent definition เป็น:
+
+- **Fork ได้** -- copy managed agent (เช่น Autofix) มาปรับแทนที่จะเริ่มจากศูนย์
+- **มี version** -- audit trail บันทึกว่า template เวอร์ชันไหนที่รันจริง การเปลี่ยนพฤติกรรมจึงสืบกลับไปที่ commit ได้ ไม่ใช่ปริศนา
+- **รีวิวผ่าน PR ได้** -- การเปลี่ยนสิ่งที่ agent ทำได้ ผ่านกระบวนการรีวิวเดียวกับการเปลี่ยนโค้ดแอป ไม่มีใครควรขยายสิทธิ์ของ agent แบบเงียบๆ โดยไม่มีคนรีวิวสังเกตเห็น
+
+นี่คือข้อเท็จจริงด้าน architecture ที่สำคัญที่สุดในคอร์สนี้ทั้งหมด: พฤติกรรมของ agent ไม่ใช่ setting ที่ซ่อนอยู่ใน dashboard ที่ไหนสักแห่ง มันคือไฟล์ ถ้าคุณอ่าน diff เป็น คุณก็รีวิวความสามารถของ agent ที่เปลี่ยนไปได้
+
+### ลงมือทำ: ไล่ lifecycle สำหรับจุดเจ็บปวดของคุณเอง
+
+ใช้จุดเจ็บปวดและ agent ที่เลือกไว้จากแบบฝึกหัดบทเรียนที่ 1 เขียนตามลำดับ:
+
+1. event อะไรที่ควร trigger agent นี้ (ต้องชัดเจน -- "build ล้มเหลว" คลุมเครือเกินไป "ความล้มเหลวใน pipeline build ของ \`checkout-service\` เฉพาะ branch \`main\`" คือระดับรายละเอียดที่ถูกต้อง)
+2. agent ต้องการอะไรจาก Knowledge Graph เพื่อตัดสินใจได้ดีในจุดนี้ (service ไหน, deployment ล่าสุดตัวไหน, incident ในอดีตตัวไหนถ้ามี)
+3. workspace/filesystem access ที่เล็กที่สุดที่ agent นี้ต้องการจริงๆ คืออะไร -- และอะไรที่ควรอยู่นอกเหนือการเข้าถึงอย่างชัดเจน
+
+## สรุป
+
+การรันของ agent คือลำดับที่แน่นอน ไม่ใช่กล่องดำ: trigger, context จาก Knowledge Graph, การทำงานใน sandbox, credential ที่ถูกจำกัดด้วย RBAC, การเช็ค policy สามจุด, การบันทึก log ครบถ้วน และ definition ของ agent เอง -- สิ่งที่มันทำได้ -- อยู่ในไฟล์ YAML ที่รีวิวได้ใน source control ไม่ใช่ setting ที่ต้องไปตามหาใน UI บทเรียนถัดไป เราจะเปลี่ยนสิ่งนี้ให้เป็น agent ที่รันได้จริง`,
+      },
+      {
+        slug: "installing-and-configuring-an-agent",
+        titleEn: "Installing and Configuring Your First Agent",
+        titleTh: "การติดตั้งและตั้งค่า Agent ตัวแรกของคุณ",
+        order: 3,
+        contentEn: `Harness's own framing for setup is "three steps: create, configure, run" -- let's make that concrete with the real schema.
+
+### The YAML shape
+
+Every Worker Agent definition follows this structure:
+
+\`\`\`yaml
+agent:
+  uses: harnessAI@1.0.0
+  with:
+    prompt: |
+      [instructions here]
+    connector: account.harnessAnthropic
+    mcp:
+      - connector_id
+    allowed_domains: domain.com
+    env:
+      key: "value"
+    max_turns: "40"
+    workdir: /harness
+  inputs:
+    paramName:
+      type: string
+      required: true
+      default: value
+\`\`\`
+
+### Field by field
+
+| Field | Purpose |
+| --- | --- |
+| \`prompt\` | The system instruction sent to the model. Supports Harness variable expressions like \`<+inputs.projectName>\` for dynamic values pulled in at run time. |
+| \`connector\` | The model connector ID (e.g. \`account.harnessAnthropic\`) -- this is what actually supplies credentials and picks a default model. |
+| \`mcp\` | An optional list of MCP server connectors, granting the agent access to the Harness platform itself and to external services (Git, Jira, Slack -- more on this in the codebase-reading lesson). |
+| \`allowed_domains\` | Comma-separated hostnames or regex patterns the agent's network access is restricted to. Harness's own domains are allowed by default; anything else has to be explicitly listed. |
+| \`env\` | Environment variables as key-value pairs. Quote boolean-looking values as strings (\`"true"\`), not bare booleans. |
+| \`max_turns\` | An optional cap on how many reasoning/tool-use iterations the agent gets before it has to stop, passed as a string (e.g. \`"40"\`). |
+| \`workdir\` | The working directory the agent operates from. Defaults to \`/harness\`. |
+| \`backend\` / \`image\` / \`docker_connector\` | Optional, for non-default runtimes -- \`backend: openai\` switches to a LiteLLM setup, and \`image\`/\`docker_connector\` let you run the agent inside a custom container image instead of the default one. |
+
+Inputs are declared separately, under \`agent.inputs\`, as typed parameters:
+
+\`\`\`yaml
+inputs:
+  projectName:
+    type: string
+    required: true
+    default: Unscripted_Tour
+\`\`\`
+
+You reference them inside the prompt as \`<+inputs.projectName>\` -- note the exact casing matters.
+
+### A real example: the Code Coverage agent
+
+Harness's own documentation shows this as a sample \`code-coverage-agent.yaml\`:
+
+\`\`\`yaml
+agent:
+  steps:
+  - name: Improve Code Coverage
+    run:
+      image: harness/ai-agent:latest
+      inputs:
+        model: claude
+        max_turns: 150
+        target_coverage:
+          overall: 90%
+          per_file: 80%
+\`\`\`
+
+Notice this one sets a much higher \`max_turns\` (150) than the generic example above (40) -- closing coverage gaps across a codebase legitimately takes more iterations than, say, diagnosing one build failure. There's no universal "right" number; it should match the actual size of the job.
+
+### Model choice isn't locked in
+
+The \`connector\` field determines the default model, but it's explicitly swappable: Harness supports connecting Anthropic, OpenAI, or any OpenAI-compatible endpoint, and lets you switch models per agent, per step, or set an account-wide default. As of Harness's own docs, the available Claude options include Claude Opus 4.5, Claude Sonnet 4.6, and Claude Haiku 4.5 -- a heavier reasoning job (like Autofix tracing a subtle regression) and a cheap, high-volume one (like a Feature Flag Cleanup scan) don't need to run on the same model.
+
+### Where the UI and the YAML meet
+
+If you're configuring through the Harness UI rather than hand-writing YAML, the required fields are: **Name** (a human-readable identifier so the agent shows up correctly in the catalog), **Instructions** (this is the \`prompt\` field), and **Model Connector**. Optional UI fields -- Model Name (which can even take an AWS Bedrock ARN directly), MCP Connectors, Inputs, environment variables, and allowed domains -- map onto exactly the YAML fields above. Harness can also generate a starting template for you if you'd rather not hand-write the YAML from scratch.
+
+### Hands-on: write your first agent definition
+
+Take the pain point, agent, trigger, and context requirements you've built up across lessons 1 and 2, and write an actual \`agent.yaml\` for it now:
+
+1. Pick a real \`connector\` value conceptually (you don't need a live Harness account to do this exercise -- write down what connector you'd ask your platform team to set up, and why Anthropic vs. OpenAI vs. something else makes sense for this job).
+2. Write a first-draft \`prompt\` -- just a few sentences for now; the next lesson is entirely about making this good.
+3. Set an \`inputs\` block with at least one parameter your prompt will reference via \`<+inputs...>\`.
+4. Pick a \`max_turns\` value and write one sentence justifying it, the way we justified 150 vs. 40 above.
+
+Keep this file. Lesson 5 (codebase context) and lesson 11 (the end-to-end exercise) both build directly on it.
+
+## Conclusion
+
+An agent's configuration is one YAML block with a fixed, documented shape: \`prompt\`, \`connector\`, \`mcp\`, \`allowed_domains\`, \`env\`, \`max_turns\`, \`workdir\`, and declared \`inputs\` referenced inside the prompt via \`<+inputs.x>\`. The UI's required fields (Name, Instructions, Model Connector) are the same three load-bearing pieces underneath. Setup really is close to Harness's own "three steps" framing -- the actual work, as the next lesson covers, is writing a \`prompt\` that's worth running.`,
+        contentTh: `คำอธิบายการตั้งค่าของ Harness เองคือ "สามขั้นตอน: create, configure, run" -- มาทำให้เป็นรูปธรรมด้วย schema จริง
+
+### รูปร่างของ YAML
+
+Worker Agent definition ทุกตัวมีโครงสร้างนี้:
+
+\`\`\`yaml
+agent:
+  uses: harnessAI@1.0.0
+  with:
+    prompt: |
+      [คำสั่งตรงนี้]
+    connector: account.harnessAnthropic
+    mcp:
+      - connector_id
+    allowed_domains: domain.com
+    env:
+      key: "value"
+    max_turns: "40"
+    workdir: /harness
+  inputs:
+    paramName:
+      type: string
+      required: true
+      default: value
+\`\`\`
+
+### แต่ละ field
+
+| Field | หน้าที่ |
+| --- | --- |
+| \`prompt\` | คำสั่งระบบที่ส่งให้โมเดล รองรับ Harness variable expression เช่น \`<+inputs.projectName>\` สำหรับค่าที่ดึงเข้ามาตอนรันจริง |
+| \`connector\` | ID ของ model connector (เช่น \`account.harnessAnthropic\`) -- ตัวนี้แหละที่ให้ credential และเลือกโมเดลเริ่มต้นจริงๆ |
+| \`mcp\` | รายการ MCP server connector แบบ optional ให้สิทธิ์ agent เข้าถึงแพลตฟอร์ม Harness เองและบริการภายนอก (Git, Jira, Slack -- รายละเอียดเพิ่มในบทเรียนเรื่องการอ่าน codebase) |
+| \`allowed_domains\` | hostname หรือ regex pattern คั่นด้วย comma ที่จำกัดการเข้าถึงเครือข่ายของ agent โดเมนของ Harness เองได้รับอนุญาตเป็นค่าเริ่มต้น ที่เหลือต้องระบุชัดเจน |
+| \`env\` | ตัวแปรสภาพแวดล้อมแบบ key-value ค่าที่ดูเหมือน boolean ให้ใส่เป็น string (\`"true"\`) ไม่ใช่ boolean เปล่าๆ |
+| \`max_turns\` | เพดาน optional ว่า agent ได้ reasoning/tool-use กี่รอบก่อนต้องหยุด ส่งเป็น string (เช่น \`"40"\`) |
+| \`workdir\` | working directory ที่ agent ทำงานอยู่ ค่าเริ่มต้นคือ \`/harness\` |
+| \`backend\` / \`image\` / \`docker_connector\` | optional สำหรับ runtime ที่ไม่ใช่ค่าเริ่มต้น -- \`backend: openai\` เปลี่ยนไปใช้ LiteLLM setup และ \`image\`/\`docker_connector\` ให้รัน agent ใน custom container image แทนตัวเริ่มต้น |
+
+Input ประกาศแยกต่างหาก ภายใต้ \`agent.inputs\` เป็นพารามิเตอร์ที่มี type:
+
+\`\`\`yaml
+inputs:
+  projectName:
+    type: string
+    required: true
+    default: Unscripted_Tour
+\`\`\`
+
+อ้างอิงข้างใน prompt ด้วย \`<+inputs.projectName>\` -- ตัวพิมพ์เล็กใหญ่ต้องตรงเป๊ะ
+
+### ตัวอย่างจริง: Code Coverage agent
+
+เอกสารของ Harness เองโชว์ตัวอย่าง \`code-coverage-agent.yaml\` นี้:
+
+\`\`\`yaml
+agent:
+  steps:
+  - name: Improve Code Coverage
+    run:
+      image: harness/ai-agent:latest
+      inputs:
+        model: claude
+        max_turns: 150
+        target_coverage:
+          overall: 90%
+          per_file: 80%
+\`\`\`
+
+สังเกตว่าตัวนี้ตั้ง \`max_turns\` สูงกว่า (150) ตัวอย่างทั่วไปข้างบน (40) มาก -- การปิดช่องว่าง coverage ทั่วทั้ง codebase ต้องใช้รอบมากกว่าจริงๆ เทียบกับการวินิจฉัย build ที่ล้มเหลวหนึ่งครั้ง ไม่มีตัวเลข "ถูกต้องสากล" -- ควรให้ตรงกับขนาดงานจริง
+
+### การเลือกโมเดลไม่ได้ล็อกตายตัว
+
+field \`connector\` กำหนดโมเดลเริ่มต้น แต่สลับได้ชัดเจน: Harness รองรับการเชื่อมต่อ Anthropic, OpenAI, หรือ endpoint ที่เข้ากันได้กับ OpenAI ใดๆ และให้สลับโมเดลได้ต่อ agent, ต่อ step, หรือตั้งเป็นค่าเริ่มต้นทั้ง account ตามเอกสารของ Harness เอง ตัวเลือก Claude ที่มีคือ Claude Opus 4.5, Claude Sonnet 4.6, และ Claude Haiku 4.5 -- งานที่ต้อง reasoning หนักๆ (เช่น Autofix ไล่หา regression ที่ซ่อนอยู่) กับงานปริมาณมากแต่ราคาถูก (เช่นการสแกน Feature Flag Cleanup) ไม่จำเป็นต้องรันบนโมเดลเดียวกัน
+
+### จุดที่ UI กับ YAML มาบรรจบกัน
+
+ถ้าตั้งค่าผ่าน UI ของ Harness แทนที่จะเขียน YAML มือ field ที่จำเป็นคือ **Name** (ชื่อที่อ่านได้ ให้ agent ขึ้นถูกต้องใน catalog), **Instructions** (คือ field \`prompt\` นั่นเอง), และ **Model Connector** field optional อื่นในหน้า UI -- Model Name (ใส่ AWS Bedrock ARN ตรงๆ ได้ด้วย), MCP Connectors, Inputs, environment variable, และ allowed domains -- ตรงกับ field YAML ข้างบนเป๊ะ Harness ยังสร้าง template เริ่มต้นให้ได้ ถ้าไม่อยากเขียน YAML เองตั้งแต่ศูนย์
+
+### ลงมือทำ: เขียน agent definition ตัวแรกของคุณ
+
+เอาจุดเจ็บปวด, agent, trigger, และความต้องการ context ที่สร้างไว้จากบทเรียนที่ 1 และ 2 มาเขียน \`agent.yaml\` จริงตอนนี้:
+
+1. เลือกค่า \`connector\` ในเชิงแนวคิด (ไม่จำเป็นต้องมี account Harness จริงสำหรับแบบฝึกหัดนี้ -- เขียนไว้ว่าจะขอให้ทีม platform ตั้ง connector แบบไหน และทำไม Anthropic vs. OpenAI vs. อื่นๆ ถึงเหมาะกับงานนี้)
+2. เขียน \`prompt\` ร่างแรก -- แค่ไม่กี่ประโยคพอตอนนี้ บทเรียนถัดไปทั้งบทพูดถึงการทำให้ส่วนนี้ดีขึ้น
+3. ตั้ง \`inputs\` block อย่างน้อยหนึ่งพารามิเตอร์ที่ prompt จะอ้างอิงผ่าน \`<+inputs...>\`
+4. เลือกค่า \`max_turns\` แล้วเขียนหนึ่งประโยคอธิบายเหตุผล แบบเดียวกับที่อธิบาย 150 เทียบ 40 ข้างบน
+
+เก็บไฟล์นี้ไว้ -- บทเรียนที่ 5 (context ของ codebase) และบทเรียนที่ 11 (แบบฝึกหัดจบคอร์ส) ต่อยอดจากไฟล์นี้โดยตรง
+
+## สรุป
+
+configuration ของ agent คือ YAML บล็อกเดียวที่มีรูปร่างชัดเจนตายตัว: \`prompt\`, \`connector\`, \`mcp\`, \`allowed_domains\`, \`env\`, \`max_turns\`, \`workdir\`, และ \`inputs\` ที่ประกาศไว้แล้วอ้างอิงในข้างใน prompt ผ่าน \`<+inputs.x>\` field ที่จำเป็นในหน้า UI (Name, Instructions, Model Connector) ก็คือสามชิ้นหลักเดียวกันนี้เอง การตั้งค่าใกล้เคียงกับคำอธิบาย "สามขั้นตอน" ของ Harness เองจริงๆ -- งานจริงอย่างที่บทเรียนถัดไปจะพูดถึง คือการเขียน \`prompt\` ที่คุ้มค่าที่จะรัน`,
+      },
+      {
+        slug: "using-an-agent-on-a-real-project",
+        titleEn: "Using an Agent on a Real Project",
+        titleTh: "การใช้งาน Agent กับโปรเจกต์จริง",
+        order: 4,
+        contentEn: `Configuration on paper is one thing; a Worker Agent earning its keep on a real, running project is another. This lesson walks through what that actually looks like for several of the six managed agents, using the scenarios Harness's own documentation describes.
+
+### Autofix -- the build-failure-to-fix loop
+
+The pattern: a build fails, Autofix reads the logs, finds the root cause, commits a fix to the PR branch, and re-triggers the build -- repeating until it passes (or giving up and surfacing the failure for a human, depending on how it's configured).
+
+A concrete, documented example: build #5102 for \`checkout-service\` fails. Autofix traces the failure to a specific prior change, explains the impact in plain terms ("\`AuthServiceTest.testJWTExpiry\` asserts \`expiry > 3000s\` -- now fails"), generates a fix proposal, and validates it against the 18 tests it affects *before* asking a human to approve. The engineer sees an actual diff, with "Review diff" and "Apply fix" as the two real choices -- not a black-box commit that already happened.
+
+### Code Review -- catching what a rushed human review misses
+
+Harness's own example: a PR touches rate-limiter code. The Code Review agent recalls, via the Knowledge Graph, that "a similar change caused a production incident a few months back," and flags that the PR is missing a burst-traffic unit test -- the same gap that caused that earlier incident. This is the Knowledge Graph context from lesson 2 doing real work: the agent isn't just reading the diff in isolation, it's reading the diff *against your system's own history*.
+
+### IaCM Remediation -- explaining drift, not just fixing it silently
+
+An engineer asks "Explain the drift in my environment." The agent responds with specifics, not a vague summary: "6 resources were impacted: 2 security groups, 1 RDS instance resize, and 3 IAM policies" -- and offers remediation gated behind the appropriate approvals, rather than just applying a fix unasked.
+
+### The DevOps Agent, for comparison
+
+Recall from lesson 1 that the DevOps Agent is the conversational, UI-based assistant -- not a Worker Agent. A real example of using it: an engineer asks it to "Set up a build and QA deploy pipeline, and create new infra for the service using our normal standards." It generates pipeline YAML in minutes, using the team's actual existing services, connectors, and templates -- and still respects RBAC and policy guardrails while doing it. The difference from a Worker Agent: this is an interactive conversation producing a deliverable, not a background process reacting to an event.
+
+### What all of these have in common
+
+Notice that in every single example above, the agent stops short of silently finishing the job: it proposes, explains, and waits for a human decision at the point where the consequences actually matter (merging a fix, applying infrastructure remediation, promoting to production). That's not an accident, and it's not these particular agents being extra cautious -- it's the governance model from lesson 2 showing up in practice. We'll go deeper on exactly *why* this matters, and where the line should sit on your own project, in the guardrails lesson later in this course.
+
+### Hands-on: write the "before/after" for your agent
+
+Using the agent definition you drafted in lesson 3, write out a concrete before/after pair the way the real examples above do:
+
+1. **Before**: describe the exact broken or missing state the agent is reacting to (a specific failing test, a specific drifted resource, a specific undertested file) -- with real specifics, not "something is wrong."
+2. **The agent's move**: what would it actually produce -- a diff, an explanation, a remediation proposal?
+3. **After**: what does a human see, and what's the one decision they have to make before anything ships?
+
+If you can't fill in all three concretely, that's useful information too -- it usually means the agent from lesson 1 needs a narrower trigger, or the prompt from lesson 3 needs to be more specific about what "done" looks like.
+
+## Conclusion
+
+A Worker Agent earning its keep looks like Autofix tracing a build failure to a specific test assertion, Code Review catching a regression because it remembers a past incident, or IaCM Remediation naming the exact resources that drifted -- each one producing something concrete for a human to approve, not a silent commit. The DevOps Agent's conversational pipeline-creation is a different shape of the same platform, useful for comparison but not what the rest of this course focuses on.`,
+        contentTh: `การตั้งค่าบนกระดาษเป็นเรื่องหนึ่ง การที่ Worker Agent ทำงานคุ้มค่าจริงบนโปรเจกต์ที่รันอยู่จริงเป็นอีกเรื่อง บทเรียนนี้ไล่ดูว่าหน้าตาจริงๆ เป็นอย่างไรสำหรับ managed agent หลายตัวในหกตัว โดยใช้สถานการณ์ที่เอกสารของ Harness เองอธิบายไว้
+
+### Autofix -- วงจรจาก build ล้มเหลวไปถึงการแก้ไข
+
+รูปแบบ: build ล้มเหลว Autofix อ่าน log หาสาเหตุที่แท้จริง commit การแก้ไขลง PR branch แล้ว re-trigger build -- ทำซ้ำจนผ่าน (หรือยอมแพ้แล้วเอาความล้มเหลวมาให้มนุษย์ดู ขึ้นอยู่กับการตั้งค่า)
+
+ตัวอย่างที่เป็นรูปธรรมจากเอกสารจริง: build #5102 ของ \`checkout-service\` ล้มเหลว Autofix ไล่สาเหตุไปถึงการเปลี่ยนแปลงก่อนหน้าตัวหนึ่ง อธิบายผลกระทบเป็นภาษาธรรมดา ("\`AuthServiceTest.testJWTExpiry\` ยืนยันว่า \`expiry > 3000s\` -- ตอนนี้ล้มเหลว") สร้างข้อเสนอการแก้ไข แล้วตรวจสอบกับ 18 เทสที่ได้รับผลกระทบ *ก่อน* ที่จะขอให้มนุษย์อนุมัติ วิศวกรเห็น diff จริง โดยมี "Review diff" และ "Apply fix" เป็นสองทางเลือกจริง -- ไม่ใช่ commit แบบกล่องดำที่เกิดขึ้นไปแล้ว
+
+### Code Review -- จับสิ่งที่การรีวิวของมนุษย์ที่เร่งรีบพลาดไป
+
+ตัวอย่างจริงของ Harness เอง: PR หนึ่งแตะโค้ด rate-limiter Code Review agent นึกขึ้นได้ ผ่าน Knowledge Graph ว่า "การเปลี่ยนแปลงคล้ายกันนี้เคยทำให้เกิด production incident เมื่อหลายเดือนก่อน" แล้วชี้ว่า PR นี้ขาด unit test สำหรับ burst-traffic -- ช่องว่างเดียวกับที่เคยทำให้เกิด incident ก่อนหน้านั้น นี่คือ context จาก Knowledge Graph ในบทเรียนที่ 2 ที่ทำงานจริง: agent ไม่ได้แค่อ่าน diff แยกโดด แต่อ่าน diff *เทียบกับประวัติศาสตร์ของระบบคุณเอง*
+
+### IaCM Remediation -- อธิบาย drift ไม่ใช่แค่แก้แบบเงียบๆ
+
+วิศวกรถามว่า "อธิบาย drift ใน environment ของฉันหน่อย" agent ตอบด้วยรายละเอียดจริง ไม่ใช่สรุปคลุมเครือ: "6 resources ได้รับผลกระทบ: security group 2 ตัว, การ resize RDS instance 1 ครั้ง, และ IAM policy 3 ตัว" -- แล้วเสนอการแก้ไขที่ถูกกั้นด้วยการอนุมัติที่เหมาะสม แทนที่จะแก้ไปเลยโดยไม่มีใครขอ
+
+### DevOps Agent เพื่อเปรียบเทียบ
+
+จำจากบทเรียนที่ 1 ได้ไหมว่า DevOps Agent คือ assistant แบบสนทนา บน UI -- ไม่ใช่ Worker Agent ตัวอย่างจริงของการใช้งาน: วิศวกรขอให้มัน "ตั้งค่า pipeline build และ deploy QA แล้วสร้าง infra ใหม่สำหรับ service โดยใช้มาตรฐานปกติของเรา" มันสร้าง pipeline YAML ภายในไม่กี่นาที โดยใช้ service, connector, และ template จริงที่ทีมมีอยู่แล้ว -- และยังเคารพ RBAC กับ policy guardrail ระหว่างทำด้วย ความต่างจาก Worker Agent: นี่คือบทสนทนาโต้ตอบที่ผลิตผลลัพธ์ส่งมอบ ไม่ใช่กระบวนการพื้นหลังที่ตอบสนอง event
+
+### สิ่งที่ทั้งหมดนี้มีร่วมกัน
+
+สังเกตว่าทุกตัวอย่างข้างบน agent หยุดก่อนที่จะทำงานเสร็จแบบเงียบๆ: มันเสนอ, อธิบาย, แล้วรอการตัดสินใจของมนุษย์ตรงจุดที่ผลลัพธ์สำคัญจริงๆ (การ merge การแก้ไข, การใช้ remediation กับ infrastructure, การ promote ขึ้น production) นี่ไม่ใช่เรื่องบังเอิญ และไม่ใช่ว่า agent พวกนี้ระมัดระวังเป็นพิเศษ -- มันคือโมเดลการกำกับดูแลจากบทเรียนที่ 2 ที่แสดงออกมาในทางปฏิบัติ เราจะเจาะลึกว่าทำไมเรื่องนี้ถึงสำคัญ และเส้นแบ่งควรอยู่ตรงไหนในโปรเจกต์ของคุณเอง ในบทเรียนเรื่อง guardrails ท้ายคอร์ส
+
+### ลงมือทำ: เขียน "ก่อน/หลัง" สำหรับ agent ของคุณ
+
+ใช้ agent definition ที่ร่างไว้ในบทเรียนที่ 3 เขียนคู่ก่อน/หลังที่เป็นรูปธรรม แบบเดียวกับตัวอย่างจริงข้างบน:
+
+1. **ก่อน**: อธิบายสถานะที่เสียหรือขาดหายจริงที่ agent กำลังตอบสนอง (เทสที่ล้มเหลวตัวไหนจริงๆ, resource ที่ drift ตัวไหนจริงๆ, ไฟล์ที่เทสไม่ครอบคลุมไฟล์ไหนจริงๆ) -- ด้วยรายละเอียดจริง ไม่ใช่ "มีอะไรผิดปกติ"
+2. **การขยับของ agent**: มันจะผลิตอะไรออกมาจริงๆ -- diff, คำอธิบาย, หรือข้อเสนอ remediation?
+3. **หลัง**: มนุษย์เห็นอะไร และการตัดสินใจหนึ่งอย่างที่ต้องทำก่อนอะไรจะถูกส่งออกไปคืออะไร
+
+ถ้าเติมทั้งสามข้อให้เป็นรูปธรรมไม่ได้ นั่นก็เป็นข้อมูลที่มีประโยชน์เหมือนกัน -- มักแปลว่า agent จากบทเรียนที่ 1 ต้องการ trigger ที่แคบกว่านี้ หรือ prompt จากบทเรียนที่ 3 ต้องระบุให้ชัดกว่านี้ว่า "เสร็จ" หน้าตาเป็นอย่างไร
+
+## สรุป
+
+Worker Agent ที่ทำงานคุ้มค่าจริงๆ หน้าตาเหมือน Autofix ที่ไล่ build ที่ล้มเหลวไปถึง test assertion ที่เจาะจง, Code Review ที่จับ regression ได้เพราะจำ incident ในอดีตได้, หรือ IaCM Remediation ที่ระบุ resource ที่ drift ตรงๆ -- แต่ละตัวผลิตสิ่งที่เป็นรูปธรรมให้มนุษย์อนุมัติ ไม่ใช่ commit แบบเงียบๆ การสร้าง pipeline แบบสนทนาของ DevOps Agent เป็นรูปแบบที่ต่างออกไปของแพลตฟอร์มเดียวกัน มีประโยชน์ไว้เปรียบเทียบ แต่ไม่ใช่สิ่งที่คอร์สที่เหลือจะโฟกัส`,
+      },
+      {
+        slug: "writing-effective-agent-instructions",
+        titleEn: "Writing Prompts and Instructions That Actually Work",
+        titleTh: "การเขียน Prompt/Instruction ให้ Agent ทำงานได้มีประสิทธิภาพ",
+        order: 5,
+        contentEn: `The \`prompt\` field (or **Instructions** in the UI) is the one piece of an agent definition that's entirely up to you -- everything else in the YAML is plumbing. Get the prompt wrong and a perfectly-configured agent still does the wrong thing, or the right thing too broadly.
+
+### Start from the managed agents' own shape
+
+Look back at the six managed agents from lesson 1. Notice that each one's *name* is already a tightly-scoped job description: "Improve Code Coverage," not "make the codebase better." That's the first and most important prompt-writing lesson, before you've written a single sentence: **a good agent instruction is scoped to one job with a checkable definition of done, not a broad goal.**
+
+Compare:
+
+- Too broad: "Keep the test suite healthy."
+- Scoped, like the real \`code-coverage-agent.yaml\` example from lesson 3: "Identify untested lines and generate tests to close coverage gaps, targeting 90% overall coverage and 80% per file."
+
+The second one is checkable. You can look at the result and say yes or no, it did that. The first one invites the agent to make judgment calls about scope that you, not it, should be making.
+
+### Use inputs for anything that changes between runs
+
+Recall from lesson 3 that \`inputs\` are declared with a type and referenced in the prompt via \`<+inputs.paramName>\`. Anything that's genuinely a parameter -- a target coverage percentage, a project name, a service name -- belongs in \`inputs\`, not hardcoded into prose inside the prompt. This has a real consequence beyond tidiness: it's what lets you fork one agent template into several differently-configured instances (a code-coverage agent for \`checkout-service\` at 90% and another for a legacy service at 60%) without duplicating the prompt text itself.
+
+### Tell it what to output, not just what to do
+
+Harness's own documentation is explicit on this point: "Tell the agent in Instructions which variables to output. Do not use this field to declare output variables." In practice, that means your prompt should name, in plain language, what the agent needs to communicate back -- a pipeline variable name, a specific format -- rather than assuming the YAML schema has a dedicated field for declaring outputs. If you need the agent's result to flow into a later pipeline step, say so directly in the prompt.
+
+### Match the prompt's precision to the job's risk
+
+Look back at the Autofix and Code Review examples from lesson 4. Both explain their reasoning in specific, checkable terms ("\`AuthServiceTest.testJWTExpiry\` asserts \`expiry > 3000s\`") rather than a vague "tests were failing." That specificity isn't incidental -- it's very likely a direct result of how those agents are instructed to communicate, and it's exactly what makes "Review diff" a meaningful choice for the human on the other end rather than a rubber stamp. A prompt that produces vague output produces a reviewer who can't actually review anything.
+
+### Hands-on: rewrite your lesson 3 prompt
+
+Take the first-draft prompt you wrote in lesson 3's exercise and revise it against three checks:
+
+1. **Is "done" checkable?** If someone else read only your prompt, could they tell whether the agent's output succeeded or failed, without guessing?
+2. **Did you move anything that changes between runs into \`inputs\`?** Reread your prompt for any hardcoded value that's really a parameter in disguise.
+3. **Did you say what to output?** If this agent's result needs to flow anywhere else (a pipeline variable, a PR comment, a Slack message), is that said explicitly, in the prompt itself?
+
+Rewrite the prompt, then write one sentence comparing the before and after -- what specifically changed, and why.
+
+## Conclusion
+
+A good agent instruction reads like the six managed agents' own names: scoped to one job, with a definition of done precise enough that a human reviewer can actually check it. Parameters that vary between runs go in \`inputs\` and get referenced via \`<+inputs.x>\`, not hardcoded into prose. And because Harness doesn't have a separate output-declaration mechanism, anything the agent needs to hand off has to be named explicitly, in plain language, inside the prompt itself.`,
+        contentTh: `field \`prompt\` (หรือ **Instructions** ในหน้า UI) คือส่วนเดียวของ agent definition ที่ขึ้นอยู่กับคุณทั้งหมด -- ที่เหลือใน YAML เป็นแค่ท่อน้ำ ถ้าเขียน prompt ผิด agent ที่ตั้งค่าได้สมบูรณ์แบบก็ยังทำผิดอยู่ดี หรือทำถูกแต่กว้างเกินไป
+
+### เริ่มจากรูปร่างของ managed agent เอง
+
+ย้อนกลับไปดู managed agent หกตัวจากบทเรียนที่ 1 สังเกตว่า *ชื่อ* ของแต่ละตัวก็เป็นคำอธิบายงานที่แคบอยู่แล้ว: "Improve Code Coverage" ไม่ใช่ "ทำให้ codebase ดีขึ้น" นี่คือบทเรียนการเขียน prompt ที่สำคัญที่สุด ก่อนที่จะเขียนประโยคแรกด้วยซ้ำ: **instruction ที่ดีสำหรับ agent มีขอบเขตแคบกับงานเดียว มีนิยามของ "เสร็จแล้ว" ที่ตรวจสอบได้ ไม่ใช่เป้าหมายกว้างๆ**
+
+เทียบกัน:
+
+- กว้างเกินไป: "ดูแล test suite ให้แข็งแรง"
+- แคบแบบตัวอย่างจริง \`code-coverage-agent.yaml\` จากบทเรียนที่ 3: "หาบรรทัดที่ยังไม่มีเทสครอบคลุม แล้วสร้างเทสเพื่อปิดช่องว่าง เป้าหมาย 90% โดยรวมและ 80% ต่อไฟล์"
+
+อันที่สองตรวจสอบได้ คุณดูผลลัพธ์แล้วบอกได้ว่าใช่หรือไม่ว่ามันทำสิ่งนั้น อันแรกเชิญชวนให้ agent ตัดสินใจเรื่องขอบเขตเอง ทั้งที่ควรเป็นคุณที่ตัดสินใจ ไม่ใช่มัน
+
+### ใช้ inputs สำหรับอะไรก็ตามที่เปลี่ยนไปในแต่ละการรัน
+
+จำจากบทเรียนที่ 3 ได้ไหมว่า \`inputs\` ถูกประกาศพร้อม type แล้วอ้างอิงใน prompt ผ่าน \`<+inputs.paramName>\` อะไรก็ตามที่เป็นพารามิเตอร์จริงๆ -- เปอร์เซ็นต์ coverage เป้าหมาย, ชื่อโปรเจกต์, ชื่อ service -- ควรอยู่ใน \`inputs\` ไม่ใช่ hardcode ลงในข้อความข้างใน prompt เรื่องนี้มีผลจริงมากกว่าแค่ความเรียบร้อย: มันคือสิ่งที่ทำให้ fork agent template เดียวไปเป็นหลาย instance ที่ตั้งค่าต่างกันได้ (agent code-coverage สำหรับ \`checkout-service\` ที่ 90% กับอีกตัวสำหรับ legacy service ที่ 60%) โดยไม่ต้อง copy ข้อความ prompt ซ้ำ
+
+### บอกว่าต้อง output อะไร ไม่ใช่แค่ต้องทำอะไร
+
+เอกสารของ Harness เองพูดชัดเจนเรื่องนี้: "บอก agent ใน Instructions ว่าตัวแปรไหนที่ต้อง output อย่าใช้ field นี้ไปประกาศตัวแปร output" ในทางปฏิบัติ แปลว่า prompt ของคุณควรระบุเป็นภาษาธรรมดาว่า agent ต้องสื่อสารอะไรกลับมา -- ชื่อตัวแปร pipeline, รูปแบบเฉพาะ -- แทนที่จะสมมุติว่า YAML schema มี field เฉพาะสำหรับประกาศ output ถ้าต้องการให้ผลลัพธ์ของ agent ไหลต่อไปยัง pipeline step ถัดไป ต้องบอกตรงๆ ใน prompt
+
+### ให้ความละเอียดของ prompt ตรงกับความเสี่ยงของงาน
+
+ย้อนกลับไปดูตัวอย่าง Autofix และ Code Review จากบทเรียนที่ 4 ทั้งคู่อธิบายเหตุผลด้วยคำที่เจาะจง ตรวจสอบได้ ("\`AuthServiceTest.testJWTExpiry\` ยืนยันว่า \`expiry > 3000s\`") แทนที่จะพูดคลุมเครือว่า "เทสล้มเหลว" ความเจาะจงนั้นไม่ใช่เรื่องบังเอิญ -- มีแนวโน้มสูงว่าเป็นผลโดยตรงจากวิธีที่ agent เหล่านั้นถูกสั่งให้สื่อสาร และนั่นคือสิ่งที่ทำให้ "Review diff" เป็นทางเลือกที่มีความหมายจริงสำหรับมนุษย์ฝั่งตรงข้าม ไม่ใช่แค่ตราประทับยาง prompt ที่ผลิต output คลุมเครือ จะผลิตผู้รีวิวที่รีวิวอะไรจริงๆ ไม่ได้
+
+### ลงมือทำ: เขียน prompt จากบทเรียนที่ 3 ใหม่
+
+เอา prompt ร่างแรกที่เขียนไว้ในแบบฝึกหัดบทเรียนที่ 3 มาปรับปรุงด้วยสามเช็ค:
+
+1. **"เสร็จแล้ว" ตรวจสอบได้ไหม?** ถ้าคนอื่นอ่านแค่ prompt ของคุณ เขาจะบอกได้ไหมว่าผลลัพธ์ของ agent สำเร็จหรือล้มเหลว โดยไม่ต้องเดา
+2. **ย้ายอะไรที่เปลี่ยนไปในแต่ละการรันเข้า \`inputs\` แล้วหรือยัง?** อ่าน prompt ซ้ำดูว่ามีค่า hardcode ไหนที่จริงๆ แล้วเป็นพารามิเตอร์แฝงอยู่
+3. **บอกแล้วหรือยังว่าต้อง output อะไร?** ถ้าผลลัพธ์ของ agent นี้ต้องไหลไปที่อื่น (ตัวแปร pipeline, คอมเมนต์ใน PR, ข้อความ Slack) พูดไว้ชัดเจนใน prompt เองหรือยัง
+
+เขียน prompt ใหม่ แล้วเขียนหนึ่งประโยคเทียบก่อน/หลัง -- อะไรเปลี่ยนไปจริงๆ และทำไม
+
+## สรุป
+
+instruction ที่ดีสำหรับ agent มีหน้าตาเหมือนชื่อของ managed agent หกตัวเอง: ขอบเขตแคบกับงานเดียว มีนิยาม "เสร็จแล้ว" ที่แม่นยำพอให้มนุษย์ตรวจสอบได้จริง พารามิเตอร์ที่เปลี่ยนไปในแต่ละการรันอยู่ใน \`inputs\` และอ้างอิงผ่าน \`<+inputs.x>\` ไม่ใช่ hardcode ลงข้อความ และเพราะ Harness ไม่มีกลไกประกาศ output แยกต่างหาก อะไรก็ตามที่ agent ต้องส่งต่อต้องถูกระบุชัดเจน เป็นภาษาธรรมดา อยู่ข้างใน prompt เอง`,
+      },
+      {
+        slug: "agent-reading-your-codebase",
+        titleEn: "Letting the Agent Read and Understand Your Codebase",
+        titleTh: "การให้ Agent อ่านและทำความเข้าใจ Codebase",
+        order: 6,
+        contentEn: `Every example in lesson 4 depended on the agent knowing something about your system beyond the diff in front of it -- Code Review remembering a past incident, Autofix tracing a failure to the exact change that caused it. This lesson is about where that understanding actually comes from, and how to make sure your agent has what it needs.
+
+### Two separate sources of context, not one
+
+It's easy to assume an agent "reads the codebase" the way a person would -- opening files, scrolling around. In practice, a Worker Agent draws on two distinct sources, and knowing which is which matters for configuring it correctly:
+
+1. **The Harness Knowledge Graph** -- services, pipelines, deployments, and incidents, maintained by Harness itself as part of running your delivery platform. This is what let the Code Review agent in lesson 4 recall a past production incident tied to similar rate-limiter code. You don't feed this manually; it accumulates from your actual usage of Harness over time.
+
+2. **MCP connectors** -- the \`mcp\` field from lesson 3's YAML schema, an explicit list of MCP server connectors you grant the agent. This is how an agent reaches things *outside* Harness's own Knowledge Graph: your Git repository, Jira, Slack, or any other MCP-compatible tool or custom tool you register.
+
+The Knowledge Graph is ambient context about your delivery history; MCP connectors are explicit grants to specific external systems. A Code Review agent leans on the first. An agent that needs to pull a ticket's description before acting needs the second -- explicitly, as a connector you add.
+
+### Access is still bounded, even with both
+
+Recall the sandbox model from lesson 2: read-only filesystem except the workspace, network access configurable as unrestricted, MCP-allow-listed, or fully disabled, and \`allowed_domains\` from lesson 3's schema restricting what hosts the agent can even reach. Granting an MCP connector doesn't bypass any of that -- it's an additional, specific permission layered on top of the same sandboxed, RBAC-scoped execution every agent runs inside.
+
+This matters in practice: an agent reading your codebase isn't a vague "it has access to everything now" situation. It's: this Knowledge Graph, plus exactly these MCP connectors, inside this sandbox, with credentials no broader than the triggering user's own.
+
+### Hands-on: audit what your agent actually needs to read
+
+Go back to the agent you've been building across lessons 1, 3, and 5. Answer concretely:
+
+1. Does this agent's job genuinely require the Knowledge Graph (deployment history, past incidents), or is it operating on a self-contained diff/file that doesn't need that broader context?
+2. List the specific external systems it needs to reach, as MCP connectors -- not "the usual tools," but by name (your Git host, specifically; Jira, specifically, if it needs ticket context; anything else).
+3. For each one you listed, write one sentence on what it would do if that connector were *missing* -- would the agent fail loudly, or would it silently do a worse job? If you're not sure, that's a sign the prompt from lesson 5 needs to say explicitly what context it depends on.
+
+## Conclusion
+
+An agent's understanding of your codebase comes from two separate places: the Harness Knowledge Graph (ambient, accumulated, about your delivery history) and MCP connectors (explicit grants to specific external systems like Git, Jira, or Slack). Both operate inside the same sandboxed, RBAC-scoped execution from lesson 2 -- granting an agent more context never means granting it more authority than the person who triggered it already has.`,
+        contentTh: `ทุกตัวอย่างในบทเรียนที่ 4 ต้องอาศัย agent รู้อะไรบางอย่างเกี่ยวกับระบบของคุณที่มากกว่า diff ตรงหน้า -- Code Review ที่จำ incident ในอดีตได้, Autofix ที่ไล่ความล้มเหลวไปถึงการเปลี่ยนแปลงที่แท้จริงที่ทำให้เกิดมัน บทเรียนนี้พูดถึงว่าความเข้าใจนั้นมาจากไหนจริงๆ และจะมั่นใจได้อย่างไรว่า agent ของคุณมีสิ่งที่มันต้องการ
+
+### สองแหล่ง context ที่แยกกัน ไม่ใช่แหล่งเดียว
+
+ง่ายที่จะสมมุติว่า agent "อ่าน codebase" แบบที่คนทำ -- เปิดไฟล์ เลื่อนดู ในทางปฏิบัติ Worker Agent อาศัยสองแหล่งที่แยกกันชัดเจน และการรู้ว่าอันไหนเป็นอันไหนสำคัญต่อการตั้งค่าให้ถูกต้อง:
+
+1. **Harness Knowledge Graph** -- services, pipelines, deployments, และ incidents ที่ Harness เองดูแลไว้ในฐานะส่วนหนึ่งของการรันแพลตฟอร์ม delivery ของคุณ นี่คือสิ่งที่ทำให้ Code Review agent ในบทเรียนที่ 4 นึกถึง production incident ในอดีตที่เกี่ยวกับโค้ด rate-limiter คล้ายกันได้ คุณไม่ได้ป้อนสิ่งนี้มือ มันสะสมจากการใช้งาน Harness จริงของคุณตามเวลา
+
+2. **MCP connectors** -- field \`mcp\` จาก YAML schema ในบทเรียนที่ 3 รายการ MCP server connector ที่คุณให้สิทธิ์ agent อย่างชัดเจน นี่คือวิธีที่ agent เข้าถึงสิ่งที่ *อยู่นอก* Knowledge Graph ของ Harness เอง: repository Git ของคุณ, Jira, Slack, หรือเครื่องมือ MCP-compatible หรือ custom tool อื่นที่คุณลงทะเบียนไว้
+
+Knowledge Graph คือ context แวดล้อมเกี่ยวกับประวัติ delivery ของคุณ MCP connector คือการให้สิทธิ์ชัดเจนกับระบบภายนอกที่เจาะจง Code Review agent อาศัยแบบแรก agent ที่ต้องดึงคำอธิบาย ticket ก่อนทำงานต้องการแบบที่สอง -- ชัดเจน เป็น connector ที่คุณเพิ่มเอง
+
+### การเข้าถึงยังมีขอบเขต แม้มีทั้งสองแบบ
+
+จำโมเดล sandbox จากบทเรียนที่ 2 ได้ไหม: filesystem read-only ยกเว้น workspace, การเข้าถึงเครือข่ายปรับได้เป็นไม่จำกัด, จำกัดด้วย MCP allow-list, หรือปิดทั้งหมด และ \`allowed_domains\` จาก schema บทเรียนที่ 3 ที่จำกัดว่า agent เข้าถึง host ไหนได้บ้าง การให้ MCP connector ไม่ได้ข้ามสิ่งเหล่านั้นไปเลย -- มันเป็นสิทธิ์เพิ่มเติมที่เจาะจง ซ้อนทับบนการทำงานแบบ sandbox, จำกัดด้วย RBAC เดียวกันที่ agent ทุกตัวทำงานอยู่ข้างใน
+
+เรื่องนี้สำคัญในทางปฏิบัติ: agent ที่อ่าน codebase ของคุณไม่ใช่สถานการณ์คลุมเครือแบบ "ตอนนี้มันเข้าถึงทุกอย่างได้" แต่คือ: Knowledge Graph นี้ บวกกับ MCP connector ที่เจาะจงเหล่านี้เท่านั้น ข้างใน sandbox นี้ ด้วย credential ที่ไม่กว้างกว่าของผู้ใช้ที่ trigger มันเอง
+
+### ลงมือทำ: ตรวจสอบว่า agent ของคุณต้องอ่านอะไรจริงๆ
+
+ย้อนกลับไปที่ agent ที่สร้างมาตลอดบทเรียนที่ 1, 3, และ 5 ตอบให้เป็นรูปธรรม:
+
+1. งานของ agent นี้ต้องการ Knowledge Graph จริงไหม (ประวัติ deployment, incident ในอดีต) หรือมันทำงานกับ diff/ไฟล์ที่จบในตัวเองที่ไม่ต้องการ context กว้างนั้น
+2. ลิสต์ระบบภายนอกที่เจาะจงที่มันต้องเข้าถึง เป็น MCP connector -- ไม่ใช่ "เครื่องมือทั่วไป" แต่ระบุชื่อ (Git host ของคุณ เจาะจง, Jira เจาะจง ถ้าต้องการ context ของ ticket, อื่นๆ ถ้ามี)
+3. สำหรับแต่ละตัวที่ลิสต์ไว้ เขียนหนึ่งประโยคว่าจะเกิดอะไรถ้า connector นั้น *หายไป* -- agent จะล้มเหลวแบบชัดเจน หรือจะทำงานแย่ลงแบบเงียบๆ ถ้าไม่แน่ใจ นั่นเป็นสัญญาณว่า prompt จากบทเรียนที่ 5 ต้องระบุชัดเจนว่ามันพึ่งพา context อะไรบ้าง
+
+## สรุป
+
+ความเข้าใจ codebase ของ agent มาจากสองที่ที่แยกกัน: Harness Knowledge Graph (แวดล้อม สะสมมา เกี่ยวกับประวัติ delivery ของคุณ) และ MCP connector (การให้สิทธิ์ชัดเจนกับระบบภายนอกที่เจาะจง เช่น Git, Jira, หรือ Slack) ทั้งคู่ทำงานข้างในการทำงานแบบ sandbox จำกัดด้วย RBAC เดียวกันจากบทเรียนที่ 2 -- การให้ context เพิ่มกับ agent ไม่เคยแปลว่าให้อำนาจมากกว่าที่คนที่ trigger มันมีอยู่แล้ว`,
+      },
+      {
+        slug: "planning-before-editing",
+        titleEn: "Planning Before Editing",
+        titleTh: "การวางแผนงานก่อนลงมือแก้ไขโค้ด",
+        order: 7,
+        contentEn: `Every real example from lesson 4 followed the same shape, even though they were different agents doing different jobs: trace/diagnose first, explain the finding in specific terms, *then* propose a change -- never edit first and explain later. This lesson makes that shape explicit, because it's the single most important habit to carry into configuring any new agent.
+
+### The shape, named
+
+1. **Trace** -- find the specific, root cause. Not "the build failed," but "\`AuthServiceTest.testJWTExpiry\` asserts \`expiry > 3000s\` -- now fails," traced to a specific prior change (Autofix, from lesson 4).
+2. **Explain the impact** -- in terms a human can evaluate without re-deriving the diagnosis themselves. "6 resources were impacted: 2 security groups, 1 RDS instance resize, and 3 IAM policies" (IaCM Remediation, from lesson 4) is a plan a human can actually sanity-check; "some infrastructure drifted" is not.
+3. **Validate before proposing** -- Autofix checks its fix against the 18 tests it affects *before* surfacing it, not after. The validation is part of the plan, not a separate step that happens post-hoc.
+4. **Propose, don't apply** -- the fix/remediation/test is generated and shown, with "Review diff" and "Apply fix" as the human's actual choices.
+
+Notice what's conspicuously absent from this shape: "edit the code, then tell the human what you did." That ordering -- act first, explain after -- is exactly what these agents don't do, and it's worth treating as a hard rule rather than a style preference when you're deciding how to prompt your own.
+
+### Why this is a prompting concern, not just an agent-design concern
+
+You might assume this sequencing is baked into Harness's platform and nothing you need to think about. It isn't, entirely -- lesson 5 covered that your \`prompt\` is what tells the agent what "done" looks like and what to output. If your prompt's definition of done is just "fix the failing test," you've said nothing about tracing, explaining, or validating first -- you've left the agent free to pick its own process, which might not be the trace-explain-validate-propose shape at all. If you want that discipline, your prompt needs to ask for it: tell the agent, in plain language, to identify the root cause and explain it before generating any change, and to validate the change against the affected tests before presenting it.
+
+### Hands-on: write your agent's plan-first instruction
+
+Take the prompt you revised in lesson 5, and add an explicit planning step to it:
+
+1. Write one sentence instructing the agent to trace/diagnose before proposing anything -- naming what "root cause" means for your specific job (a failing assertion, a specific drifted resource, an untested code path).
+2. Write one sentence instructing it to explain its finding in specific, checkable terms -- and give it one concrete example of the level of specificity you want, the way this lesson's examples did.
+3. Write one sentence on what validation has to happen before the agent presents its proposal, and what "ready to review" actually means for this job.
+
+Reread the result: does it read like Autofix's trace-explain-validate-propose shape, or does it still leave room for the agent to skip straight to a change?
+
+## Conclusion
+
+Every real agent example in this course so far traces a root cause, explains it in specific terms, validates its fix, and only then proposes a change for a human to review -- never the reverse. That discipline isn't automatic; it comes from what you put in the prompt. If you want an agent to plan before it edits, say so explicitly -- the next lesson covers what to do with the output once it arrives.`,
+        contentTh: `ทุกตัวอย่างจริงจากบทเรียนที่ 4 มีรูปร่างเดียวกัน แม้จะเป็น agent คนละตัวทำงานคนละอย่าง: ไล่หา/วินิจฉัยก่อน อธิบายสิ่งที่พบด้วยคำเจาะจง *แล้วค่อย* เสนอการเปลี่ยนแปลง -- ไม่เคยแก้ก่อนแล้วค่อยอธิบายทีหลัง บทเรียนนี้ทำให้รูปร่างนั้นชัดเจน เพราะมันคือนิสัยที่สำคัญที่สุดที่ควรติดตัวไปใช้ตอนตั้งค่า agent ตัวใหม่ๆ
+
+### รูปร่างนั้น เรียกชื่อให้ชัด
+
+1. **ไล่หา (Trace)** -- หาสาเหตุที่แท้จริงเจาะจง ไม่ใช่ "build ล้มเหลว" แต่เป็น "\`AuthServiceTest.testJWTExpiry\` ยืนยันว่า \`expiry > 3000s\` -- ตอนนี้ล้มเหลว" ไล่กลับไปถึงการเปลี่ยนแปลงก่อนหน้าที่เจาะจง (Autofix จากบทเรียนที่ 4)
+2. **อธิบายผลกระทบ** -- ด้วยคำที่มนุษย์ประเมินได้โดยไม่ต้องไล่การวินิจฉัยซ้ำเอง "6 resources ได้รับผลกระทบ: security group 2 ตัว, การ resize RDS instance 1 ครั้ง, และ IAM policy 3 ตัว" (IaCM Remediation จากบทเรียนที่ 4) คือแผนที่มนุษย์เช็คสติได้จริง "infrastructure บาง drift" ไม่ใช่
+3. **ตรวจสอบก่อนเสนอ** -- Autofix เช็คการแก้ไขของมันกับ 18 เทสที่ได้รับผลกระทบ *ก่อน* ที่จะเอามาให้ดู ไม่ใช่หลัง การตรวจสอบเป็นส่วนหนึ่งของแผน ไม่ใช่ขั้นตอนแยกที่ทำทีหลัง
+4. **เสนอ ไม่ใช่ลงมือทำเอง** -- การแก้ไข/remediation/เทสถูกสร้างและโชว์ โดยมี "Review diff" และ "Apply fix" เป็นทางเลือกจริงของมนุษย์
+
+สังเกตสิ่งที่หายไปอย่างเห็นได้ชัดจากรูปร่างนี้: "แก้โค้ดแล้วค่อยบอกมนุษย์ว่าทำอะไรไป" ลำดับนั้น -- ทำก่อนแล้วค่อยอธิบาย -- คือสิ่งที่ agent พวกนี้ไม่ทำเลย และควรปฏิบัติเหมือนกฎที่เข้มงวด ไม่ใช่แค่ความชอบด้านสไตล์ ตอนตัดสินใจว่าจะสั่ง agent ของคุณเองอย่างไร
+
+### ทำไมนี่คือเรื่องของการเขียน prompt ไม่ใช่แค่การออกแบบ agent
+
+คุณอาจสมมุติว่าลำดับนี้ถูกฝังไว้ในแพลตฟอร์มของ Harness แล้วไม่ต้องคิดอะไรเพิ่ม ไม่ใช่ทั้งหมด -- บทเรียนที่ 5 พูดไว้ว่า \`prompt\` ของคุณคือสิ่งที่บอก agent ว่า "เสร็จแล้ว" หน้าตาเป็นอย่างไรและต้อง output อะไร ถ้านิยาม "เสร็จแล้ว" ใน prompt ของคุณเป็นแค่ "แก้เทสที่ล้มเหลว" คุณไม่ได้พูดอะไรเลยเรื่องการไล่หา, อธิบาย, หรือตรวจสอบก่อน -- คุณปล่อยให้ agent เลือก process เองได้ ซึ่งอาจไม่ใช่รูปร่างไล่หา-อธิบาย-ตรวจสอบ-เสนอเลยก็ได้ ถ้าต้องการวินัยนั้น prompt ต้องขอมันตรงๆ: บอก agent เป็นภาษาธรรมดาให้หาสาเหตุที่แท้จริงและอธิบายก่อนที่จะสร้างการเปลี่ยนแปลงใดๆ และให้ตรวจสอบการเปลี่ยนแปลงกับเทสที่ได้รับผลกระทบก่อนที่จะนำเสนอ
+
+### ลงมือทำ: เขียน instruction แบบวางแผนก่อนของ agent คุณ
+
+เอา prompt ที่ปรับปรุงไว้ในบทเรียนที่ 5 มาเพิ่มขั้นตอนการวางแผนที่ชัดเจน:
+
+1. เขียนหนึ่งประโยคสั่งให้ agent ไล่หา/วินิจฉัยก่อนที่จะเสนออะไร -- ระบุว่า "สาเหตุที่แท้จริง" หมายถึงอะไรสำหรับงานเจาะจงของคุณ (assertion ที่ล้มเหลว, resource ที่ drift ตัวที่เจาะจง, code path ที่ไม่มีเทสครอบคลุม)
+2. เขียนหนึ่งประโยคสั่งให้มันอธิบายสิ่งที่พบด้วยคำเจาะจง ตรวจสอบได้ -- และให้ตัวอย่างระดับความเจาะจงที่ต้องการหนึ่งตัวอย่าง แบบเดียวกับตัวอย่างในบทเรียนนี้
+3. เขียนหนึ่งประโยคว่าต้องมีการตรวจสอบอะไรก่อนที่ agent จะนำเสนอข้อเสนอของมัน และ "พร้อมให้รีวิว" หมายถึงอะไรจริงๆ สำหรับงานนี้
+
+อ่านผลลัพธ์ซ้ำ: มันอ่านเหมือนรูปร่างไล่หา-อธิบาย-ตรวจสอบ-เสนอของ Autofix ไหม หรือยังเปิดช่องให้ agent ข้ามไปแก้ไขตรงๆ ได้อยู่
+
+## สรุป
+
+ทุกตัวอย่าง agent จริงในคอร์สนี้จนถึงตอนนี้ไล่หาสาเหตุที่แท้จริง อธิบายด้วยคำเจาะจง ตรวจสอบการแก้ไข แล้วค่อยเสนอการเปลี่ยนแปลงให้มนุษย์รีวิวเท่านั้น -- ไม่เคยกลับลำดับ วินัยนั้นไม่ได้เกิดขึ้นเอง มันมาจากสิ่งที่คุณใส่ไว้ใน prompt ถ้าต้องการให้ agent วางแผนก่อนแก้ไข ต้องขอมันตรงๆ -- บทเรียนถัดไปพูดถึงว่าจะทำอะไรกับผลลัพธ์เมื่อมันมาถึง`,
+      },
+      {
+        slug: "reviewing-agent-output",
+        titleEn: "Reviewing Agent Output and Fixing Problems",
+        titleTh: "การตรวจสอบผลลัพธ์และแก้ไขปัญหาจาก Agent",
+        order: 8,
+        contentEn: `Lesson 7 established that a well-prompted agent stops and proposes rather than silently applying a change. This lesson is about what you, the human on the other end, actually do with that proposal -- and what to do when the agent got it wrong.
+
+### What you're actually looking at
+
+Recall the concrete artifacts from lesson 4's examples: a diff with "Review diff" and "Apply fix" as real choices (Autofix); a flagged gap tied to a named past incident (Code Review); a named list of drifted resources with a remediation offered behind approval (IaCM Remediation). None of these are a plain "trust me" -- each gives you something specific to check against reality.
+
+A useful habit: review an agent's proposal the same way you'd review a junior engineer's PR, not the way you'd rubber-stamp a linter's auto-fix. The agent's reasoning is visible (lesson 7's trace-explain-validate shape) specifically so you can check it, not just the diff.
+
+### Use the audit trail, not just the current proposal
+
+Lesson 2 covered that every execution is logged: who triggered it, which template version ran, every action taken, the final outcome. When something looks off, that trail is your first stop -- before assuming the agent is simply wrong, check whether an older template version ran, or whether the trigger fired on context you didn't expect (a different branch, a stale cache, an unrelated prior incident the Knowledge Graph surfaced).
+
+### When the agent's proposal is wrong
+
+A wrong proposal from a well-scoped agent (lesson 5) is informative, not just annoying -- it's telling you one of a few specific things:
+
+1. **The prompt's definition of "done" was ambiguous**, and the agent made a reasonable-but-wrong judgment call you didn't actually authorize. Fix: tighten the prompt per lesson 5, not just reject this one output.
+2. **The context was missing or wrong** -- an MCP connector (lesson 6) wasn't granted, or the Knowledge Graph didn't have the history this situation needed. Fix: revisit what you audited in lesson 6's exercise.
+3. **The job itself was too broad for one agent.** If you're finding yourself unable to cleanly say what went wrong, that's often a sign the original agent definition from lesson 1 tried to cover too much ground, and should be split into narrower agents instead.
+
+In every case, the fix belongs in the versioned YAML template (lesson 2's "Agent as Code" point), reviewed like any other code change -- not a one-off manual correction that leaves the next run just as likely to repeat the mistake.
+
+### Hands-on: write your own review checklist
+
+Using the agent you've built across this course, write a short checklist (3-5 items) you'd personally run through before clicking the equivalent of "Apply fix" on its output. Base it on what this specific agent does -- a checklist for an Autofix-style agent should look different from one for an IaCM Remediation-style agent. For each item, name what you're actually checking against (a specific test suite, a specific list of affected resources, a specific past incident) -- not "make sure it looks right."
+
+## Conclusion
+
+Reviewing an agent's output means treating its proposal like a junior engineer's PR: check the specific diff/explanation it gave you against reality, consult the audit trail when something looks off rather than guessing, and when it's genuinely wrong, trace the cause to an ambiguous prompt, missing context, or an agent that's trying to do too much -- then fix the versioned template itself, not just this one output.`,
+        contentTh: `บทเรียนที่ 7 สรุปไว้ว่า agent ที่ถูกสั่งมาดีจะหยุดและเสนอ แทนที่จะลงมือแก้ไขแบบเงียบๆ บทเรียนนี้พูดถึงว่าคุณ -- มนุษย์ฝั่งตรงข้าม -- ทำอะไรกับข้อเสนอนั้นจริงๆ และต้องทำอะไรเมื่อ agent ทำผิด
+
+### สิ่งที่คุณกำลังดูอยู่จริงๆ
+
+จำสิ่งที่เป็นรูปธรรมจากตัวอย่างในบทเรียนที่ 4 ได้ไหม: diff ที่มี "Review diff" และ "Apply fix" เป็นทางเลือกจริง (Autofix); ช่องว่างที่ถูกชี้พร้อมโยงกับ incident ในอดีตที่ระบุชื่อ (Code Review); รายการ resource ที่ drift ระบุชื่อ พร้อม remediation ที่เสนอรอการอนุมัติ (IaCM Remediation) ไม่มีอันไหนเป็นแค่ "เชื่อผมเถอะ" -- แต่ละอันให้สิ่งที่เจาะจงให้คุณเช็คกับความจริง
+
+นิสัยที่มีประโยชน์: รีวิวข้อเสนอของ agent แบบเดียวกับที่รีวิว PR ของวิศวกรจูเนียร์ ไม่ใช่แบบที่ปั๊มตราให้ auto-fix ของ linter เหตุผลของ agent มองเห็นได้ (รูปร่างไล่หา-อธิบาย-ตรวจสอบจากบทเรียนที่ 7) เพื่อให้คุณเช็คมันได้ ไม่ใช่แค่เช็ค diff
+
+### ใช้ audit trail ไม่ใช่แค่ข้อเสนอปัจจุบัน
+
+บทเรียนที่ 2 พูดไว้ว่าทุกการรันถูกบันทึก: ใคร trigger, template เวอร์ชันไหนที่รัน, ทุก action ที่ทำ, ผลลัพธ์สุดท้าย เมื่อมีอะไรดูแปลกๆ trail นั้นคือจุดแรกที่ควรไป -- ก่อนที่จะสมมุติว่า agent แค่ผิด เช็คก่อนว่า template เวอร์ชันเก่ารันหรือเปล่า หรือ trigger ทำงานด้วย context ที่คุณไม่คาดคิด (branch คนละตัว, cache ที่ค้าง, incident ก่อนหน้าที่ไม่เกี่ยวที่ Knowledge Graph ดึงมา)
+
+### เมื่อข้อเสนอของ agent ผิด
+
+ข้อเสนอที่ผิดจาก agent ที่ขอบเขตดี (บทเรียนที่ 5) ให้ข้อมูล ไม่ใช่แค่น่ารำคาญ -- มันกำลังบอกหนึ่งในไม่กี่เรื่องที่เจาะจง:
+
+1. **นิยาม "เสร็จแล้ว" ใน prompt คลุมเครือ** และ agent ตัดสินใจแบบที่ดูสมเหตุสมผลแต่ผิด ที่คุณไม่ได้อนุญาตจริงๆ แก้: กระชับ prompt ตามบทเรียนที่ 5 ไม่ใช่แค่ปฏิเสธผลลัพธ์นี้ครั้งเดียว
+2. **Context หายไปหรือผิด** -- MCP connector (บทเรียนที่ 6) ไม่ได้ให้สิทธิ์ไว้ หรือ Knowledge Graph ไม่มีประวัติที่สถานการณ์นี้ต้องการ แก้: กลับไปดูสิ่งที่ตรวจสอบไว้ในแบบฝึกหัดบทเรียนที่ 6
+3. **งานนั้นกว้างเกินไปสำหรับ agent เดียว** ถ้าพบว่าบอกไม่ได้ชัดเจนว่าอะไรผิด นั่นมักเป็นสัญญาณว่า agent definition ดั้งเดิมจากบทเรียนที่ 1 พยายามครอบคลุมมากเกินไป และควรแยกเป็น agent ที่แคบกว่าแทน
+
+ไม่ว่ากรณีไหน การแก้ไขควรอยู่ใน YAML template ที่มี version (ประเด็น "Agent as Code" จากบทเรียนที่ 2) รีวิวเหมือนการเปลี่ยนโค้ดอื่นๆ -- ไม่ใช่การแก้มือครั้งเดียวที่ทิ้งให้การรันครั้งถัดไปมีโอกาสผิดซ้ำเท่าเดิม
+
+### ลงมือทำ: เขียน checklist การรีวิวของคุณเอง
+
+ใช้ agent ที่สร้างมาตลอดคอร์สนี้ เขียน checklist สั้นๆ (3-5 ข้อ) ที่คุณจะไล่เช็คจริงก่อนกดปุ่มเทียบเท่า "Apply fix" กับผลลัพธ์ของมัน อิงตามสิ่งที่ agent ตัวนี้ทำจริง -- checklist สำหรับ agent สไตล์ Autofix ควรหน้าตาต่างจาก agent สไตล์ IaCM Remediation สำหรับแต่ละข้อ ระบุว่าคุณกำลังเช็คกับอะไรจริงๆ (test suite ที่เจาะจง, รายการ resource ที่ได้รับผลกระทบที่เจาะจง, incident ในอดีตที่เจาะจง) -- ไม่ใช่ "เช็คว่าดูถูกต้อง"
+
+## สรุป
+
+การรีวิวผลลัพธ์ของ agent คือการปฏิบัติต่อข้อเสนอของมันเหมือน PR ของวิศวกรจูเนียร์: เช็ค diff/คำอธิบายที่เจาะจงที่มันให้มากับความจริง ปรึกษา audit trail เมื่อมีอะไรดูแปลกแทนที่จะเดา และเมื่อมันผิดจริง ให้ไล่หาสาเหตุไปที่ prompt ที่คลุมเครือ, context ที่หายไป, หรือ agent ที่พยายามทำมากเกินไป -- แล้วแก้ที่ template ที่มี version เอง ไม่ใช่แค่ผลลัพธ์นี้ครั้งเดียว`,
+      },
+      {
+        slug: "best-practices-for-software-engineers",
+        titleEn: "Best Practices for Software Engineers",
+        titleTh: "Best Practices สำหรับ Software Engineer",
+        order: 9,
+        contentEn: `This lesson pulls together the habits from lessons 1 through 8 into a single working checklist -- the things worth doing by default, every time, rather than relearning under pressure when an agent's output is already in front of you and something's gone wrong.
+
+### Keep agents narrow, the way Harness's own six are
+
+Lesson 1's six managed agents are each scoped to one job with a checkable definition of done. When you're tempted to add "and also..." to an agent's prompt, that's the moment to ask whether you actually need a second, separate agent instead. A narrow agent is easier to review (lesson 8), easier to reason about when something goes wrong, and easier to grant minimal MCP access to (lesson 6) -- all because there's less surface area to think about at once.
+
+### Treat the YAML template as real code, because it is
+
+Lesson 2 covered that agent definitions are forkable, versioned, and PR-reviewable. Actually use that: route a change to what an agent is allowed to do through the same review process as any other code change, not a quick dashboard edit nobody else sees. The audit trail from lesson 2 records which template version ran -- that's only useful information if the template history itself was taken seriously.
+
+### Match the model to the job, not the other way around
+
+Lesson 3 covered that model choice is swappable per agent, per step, with Claude Opus, Sonnet, and Haiku all available options (plus OpenAI/any OpenAI-compatible endpoint). A heavy diagnostic job like tracing a subtle build regression and a high-volume scan like a Feature Flag Cleanup pass don't need the same model. Defaulting everything to the biggest available model is neither necessary nor free.
+
+### Grant context deliberately, not by default
+
+Lesson 6 drew the line between the ambient Knowledge Graph and explicit MCP connectors. Before adding an MCP connector to an agent, ask the question from lesson 6's exercise again: what would actually break if this connector were missing? If the honest answer is "probably nothing, I just added it to be safe," that's a connector you likely don't need.
+
+### Write prompts that make review possible, not just prompts that work
+
+Lesson 5's core point was that a vague prompt produces vague output, and vague output can't actually be reviewed (lesson 8). Before shipping a new agent, read its prompt and ask: if this agent's result looked wrong, would I actually be able to tell, from what it outputs? If not, the prompt needs another pass before the agent needs anything else.
+
+### Hands-on: run your agent definition through this checklist
+
+Take the agent definition you've built across the whole course and go through all five points above, one at a time, writing a short pass/fail note for each:
+
+1. Is it scoped to one job, or did "and also..." creep in anywhere?
+2. Would the change you'd make to its prompt right now go through your team's normal PR review, or would it be a quick unreviewed edit?
+3. Is the model choice deliberate, or just whatever the default happened to be?
+4. For every MCP connector it has, can you still answer "what breaks if this is removed" concretely?
+5. Could a teammate who's never seen this agent run tell, from its output alone, whether a given run succeeded or failed?
+
+Any "fail" here is worth fixing before this agent touches a real project.
+
+## Conclusion
+
+The best practices worth carrying forward are, in short: keep agents as narrow as Harness's own six managed ones, review template changes like real code because they are real code, match the model to the actual job instead of defaulting to the biggest one, grant MCP context deliberately rather than defensively, and write prompts specific enough that their output can actually be reviewed. None of this is a new idea on top of the previous eight lessons -- it's those same eight lessons, as a checklist you run before trusting an agent with a real project.`,
+        contentTh: `บทเรียนนี้รวมนิสัยจากบทเรียนที่ 1 ถึง 8 เข้าเป็น checklist เดียวที่ใช้งานได้จริง -- สิ่งที่ควรทำเป็นค่าเริ่มต้นทุกครั้ง แทนที่จะมาเรียนรู้ใหม่ภายใต้แรงกดดันตอนที่ผลลัพธ์ของ agent อยู่ตรงหน้าแล้วและมีอะไรผิดพลาดไปแล้ว
+
+### ให้ agent แคบ แบบหกตัวของ Harness เอง
+
+agent ที่ managed หกตัวจากบทเรียนที่ 1 แต่ละตัวมีขอบเขตงานเดียวที่มีนิยาม "เสร็จแล้ว" ตรวจสอบได้ เมื่อรู้สึกอยากเพิ่ม "แล้วก็..." ลงใน prompt ของ agent นั่นคือจังหวะที่ควรถามว่าจริงๆ แล้วต้องการ agent ที่สองแยกต่างหากหรือเปล่า agent ที่แคบรีวิวง่ายกว่า (บทเรียนที่ 8) คิดตามง่ายกว่าเมื่อมีอะไรผิดพลาด และให้สิทธิ์ MCP แบบน้อยที่สุดได้ง่ายกว่า (บทเรียนที่ 6) -- ทั้งหมดเพราะมีพื้นที่ต้องคิดพร้อมกันน้อยกว่า
+
+### ปฏิบัติต่อ YAML template เหมือนโค้ดจริง เพราะมันคือโค้ดจริง
+
+บทเรียนที่ 2 พูดไว้ว่า agent definition fork ได้, มี version, รีวิวผ่าน PR ได้ ใช้มันจริงๆ: ส่งการเปลี่ยนแปลงสิ่งที่ agent ทำได้ผ่านกระบวนการรีวิวเดียวกับการเปลี่ยนโค้ดอื่นๆ ไม่ใช่การแก้ dashboard เร็วๆ ที่ไม่มีใครเห็น audit trail จากบทเรียนที่ 2 บันทึกว่า template เวอร์ชันไหนที่รัน -- ข้อมูลนั้นมีประโยชน์ก็ต่อเมื่อประวัติ template เองถูกจริงจังด้วย
+
+### ให้โมเดลตรงกับงาน ไม่ใช่กลับกัน
+
+บทเรียนที่ 3 พูดไว้ว่าการเลือกโมเดลสลับได้ต่อ agent ต่อ step โดยมี Claude Opus, Sonnet, และ Haiku เป็นตัวเลือก (บวก OpenAI/endpoint ที่เข้ากันได้ใดๆ) งานวินิจฉัยหนักๆ อย่างการไล่หา build regression ที่ซ่อนอยู่ กับงานสแกนปริมาณมากอย่าง Feature Flag Cleanup ไม่จำเป็นต้องใช้โมเดลเดียวกัน การตั้งค่าเริ่มต้นทุกอย่างเป็นโมเดลใหญ่ที่สุดที่มีไม่จำเป็นและไม่ฟรี
+
+### ให้ context อย่างตั้งใจ ไม่ใช่โดยค่าเริ่มต้น
+
+บทเรียนที่ 6 แบ่งเส้นระหว่าง Knowledge Graph แวดล้อมกับ MCP connector ที่ชัดเจน ก่อนเพิ่ม MCP connector ให้ agent ถามคำถามจากแบบฝึกหัดบทเรียนที่ 6 อีกครั้ง: จะพังอะไรจริงๆ ถ้า connector นี้หายไป ถ้าคำตอบจริงใจคือ "คงไม่มีอะไร แค่เพิ่มไว้เผื่อปลอดภัย" นั่นคือ connector ที่คุณน่าจะไม่ต้องการ
+
+### เขียน prompt ที่ทำให้รีวิวได้ ไม่ใช่แค่ prompt ที่ใช้งานได้
+
+ประเด็นหลักของบทเรียนที่ 5 คือ prompt ที่คลุมเครือผลิต output ที่คลุมเครือ และ output ที่คลุมเครือรีวิวจริงๆ ไม่ได้ (บทเรียนที่ 8) ก่อน ship agent ตัวใหม่ อ่าน prompt ของมันแล้วถามว่า: ถ้าผลลัพธ์ของ agent นี้ดูผิด จะบอกได้จริงไหมจากสิ่งที่มัน output ออกมา ถ้าไม่ได้ prompt ต้องปรับอีกรอบก่อนที่ agent จะต้องการอะไรอื่น
+
+### ลงมือทำ: ไล่ agent definition ของคุณผ่าน checklist นี้
+
+เอา agent definition ที่สร้างมาตลอดทั้งคอร์สมาไล่ทั้งห้าข้อข้างบนทีละข้อ เขียนบันทึกผ่าน/ไม่ผ่านสั้นๆ สำหรับแต่ละข้อ:
+
+1. มันมีขอบเขตงานเดียวไหม หรือมี "แล้วก็..." แอบเข้ามาตรงไหนบ้าง
+2. การเปลี่ยนแปลงที่จะทำกับ prompt ของมันตอนนี้ จะผ่านกระบวนการรีวิว PR ปกติของทีมคุณไหม หรือจะเป็นการแก้เร็วๆ ที่ไม่มีใครรีวิว
+3. การเลือกโมเดลตั้งใจไหม หรือแค่เป็นค่าเริ่มต้นที่บังเอิญเป็นแบบนั้น
+4. สำหรับทุก MCP connector ที่มันมี ยังตอบได้ชัดเจนไหมว่า "จะพังอะไรถ้าถอดอันนี้ออก"
+5. เพื่อนร่วมทีมที่ไม่เคยเห็น agent นี้มาก่อน บอกได้ไหมจากผลลัพธ์อย่างเดียวว่าการรันครั้งนั้นสำเร็จหรือล้มเหลว
+
+ข้อไหนที่ "ไม่ผ่าน" ตรงนี้ ควรแก้ก่อนที่จะให้ agent ตัวนี้แตะโปรเจกต์จริง
+
+## สรุป
+
+best practice ที่ควรติดตัวไปใช้ สรุปสั้นๆ คือ: ให้ agent แคบแบบหกตัว managed ของ Harness เอง รีวิวการเปลี่ยน template เหมือนโค้ดจริงเพราะมันคือโค้ดจริง ให้โมเดลตรงกับงานจริงแทนที่จะตั้งค่าเริ่มต้นเป็นตัวใหญ่สุด ให้ context ผ่าน MCP อย่างตั้งใจไม่ใช่เผื่อไว้ก่อน และเขียน prompt ให้เจาะจงพอที่ output ของมันจะรีวิวได้จริง ไม่มีข้อไหนเป็นไอเดียใหม่นอกเหนือจากแปดบทเรียนก่อนหน้า -- มันคือแปดบทเรียนเดิมนั่นแหละ ในรูปแบบ checklist ที่ไล่เช็คก่อนจะไว้ใจให้ agent แตะโปรเจกต์จริง`,
+      },
+      {
+        slug: "guardrails-what-not-to-delegate",
+        titleEn: "Guardrails: What Not to Delegate to an Agent",
+        titleTh: "ข้อควรระวังและสิ่งที่ไม่ควรให้ Agent ทำ",
+        order: 10,
+        contentEn: `Every lesson so far has shown agents stopping short of the riskiest action and handing the decision to a human. This lesson makes that boundary explicit -- both the guardrails Harness bakes in by default, and the judgment calls that are still yours to make.
+
+### What's already enforced, whether you think about it or not
+
+Lesson 2's architecture lesson covered three mechanisms worth repeating here, because they're your safety net even when a prompt (lesson 5) is imperfect:
+
+- **RBAC-intersected credentials.** An agent's ephemeral token is scoped to the intersection of its own permissions and the triggering user's RBAC -- it cannot act with more authority than the person who triggered it already has. A careless prompt can still cause a bad outcome, but it cannot cause an outcome the triggering user wasn't already capable of causing.
+- **Three-point OPA policy evaluation.** Checked at template save, pipeline start, and the moment of a governed action -- a policy change can stop an agent mid-flight, not just block future runs.
+- **Sandboxed execution.** Read-only filesystem outside the workspace, configurable network access (unrestricted / MCP-allow-listed / disabled), \`allowed_domains\` restrictions from lesson 3.
+
+### What the real examples show being gated behind human approval
+
+Look back at lesson 4's concrete scenarios -- these aren't hypothetical caution, they're the documented behavior of Harness's own managed agents:
+
+- **Destructive database changes are flagged, not silently applied.** For schema migrations, the agent generates the migration with a rollback script, validates against a shadow database, and explicitly flags destructive changes -- it doesn't just run them.
+- **Production promotion stays gated on real checks.** Promoting a service to production happens only after the agent verifies it passed all required gates (unit tests, performance tests, security) -- and a quarantined artifact with medium/high-severity issues blocks the release outright rather than being waved through.
+- **Infrastructure remediation is offered, not auto-applied.** The drift-explanation example from lesson 4 ends with remediation "offered... with appropriate approval gates," not a fix that already happened by the time you read about it.
+
+### Where the judgment is still yours
+
+The platform's guardrails handle authority and policy; they don't substitute for the scoping decisions from lessons 1 and 9. Specifically still your call:
+
+1. **How narrow to make each agent.** Nothing stops you from writing an overly broad prompt that technically stays inside RBAC bounds but still makes bad judgment calls across too wide a scope (lesson 9's point about splitting agents rather than adding "and also...").
+2. **Which MCP connectors to actually grant.** The platform enforces what a granted connector is allowed to touch; it doesn't stop you from granting more than a job needs (lesson 6's audit exercise exists precisely because this is a human decision, not an automatic one).
+3. **Whether a "scoped to the user's own RBAC" agent is still too much authority for a given job.** If a senior engineer with broad production access triggers an agent, that agent inherits broad access too -- the intersection limits it to no *more* than the user has, not to some separately-considered safe subset. Deciding whether a given agent should run with a deliberately narrower service account, rather than the triggering user's own full permissions, is a real design choice you still have to make.
+4. **What counts as "done enough to auto-apply" versus "needs a human."** Harness's own examples gate the riskiest actions behind approval by default, but less risky ones can be configured to apply automatically. Where exactly that line sits for your own project -- which agent outputs are safe enough to never need a human click -- is a judgment call the platform doesn't make for you.
+
+### Hands-on: draw your own line
+
+For the agent you've built across this course, answer directly:
+
+1. Given the RBAC-intersection rule, what's the worst thing this agent *could* do, assuming it ran triggered by the most highly-privileged person on your team? Is that acceptable, or does this agent need its own narrower service account instead?
+2. Is there any part of this agent's output that you'd be comfortable auto-applying without a human click -- and if so, why is that specific part lower-risk than the rest?
+3. Name one thing you would never let this agent do, even with all the platform guardrails in place, and write one sentence on why no amount of prompt-tuning would make that acceptable.
+
+## Conclusion
+
+The platform enforces real limits by default -- RBAC-intersected credentials, three-point policy checks, sandboxed execution -- and its own examples show destructive database changes, production promotions, and infrastructure remediation all gated behind human approval rather than auto-applied. What the platform can't decide for you is how narrow to scope each agent, which connectors a job actually needs, whether the triggering user's own permissions are still too broad for a given agent to inherit, and where your own line sits between "safe to auto-apply" and "needs a human." Those four are yours to draw, deliberately, before an agent touches a real project.`,
+        contentTh: `ทุกบทเรียนจนถึงตอนนี้แสดงให้เห็นว่า agent หยุดก่อนการกระทำที่เสี่ยงที่สุด แล้วส่งการตัดสินใจให้มนุษย์ บทเรียนนี้ทำให้เส้นแบ่งนั้นชัดเจน -- ทั้ง guardrail ที่ Harness ฝังไว้เป็นค่าเริ่มต้น และการตัดสินใจที่ยังเป็นหน้าที่ของคุณเอง
+
+### สิ่งที่ถูกบังคับใช้อยู่แล้ว ไม่ว่าคุณจะคิดถึงมันหรือไม่
+
+บทเรียน architecture ที่ 2 พูดถึงกลไกสามอย่างที่ควรพูดซ้ำตรงนี้ เพราะมันคือตาข่ายนิรภัยของคุณแม้ตอนที่ prompt (บทเรียนที่ 5) ไม่สมบูรณ์แบบ:
+
+- **Credential ที่ถูกจำกัดด้วยจุดตัด RBAC** ephemeral token ของ agent ถูกจำกัดด้วยจุดตัดระหว่างสิทธิ์ของมันเองกับ RBAC ของผู้ใช้ที่ trigger -- มันทำอะไรด้วยอำนาจมากกว่าที่คนที่ trigger มันมีอยู่แล้วไม่ได้ prompt ที่ประมาทยังทำให้เกิดผลเสียได้ แต่ทำให้เกิดผลที่ผู้ใช้ที่ trigger ทำไม่ได้อยู่แล้วไม่ได้
+- **การเช็ค OPA policy สามจุด** เช็คตอนบันทึก template, ตอน pipeline เริ่ม, และตอนพยายามทำ governed action -- การเปลี่ยน policy หยุด agent กลางทางได้ ไม่ใช่แค่บล็อกการรันในอนาคต
+- **การทำงานใน sandbox** filesystem read-only นอก workspace, การเข้าถึงเครือข่ายปรับได้ (ไม่จำกัด / MCP-allow-list / ปิด), ข้อจำกัด \`allowed_domains\` จากบทเรียนที่ 3
+
+### สิ่งที่ตัวอย่างจริงแสดงให้เห็นว่าถูกกั้นไว้รอการอนุมัติจากมนุษย์
+
+ย้อนกลับไปดูสถานการณ์จริงจากบทเรียนที่ 4 -- นี่ไม่ใช่ความระมัดระวังสมมุติ แต่คือพฤติกรรมที่บันทึกไว้จริงของ managed agent ของ Harness เอง:
+
+- **การเปลี่ยนแปลงฐานข้อมูลที่ทำลายล้างถูกชี้ธง ไม่ใช่แก้แบบเงียบๆ** สำหรับ schema migration agent สร้าง migration พร้อม rollback script ตรวจสอบกับ shadow database แล้วชี้ธงการเปลี่ยนแปลงที่ทำลายล้างอย่างชัดเจน -- ไม่ได้แค่รันมันไปเลย
+- **การ promote ขึ้น production ยังถูกกั้นด้วยการเช็คจริง** การ promote service ขึ้น production เกิดขึ้นก็ต่อเมื่อ agent ยืนยันว่าผ่านทุก gate ที่จำเป็น (unit test, performance test, security) -- และ artifact ที่ถูก quarantine ที่มีปัญหาระดับกลาง/สูงจะบล็อก release ไปเลย ไม่ถูกปล่อยผ่าน
+- **การแก้ไข infrastructure ถูกเสนอ ไม่ใช่แก้ไปเลย** ตัวอย่างการอธิบาย drift จากบทเรียนที่ 4 จบด้วยการ remediation ที่ "เสนอ... พร้อม approval gate ที่เหมาะสม" ไม่ใช่การแก้ไขที่เกิดขึ้นไปแล้วตอนที่คุณอ่านเจอ
+
+### จุดที่การตัดสินใจยังเป็นของคุณ
+
+guardrail ของแพลตฟอร์มจัดการเรื่องอำนาจและ policy มันไม่ได้แทนที่การตัดสินใจเรื่องขอบเขตจากบทเรียนที่ 1 และ 9 ที่ยังเป็นการตัดสินใจของคุณโดยเฉพาะ:
+
+1. **จะให้ agent แต่ละตัวแคบแค่ไหน** ไม่มีอะไรหยุดคุณจากการเขียน prompt ที่กว้างเกินไป ซึ่งทางเทคนิคยังอยู่ในขอบเขต RBAC แต่ยังตัดสินใจผิดพลาดได้ในขอบเขตที่กว้างเกินไป (ประเด็นเรื่องแยก agent แทนที่จะเพิ่ม "แล้วก็..." จากบทเรียนที่ 9)
+2. **จะให้ MCP connector ตัวไหนจริงๆ** แพลตฟอร์มบังคับว่า connector ที่ให้ไปแตะอะไรได้ แต่ไม่ได้หยุดคุณจากการให้มากกว่าที่งานต้องการ (แบบฝึกหัดตรวจสอบจากบทเรียนที่ 6 มีอยู่ก็เพราะเรื่องนี้เป็นการตัดสินใจของมนุษย์ ไม่ใช่อัตโนมัติ)
+3. **agent ที่ "จำกัดด้วย RBAC ของผู้ใช้เอง" ยังมีอำนาจมากเกินไปสำหรับงานหนึ่งๆ หรือไม่** ถ้าวิศวกรอาวุโสที่มีสิทธิ์ production กว้างเป็นคน trigger agent agent นั้นก็สืบทอดสิทธิ์ที่กว้างไปด้วย จุดตัดจำกัดแค่ไม่ให้ *มากกว่า* ที่ผู้ใช้มี ไม่ได้จำกัดลงมาเป็น subset ที่ปลอดภัยที่พิจารณาแยกต่างหาก การตัดสินใจว่า agent ตัวหนึ่งควรรันด้วย service account ที่แคบกว่าโดยตั้งใจ แทนที่จะใช้สิทธิ์เต็มของผู้ใช้ที่ trigger มันเอง เป็นทางเลือกด้านการออกแบบจริงที่ยังต้องทำเอง
+4. **อะไรนับว่า "เสร็จพอที่จะ apply อัตโนมัติ" เทียบกับ "ต้องการมนุษย์"** ตัวอย่างจริงของ Harness เองกั้นการกระทำที่เสี่ยงที่สุดไว้รอการอนุมัติเป็นค่าเริ่มต้น แต่ตัวที่เสี่ยงน้อยกว่าตั้งค่าให้ apply อัตโนมัติได้ เส้นแบ่งนั้นอยู่ตรงไหนจริงๆ สำหรับโปรเจกต์ของคุณเอง -- ผลลัพธ์ของ agent ตัวไหนปลอดภัยพอที่จะไม่ต้องการการคลิกจากมนุษย์เลย -- เป็นการตัดสินใจที่แพลตฟอร์มไม่ได้ทำแทนคุณ
+
+### ลงมือทำ: ขีดเส้นของคุณเอง
+
+สำหรับ agent ที่สร้างมาตลอดคอร์สนี้ ตอบตรงๆ:
+
+1. ด้วยกฎจุดตัด RBAC สิ่งที่แย่ที่สุดที่ agent นี้ *ทำได้* คืออะไร ถ้าสมมุติว่าถูก trigger โดยคนที่มีสิทธิ์สูงสุดในทีมคุณ ยอมรับได้ไหม หรือ agent นี้ควรมี service account ที่แคบกว่าของตัวเองแทน
+2. มีส่วนไหนของผลลัพธ์ agent นี้ที่คุณสบายใจจะให้ apply อัตโนมัติโดยไม่ต้องคลิกจากมนุษย์ไหม ถ้ามี ทำไมส่วนนั้นถึงเสี่ยงน้อยกว่าส่วนอื่น
+3. ระบุหนึ่งอย่างที่คุณจะไม่มีวันให้ agent นี้ทำ แม้จะมี guardrail ของแพลตฟอร์มครบแล้วก็ตาม แล้วเขียนหนึ่งประโยคว่าทำไมการปรับ prompt แค่ไหนก็ไม่ทำให้สิ่งนั้นยอมรับได้
+
+## สรุป
+
+แพลตฟอร์มบังคับใช้ขีดจำกัดจริงเป็นค่าเริ่มต้น -- credential ที่จำกัดด้วยจุดตัด RBAC, การเช็ค policy สามจุด, การทำงานใน sandbox -- และตัวอย่างจริงของมันเองแสดงว่าการเปลี่ยนฐานข้อมูลที่ทำลายล้าง, การ promote ขึ้น production, และการแก้ไข infrastructure ล้วนถูกกั้นไว้รอการอนุมัติจากมนุษย์ ไม่ใช่ apply อัตโนมัติ สิ่งที่แพลตฟอร์มตัดสินใจแทนคุณไม่ได้คือจะให้ agent แต่ละตัวแคบแค่ไหน, connector ไหนที่งานต้องการจริงๆ, สิทธิ์ของผู้ใช้ที่ trigger เองยังกว้างเกินไปสำหรับ agent ตัวหนึ่งหรือไม่, และเส้นแบ่งของคุณเองอยู่ตรงไหนระหว่าง "ปลอดภัยพอจะ apply อัตโนมัติ" กับ "ต้องการมนุษย์" สี่เรื่องนี้เป็นสิ่งที่คุณต้องขีดเส้นเอง อย่างตั้งใจ ก่อนที่ agent จะแตะโปรเจกต์จริง`,
+      },
+      {
+        slug: "end-to-end-ticket-to-review-workflow",
+        titleEn: "End-to-End Workflow: Ticket → Analyze → Plan → Implement → Test → Review",
+        titleTh: "ตัวอย่าง Workflow ตั้งแต่รับ Jira Ticket → วิเคราะห์ → Plan → Implement → Test → Review",
+        order: 11,
+        contentEn: `This closing lesson is a composite exercise, not a single pre-packaged Harness feature -- it walks through a realistic ticket-to-review workflow by combining the real, individually-documented capabilities from every lesson so far. Being honest about that distinction matters: you're assembling this from genuine building blocks, not following one button Harness ships labeled "do the whole ticket."
+
+### The six stops, and which lesson each one draws on
+
+**1. Ticket arrives.** An MCP connector to Jira (lesson 6) is how an agent would actually reach a ticket's description and acceptance criteria -- not the Knowledge Graph, which is about your delivery history, not your issue tracker. This is a deliberate, explicit grant, same as any other MCP connector.
+
+**2. Analyze.** The agent draws on the Knowledge Graph (lesson 6) -- recent deployments, related past incidents, the current state of the affected service -- the same grounding that let the Code Review agent in lesson 4 recall a past production incident tied to similar code.
+
+**3. Plan.** This is lesson 7's trace-explain-validate-propose shape, applied before any ticket, not just before a code change: identify the specific root cause or specific scope of work the ticket actually requires, and explain it in terms as concrete as "\`AuthServiceTest.testJWTExpiry\` asserts \`expiry > 3000s\`" -- not a restatement of the ticket's own vague title.
+
+**4. Implement.** The actual change, produced the way Autofix produces a fix (lesson 4): as a diff, not an already-applied change. Whether this step runs as its own narrowly-scoped agent or as part of a broader one is exactly the scoping judgment call from lessons 1 and 9.
+
+**5. Test.** Validation against the affected tests, the way Autofix validates against the 18 tests it affects *before* surfacing anything (lesson 4) -- or, if coverage itself is the gap, the Code Coverage agent's job from lesson 1. Either way: validation is part of the plan, per lesson 7, not a step that happens to the output after a human already looked at it.
+
+**6. Review.** "Review diff" / "Apply fix" as real choices (lesson 4), checked against the review checklist you wrote in lesson 8's exercise, within the RBAC/policy boundaries from lesson 2, and respecting whatever line you drew in lesson 10 between "safe to auto-apply" and "needs a human."
+
+### Why this has to stay a composite, not a single black box
+
+Notice that steps 1 and 2 need different context sources (an explicit Jira connector vs. the ambient Knowledge Graph), and steps 4 and 6 are exactly the proposal/approval boundary from lessons 7 and 8. If you tried to compress this into one broadly-scoped agent with one giant prompt, you'd lose the thing that made every real example in this course trustworthy: a narrow job, a checkable definition of done, and a specific human decision point. The composite version is more moving parts, but each part is individually reviewable -- which, per lesson 9, is the entire point.
+
+### Hands-on: design your own ticket-to-review workflow
+
+Using everything you've built across this course, design this workflow for one real kind of ticket your own team actually handles (a specific bug category, a specific kind of small feature, a specific recurring chore):
+
+1. **Name the MCP connectors** step 1 and step 2 each need, and justify each one the way lesson 6's exercise asked you to.
+2. **Write the plan-stage instruction** (step 3) the way lesson 7 asked -- specific enough that "done analyzing" is checkable.
+3. **Decide the implement/test boundary** (steps 4-5): is this one agent or two? Justify it against lesson 9's narrow-scope principle.
+4. **Write the review checklist** (step 6) a human would actually run, the way lesson 8 asked, specific to this exact kind of ticket.
+5. **State, explicitly, which of these six steps -- if any -- you'd ever let run without a human checkpoint**, and defend that against lesson 10's guardrails lesson: is it safe because of a platform guarantee (RBAC, policy), or because of a judgment call you're making yourself?
+
+There's no single correct answer here -- the point of this exercise is that you can now justify every piece of the workflow by name, citing the specific lesson and the specific real example it came from, rather than describing the whole thing as "the agent handles it."
+
+## Conclusion
+
+A realistic ticket-to-review workflow is six stops -- ticket intake, analysis, planning, implementation, testing, review -- each one drawing on a specific, real Harness capability covered earlier in this course: MCP connectors for Jira, the Knowledge Graph for delivery history, the trace-explain-validate-propose planning shape, diff-based implementation, pre-surface test validation, and a human review gated by RBAC, policy, and your own judgment about what's actually safe to automate. It's assembled, deliberately, from parts you can each name and justify -- which is exactly what makes it trustworthy enough to run against a real project.`,
+        contentTh: `บทเรียนปิดท้ายนี้เป็นแบบฝึกหัดแบบผสมผสาน ไม่ใช่ feature สำเร็จรูปตัวเดียวของ Harness -- มันไล่ผ่าน workflow ตั้งแต่รับ ticket ถึงรีวิวที่สมจริง โดยรวมความสามารถจริงที่มีเอกสารแยกไว้ชัดเจนจากทุกบทเรียนที่ผ่านมาเข้าด้วยกัน การซื่อตรงกับความแตกต่างนี้สำคัญ: คุณกำลังประกอบสิ่งนี้จากชิ้นส่วนจริง ไม่ใช่กดปุ่มเดียวที่ Harness มีป้ายว่า "ทำทั้ง ticket ให้เลย"
+
+### หกจุดแวะ และแต่ละจุดอิงบทเรียนไหน
+
+**1. Ticket มาถึง** MCP connector ไปยัง Jira (บทเรียนที่ 6) คือวิธีที่ agent จะเข้าถึงคำอธิบายและเกณฑ์การยอมรับของ ticket ได้จริง -- ไม่ใช่ Knowledge Graph ซึ่งเกี่ยวกับประวัติ delivery ของคุณ ไม่ใช่ issue tracker นี่คือการให้สิทธิ์ที่ตั้งใจและชัดเจน เหมือน MCP connector อื่นๆ
+
+**2. วิเคราะห์** agent อาศัย Knowledge Graph (บทเรียนที่ 6) -- deployment ล่าสุด, incident ในอดีตที่เกี่ยวข้อง, สถานะปัจจุบันของ service ที่ได้รับผลกระทบ -- พื้นฐานเดียวกับที่ทำให้ Code Review agent ในบทเรียนที่ 4 นึกถึง production incident ในอดีตที่เกี่ยวกับโค้ดคล้ายกันได้
+
+**3. Plan** นี่คือรูปร่างไล่หา-อธิบาย-ตรวจสอบ-เสนอจากบทเรียนที่ 7 ใช้ก่อน ticket ใดๆ ไม่ใช่แค่ก่อนการเปลี่ยนโค้ด: ระบุสาเหตุที่แท้จริงหรือขอบเขตงานที่เจาะจงที่ ticket ต้องการจริงๆ แล้วอธิบายด้วยคำที่เป็นรูปธรรมแบบ "\`AuthServiceTest.testJWTExpiry\` ยืนยันว่า \`expiry > 3000s\`" -- ไม่ใช่การพูดซ้ำหัวข้อคลุมเครือของ ticket เอง
+
+**4. Implement** การเปลี่ยนแปลงจริง ผลิตแบบเดียวกับที่ Autofix ผลิตการแก้ไข (บทเรียนที่ 4): เป็น diff ไม่ใช่การเปลี่ยนแปลงที่เกิดขึ้นไปแล้ว ขั้นนี้จะรันเป็น agent ที่แคบของตัวเองหรือเป็นส่วนหนึ่งของตัวที่กว้างกว่า คือการตัดสินใจเรื่องขอบเขตจากบทเรียนที่ 1 และ 9 เป๊ะๆ
+
+**5. Test** ตรวจสอบกับเทสที่ได้รับผลกระทบ แบบเดียวกับที่ Autofix ตรวจสอบกับ 18 เทสที่ได้รับผลกระทบ *ก่อน* ที่จะเอามาให้ดู (บทเรียนที่ 4) -- หรือถ้า coverage เองคือช่องว่าง ก็เป็นหน้าที่ของ Code Coverage agent จากบทเรียนที่ 1 ไม่ว่าแบบไหน: การตรวจสอบเป็นส่วนหนึ่งของแผน ตามบทเรียนที่ 7 ไม่ใช่ขั้นตอนที่เกิดกับผลลัพธ์หลังจากมนุษย์ดูไปแล้ว
+
+**6. Review** "Review diff" / "Apply fix" เป็นทางเลือกจริง (บทเรียนที่ 4) เช็คกับ checklist รีวิวที่เขียนไว้ในแบบฝึกหัดบทเรียนที่ 8 อยู่ภายในขอบเขต RBAC/policy จากบทเรียนที่ 2 และเคารพเส้นที่ขีดไว้ในบทเรียนที่ 10 ระหว่าง "ปลอดภัยพอจะ apply อัตโนมัติ" กับ "ต้องการมนุษย์"
+
+### ทำไมต้องเป็นแบบผสมผสาน ไม่ใช่กล่องดำตัวเดียว
+
+สังเกตว่าขั้นที่ 1 กับ 2 ต้องการแหล่ง context ต่างกัน (Jira connector ที่ชัดเจน เทียบกับ Knowledge Graph แวดล้อม) และขั้นที่ 4 กับ 6 คือเส้นแบ่งเสนอ/อนุมัติจากบทเรียนที่ 7 และ 8 เป๊ะๆ ถ้าพยายามบีบทั้งหมดนี้ลงใน agent เดียวที่ขอบเขตกว้างด้วย prompt ยักษ์เดียว จะเสียสิ่งที่ทำให้ทุกตัวอย่างจริงในคอร์สนี้น่าเชื่อถือไป: งานแคบ, นิยาม "เสร็จแล้ว" ที่ตรวจสอบได้, และจุดตัดสินใจของมนุษย์ที่เจาะจง เวอร์ชันผสมผสานมีชิ้นส่วนเคลื่อนไหวมากกว่า แต่แต่ละชิ้นรีวิวได้แยกกัน -- ซึ่งตามบทเรียนที่ 9 คือประเด็นทั้งหมด
+
+### ลงมือทำ: ออกแบบ workflow ตั้งแต่ ticket ถึงรีวิวของคุณเอง
+
+ใช้ทุกอย่างที่สร้างมาตลอดคอร์สนี้ ออกแบบ workflow นี้สำหรับ ticket ประเภทจริงหนึ่งแบบที่ทีมคุณเจอจริง (หมวด bug ที่เจาะจง, feature เล็กๆ แบบที่เจาะจง, งานจุกจิกที่เกิดซ้ำที่เจาะจง):
+
+1. **ระบุชื่อ MCP connector** ที่ขั้นที่ 1 และ 2 ต้องการแต่ละตัว แล้วให้เหตุผลแบบที่แบบฝึกหัดบทเรียนที่ 6 ขอ
+2. **เขียน instruction ขั้น plan** (ขั้นที่ 3) แบบที่บทเรียนที่ 7 ขอ -- เจาะจงพอที่ "วิเคราะห์เสร็จแล้ว" จะตรวจสอบได้
+3. **ตัดสินใจเส้นแบ่ง implement/test** (ขั้นที่ 4-5): เป็น agent เดียวหรือสองตัว ให้เหตุผลเทียบกับหลักการขอบเขตแคบจากบทเรียนที่ 9
+4. **เขียน checklist การรีวิว** (ขั้นที่ 6) ที่มนุษย์จะไล่เช็คจริง แบบที่บทเรียนที่ 8 ขอ เจาะจงกับ ticket ประเภทนี้
+5. **ระบุชัดเจนว่าในหกขั้นนี้ ขั้นไหนบ้าง (ถ้ามี) ที่จะปล่อยให้รันโดยไม่มีจุดเช็คจากมนุษย์** แล้วป้องกันคำตอบนั้นด้วยบทเรียน guardrail ที่ 10: มันปลอดภัยเพราะการรับประกันของแพลตฟอร์ม (RBAC, policy) หรือเพราะการตัดสินใจที่คุณทำเอง
+
+ไม่มีคำตอบที่ถูกต้องเดียวตรงนี้ -- ประเด็นของแบบฝึกหัดนี้คือตอนนี้คุณให้เหตุผลได้ทุกชิ้นส่วนของ workflow โดยระบุชื่อ อ้างอิงบทเรียนที่เจาะจงและตัวอย่างจริงที่เจาะจงที่มันมาจาก แทนที่จะอธิบายทั้งหมดว่า "agent จัดการให้"
+
+## สรุป
+
+workflow ตั้งแต่ ticket ถึงรีวิวที่สมจริงมีหกจุดแวะ -- รับ ticket, วิเคราะห์, วางแผน, implement, test, รีวิว -- แต่ละจุดอิงความสามารถจริงที่เจาะจงของ Harness ที่พูดถึงไปแล้วในคอร์สนี้: MCP connector สำหรับ Jira, Knowledge Graph สำหรับประวัติ delivery, รูปร่างการวางแผนไล่หา-อธิบาย-ตรวจสอบ-เสนอ, การ implement แบบ diff, การตรวจสอบเทสก่อนนำเสนอ, และการรีวิวของมนุษย์ที่ถูกกั้นด้วย RBAC, policy, และการตัดสินใจของคุณเองว่าอะไรปลอดภัยพอจะทำอัตโนมัติจริงๆ มันถูกประกอบขึ้นมาอย่างตั้งใจ จากชิ้นส่วนที่คุณระบุชื่อและให้เหตุผลได้ทุกชิ้น -- ซึ่งคือสิ่งที่ทำให้มันน่าเชื่อถือพอที่จะรันกับโปรเจกต์จริง`,
+      },
+    ],
+  },
 ];
