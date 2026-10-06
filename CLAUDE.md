@@ -10,11 +10,12 @@ bun install                 # install deps
 bun run dev                 # start API with hot reload (bun --watch index.ts), http://localhost:8080
 bun run seed                 # seed courses/lessons from src/scripts/seedContent.ts, and embed them
                               # (embedding step needs OPENAI_API_KEY; skipped with a warning if unset)
-bun run migrate               # apply pending migrations (src/db/migrations, via src/db/migrate.ts —
-                                # not sequelize-cli, see src/db/README.md for why)
+bun run migrate               # apply pending migrations (src/mindspace/migrations, via
+                                # src/mindspace/migrate.ts — not sequelize-cli, see
+                                # src/mindspace/README.md for why)
 bun run migrate:status        # list applied/pending migrations
 bun run migrate:undo          # roll back the most recently applied migration
-bun run migrate:generate -- <name>   # scaffold a new migration — see src/db/README.md
+bun run migrate:generate -- <name>   # scaffold a new migration — see src/mindspace/README.md
 ```
 
 No test suite exists yet (`bun test` is Bun's runner if one is added).
@@ -44,9 +45,10 @@ Model → Database`, strictly in that order — a layer only calls the one direc
   OpenAI embeddings), `chat.service.ts` (retrieval-augmented completion), plus one thin
   service per domain (`course.service.ts`, `note.service.ts`, etc.) that delegates to its
   repository. Calls repositories, never touches Sequelize/raw SQL directly.
-- `src/repositories/*.repository.ts` — the only layer that touches Sequelize models or raw
-  SQL. One file per aggregate (`user`, `course`, `lesson`, `note`, `progress`,
-  `lessonEmbedding`, `search`, `stats`, `tag`). Returns already-camelCased data, hiding
+- `src/repositories/*Repository.ts` (e.g. `CourseRepository.ts`) — the only layer that
+  touches Sequelize models or raw SQL. One file per aggregate (`User`, `Course`, `Lesson`,
+  `Note`, `Progress`, `LessonEmbedding`, `Search`, `Stats`, `Tag`, `Role`). Returns
+  already-camelCased data, hiding
   column-naming/SQL details from everything above it.
 - `src/middlewares/auth.middleware.ts` — `requireAuth`/`optionalAuth` sit *between* route and
   controller (Express middleware, not one of the layers above), populating `req.user`.
@@ -63,8 +65,9 @@ Model → Database`, strictly in that order — a layer only calls the one direc
   tables via `sequelize.sync()`. It also runs `ensureVectorColumn()` — raw SQL to add the
   `lesson_embeddings.embedding VECTOR(1536)` column and its HNSW index, because Sequelize 6
   has no native pgvector type — and `ensureRoles()`, which seeds the fixed `roles` rows.
-- `src/db/` holds a **separate** migration track (see `src/db/README.md`) for schema changes
-  going forward, run via `src/db/migrate.ts` — a small custom runner, not `sequelize-cli`.
+- `src/mindspace/` holds a **separate** migration track (see `src/mindspace/README.md`) for
+  schema changes going forward, run via `src/mindspace/migrate.ts` — a small custom runner,
+  not `sequelize-cli`.
   `roles`, `users`, the `user_id` columns on `user_progress`/`notes`, and `courses.published`
   are migration-tracked; the rest of `courses`, plus `lessons`, `lesson_embeddings`, and the
   rest of `user_progress`/`notes`, still rely solely on `sync()` and have no migration files
@@ -92,10 +95,10 @@ association).
 
 **Publishing**: `courses.published` (default `false`) gates whether a course is visible at
 all — `findAllWithLessons()`/`findFeaturedWithLessonCounts()` only return published courses,
-`lesson.repository.ts`'s `findByIdWithCourse()` inner-joins on `published: true` so a lesson
+`LessonRepository.ts`'s `findByIdWithCourse()` inner-joins on `published: true` so a lesson
 under a draft course 404s exactly like a lesson that doesn't exist (no separate 403 path, same
 enumeration-avoidance spirit as login), and the full-text search and pgvector similarity
-queries (`search.repository.ts`, `lessonEmbedding.repository.ts`) both filter on it too, so a
+queries (`SearchRepository.ts`, `LessonEmbeddingRepository.ts`) both filter on it too, so a
 draft never surfaces via Cmd+K or gets cited by the chat tutor. `seed.ts` always seeds its
 courses as `published: true` — everything in `seedContent.ts` is finished catalog content, not
 draft material. There's no admin UI yet to toggle this on a course created outside the seed
@@ -103,7 +106,7 @@ script; it's a data-model/gating layer only, ready for whenever that exists.
 
 **RAG chat flow** (the core feature): `src/services/embedding.service.ts` chunks lesson
 content on paragraph boundaries, embeds it via `OpenAIEmbeddings` pointed at OpenRouter, and
-(through `src/repositories/lessonEmbedding.repository.ts`) writes rows to `lesson_embeddings`
+(through `src/repositories/LessonEmbeddingRepository.ts`) writes rows to `lesson_embeddings`
 with raw SQL (`::vector` cast — again, no Sequelize pgvector type). `src/services/chat.service.ts`
 embeds the question, does a cosine-distance similarity search (raw SQL, `<=>` operator, via
 the same repository's `findSimilarChunks`), then asks `ChatOpenAI` to answer grounded only in
@@ -128,7 +131,7 @@ granted out of band, directly in the DB, never through this public endpoint; sam
 `GET /api/auth/me` just echoes `req.user` — no usecase needed for that one.
 
 **Search** is two independent systems, not one: `/api/search`
-(`src/repositories/search.repository.ts`) is Postgres full-text search (`to_tsvector`/
+(`src/repositories/SearchRepository.ts`) is Postgres full-text search (`to_tsvector`/
 `ts_rank`) for the Cmd+K "jump to this lesson" spotlight; the pgvector search above is only
 for chat retrieval grounding.
 
@@ -139,7 +142,7 @@ Express uses to recognize an error handler. Controllers `next(err)` on failure (
 error thrown by a usecase, or a locally-constructed `BadRequestError` for malformed input);
 usecases and services throw rather than touching `res` directly.
 
-**Config**: `src/config/constants.ts` centralizes the OpenRouter base URL and model names
+**Config**: `src/utils/constants.ts` centralizes the OpenRouter base URL and model names
 (embedding + chat) both `src/services/*` use; `OPENAI_API_KEY` is the env var name despite
 routing through OpenRouter, and `WEB_ORIGIN` (default `http://localhost:3000`) is the only
 origin CORS allows, matching the sibling `mindspace-web` (Nuxt) frontend that's the actual
@@ -152,7 +155,7 @@ CSP stays default-`self` since this is a pure JSON API, no HTML to template arou
 req/15min) on every route, and a tight one (10 req/15min) mounted only on
 `POST /api/auth/signup` and `POST /api/auth/login` specifically, since those are the
 credential-stuffing/brute-force targets. All SQL (including the raw `sequelize.query` calls
-in `src/repositories/{search,lessonEmbedding,course,stats}.repository.ts`) uses `:named`
+in `src/repositories/{Search,LessonEmbedding,Course,Stats}Repository.ts`) uses `:named`
 replacements, never string interpolation — keep that pattern for any new raw query.
 
 ## Git workflow

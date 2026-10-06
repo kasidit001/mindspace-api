@@ -1,4 +1,4 @@
-import * as userRepository from "../repositories/user.repository";
+import * as userRepository from "../repositories/UserRepository";
 import type { CreateUserData } from "../interfaces/user.interface";
 
 export function findByEmail(email: string) {

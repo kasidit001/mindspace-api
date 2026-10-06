@@ -6,10 +6,10 @@
   "scripts": {
     "dev": "bun --watch index.ts",
     "seed": "bun run src/scripts/seed.ts",
-    "migrate": "bun run src/db/migrate.ts up",
-    "migrate:undo": "bun run src/db/migrate.ts down",
-    "migrate:status": "bun run src/db/migrate.ts status",
-    "migrate:generate": "bun run src/db/migrate.ts generate"
+    "migrate": "bun run src/mindspace/migrate.ts up",
+    "migrate:undo": "bun run src/mindspace/migrate.ts down",
+    "migrate:status": "bun run src/mindspace/migrate.ts status",
+    "migrate:generate": "bun run src/mindspace/migrate.ts generate"
   },
   "devDependencies": {
     "@types/bun": "latest",

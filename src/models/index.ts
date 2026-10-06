@@ -1,5 +1,5 @@
 import sequelize from "../config/database";
-import { EMBEDDING_DIM } from "../config/constants";
+import { EMBEDDING_DIM } from "../utils/constants";
 import { Course } from "./Course";
 import { Lesson } from "./Lesson";
 import { LessonEmbedding } from "./LessonEmbedding";

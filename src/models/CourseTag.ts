@@ -8,7 +8,7 @@ import type { Tag } from "./Tag";
  * a bare string passed to `belongsToMany`'s `through` — needed so its columns
  * get the same snake_case `field:` mapping every other FK in this schema
  * uses (courseId -> course_id, tagId -> tag_id), matching the migration in
- * src/db/migrations/20260922160847-create-tags.cjs exactly. No repository of
+ * src/mindspace/migrations/20260922160847-create-tags.cjs exactly. No repository of
  * its own — always accessed through Course.tags / Tag.courses associations.
  */
 export class CourseTag extends Model<InferAttributes<CourseTag>, InferCreationAttributes<CourseTag>> {

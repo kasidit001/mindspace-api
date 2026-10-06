@@ -1,7 +1,7 @@
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { EMBEDDING_MODEL, OPENROUTER_BASE_URL } from "../config/constants";
+import { EMBEDDING_MODEL, OPENROUTER_BASE_URL } from "../utils/constants";
 import type { Lesson } from "../models/Lesson";
-import * as lessonEmbeddingRepository from "../repositories/lessonEmbedding.repository";
+import * as lessonEmbeddingRepository from "../repositories/LessonEmbeddingRepository";
 import type { RetrievedChunk } from "../interfaces/embedding.interface";
 
 const embeddings = new OpenAIEmbeddings({
