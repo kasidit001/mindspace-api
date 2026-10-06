@@ -9,7 +9,7 @@ services:
     plan: free
     # Same region as the Neon project (AWS US East 2 / Ohio) to keep DB latency low.
     region: ohio
-    branch: feature/dashboard-aggregation-endpoint
+    branch: develop
     healthCheckPath: /health
     envVars:
       # Neon connection string — use the direct (non-pooled) one.
