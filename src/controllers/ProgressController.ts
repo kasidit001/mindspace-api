@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { completeLesson as completeLessonUseCase } from "../usecases/progress/completeLesson.usecase";
-import { listProgress as listProgressUseCase } from "../usecases/progress/listProgress.usecase";
+import { completeLesson as completeLessonUseCase } from "../usecases/progress/CompleteLessonUseCase";
+import { listProgress as listProgressUseCase } from "../usecases/progress/ListProgressUseCase";
 
 // POST /api/lessons/:id/complete — idempotent: marks a lesson complete for the
 // authenticated user, or refreshes completedAt if it's already marked complete.

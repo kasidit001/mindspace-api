@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { searchLessons as searchLessonsUseCase } from "../usecases/search/searchLessons.usecase";
+import { searchLessons as searchLessonsUseCase } from "../usecases/search/SearchLessonsUseCase";
 import { BadRequestError } from "../utils/errors";
 
 // GET /api/search?q=query — full-text keyword search over lesson title + content,

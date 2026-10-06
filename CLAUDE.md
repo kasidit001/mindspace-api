@@ -38,7 +38,7 @@ Model → Database`, strictly in that order — a layer only calls the one direc
   exactly one usecase, and shapes the response (`res.json`/status codes/SSE plumbing for
   chat). Business-rule validation (does this resource exist, is this email taken) does NOT
   belong here — that's the usecase's job.
-- `src/usecases/<domain>/*.usecase.ts` — orchestration and business rules (e.g. "USER role
+- `src/usecases/<domain>/*UseCase.ts` (e.g. `SignUpUseCase.ts`) — orchestration and business rules (e.g. "USER role
   must exist", "email must be unique", "lesson must exist before completing it"). Calls one
   or more services, never a repository or model directly.
 - `src/services/*.service.ts` — domain logic and external integrations: `auth.service.ts`
@@ -125,7 +125,7 @@ startup; the process throws immediately if it's unset, rather than signing with 
 default. `src/middlewares/auth.middleware.ts`'s `requireAuth`/`optionalAuth` populate
 `req.user` (`{ id, name, email, role }`); routes needing an account
 (`/api/lessons/:id/complete`, `/api/progress`, `/api/notes`) use `requireAuth` and scope
-their queries by `req.user!.id`. `src/usecases/auth/{signup,login}.usecase.ts` hold the
+their queries by `req.user!.id`. `src/usecases/auth/{SignUpUseCase,AuthenticationUseCase}.ts` hold the
 signup/login business rules (always assigns the `USER` role on signup — `SYSTEM_ADMIN` is
 granted out of band, directly in the DB, never through this public endpoint; same error for
 "no such user" and "wrong password" on login, to avoid an account-enumeration oracle).

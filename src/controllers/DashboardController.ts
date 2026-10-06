@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { getDashboard as getDashboardUseCase } from "../usecases/dashboard/getDashboard.usecase";
+import { getDashboard as getDashboardUseCase } from "../usecases/dashboard/GetDashboardUseCase";
 
 // GET /api/dashboard — aggregated stats, per-course progress, and streak for the
 // authenticated user's Learning Dashboard.

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { signup as signupUseCase } from "../usecases/auth/signup.usecase";
-import { login as loginUseCase } from "../usecases/auth/login.usecase";
+import { signup as signupUseCase } from "../usecases/auth/SignUpUseCase";
+import { login as loginUseCase } from "../usecases/auth/AuthenticationUseCase";
 import { BadRequestError } from "../utils/errors";
 
 // POST /api/auth/signup  { name: string, email: string, password: string }
