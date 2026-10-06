@@ -30,8 +30,9 @@ Model → Database`, strictly in that order — a layer only calls the one direc
 
 - `src/routes/*.ts` — thin. Just `Router()` + wiring a path/method (and `requireAuth` where
   needed) to a controller function. No request parsing, no business logic here.
-- `src/controllers/*.controller.ts` — the HTTP boundary. Parses `req.body`/`params`/`query`,
-  validates the *shape* of the input (missing/wrong-typed fields -> `BadRequestError`), calls
+- `src/controllers/*Controller.ts` (e.g. `AuthController.ts`) — the HTTP boundary. Parses
+  `req.body`/`params`/`query`, validates the *shape* of the input (missing/wrong-typed fields
+  -> `BadRequestError`), calls
   exactly one usecase, and shapes the response (`res.json`/status codes/SSE plumbing for
   chat). Business-rule validation (does this resource exist, is this email taken) does NOT
   belong here — that's the usecase's job.
@@ -108,7 +109,7 @@ embeds the question, does a cosine-distance similarity search (raw SQL, `<=>` op
 the same repository's `findSimilarChunks`), then asks `ChatOpenAI` to answer grounded only in
 the retrieved chunks, citing lesson titles. Two entry points mirror each other:
 `askQuestion()` (single JSON response) and `streamAnswer()` (async generator of token/done
-events), each wrapped by a same-named usecase. `src/controllers/chat.controller.ts` exposes
+events), each wrapped by a same-named usecase. `src/controllers/ChatController.ts` exposes
 both through one endpoint (`POST /api/chat/ask`, `stream: true` switches to SSE) — note it
 listens on `res.on("close")` rather than `req.on("close")` to detect client disconnects
 correctly.
@@ -143,6 +144,16 @@ usecases and services throw rather than touching `res` directly.
 routing through OpenRouter, and `WEB_ORIGIN` (default `http://localhost:3000`) is the only
 origin CORS allows, matching the sibling `mindspace-web` (Nuxt) frontend that's the actual
 consumer of this API.
+
+**Security middleware** (`index.ts`, registered before every route): `helmet()` sets the
+usual security headers (CSP, HSTS, `X-Content-Type-Options`, drops `X-Powered-By`, etc.) —
+CSP stays default-`self` since this is a pure JSON API, no HTML to template around. Two
+`express-rate-limit` instances guard against brute force/scraping: a loose global one (300
+req/15min) on every route, and a tight one (10 req/15min) mounted only on
+`POST /api/auth/signup` and `POST /api/auth/login` specifically, since those are the
+credential-stuffing/brute-force targets. All SQL (including the raw `sequelize.query` calls
+in `src/repositories/{search,lessonEmbedding,course,stats}.repository.ts`) uses `:named`
+replacements, never string interpolation — keep that pattern for any new raw query.
 
 ## Git workflow
 
