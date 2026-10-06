@@ -71,6 +71,8 @@ async function main() {
           contentEn: lessonSeed.contentEn,
           contentTh: lessonSeed.contentTh ?? null,
           labs: lessonSeed.labs ?? null,
+          sectionEn: lessonSeed.sectionEn ?? null,
+          sectionTh: lessonSeed.sectionTh ?? null,
           order: lessonSeed.order,
         },
       });
@@ -80,6 +82,8 @@ async function main() {
         contentEn: lessonSeed.contentEn,
         contentTh: lessonSeed.contentTh ?? null,
         labs: lessonSeed.labs ?? null,
+        sectionEn: lessonSeed.sectionEn ?? null,
+        sectionTh: lessonSeed.sectionTh ?? null,
         order: lessonSeed.order,
       });
 

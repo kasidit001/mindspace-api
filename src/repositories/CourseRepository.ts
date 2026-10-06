@@ -43,7 +43,7 @@ export function findAllWithLessons(includeUnpublished = false) {
         model: Lesson,
         as: "lessons",
         attributes: [
-          "id", "titleEn", "titleTh", "slug", "order", "contentType",
+          "id", "titleEn", "titleTh", "slug", "order", "contentType", "sectionEn", "sectionTh",
           // Same 200wpm estimate the lesson page shows, so a course's total matches its lessons.
           [
             sequelize.literal(
