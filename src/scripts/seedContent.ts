@@ -7600,9 +7600,44 @@ external client ทุกตัวในบทเรียนก่อนหน�
 
 "Agent harness" is a term of art in the AI tooling world, not a brand name -- it describes a category of software, and Claude Code (the CLI tool you're reading this lesson in, if you're following along hands-on) is one real, working example of it.
 
+### Why a harness had to exist
+
+Once LLMs became genuinely capable, developers ran into the same handful of pain points almost immediately:
+
+- **No state** -- every API call started over from zero, with no memory of what had already happened.
+- **Stuck "in its head"** -- the model could describe what to do next, but had no way to actually invoke a tool and make it happen.
+- **No recovery** -- one failure and the whole thing just stopped, with no retry or recovery mechanism.
+- **Context runs out** -- any task long enough to matter eventually exceeded what the model could hold in a single call.
+- **No boundaries** -- nothing defined what the model was and wasn't allowed to do, so safety depended entirely on the prompt being well-behaved.
+
+The real-world version of this shows up as a familiar complaint: "I asked the AI to write the code for me, but it only tells me what to do -- I still have to copy and paste every step myself." A capable model with none of these gaps closed is still, in practice, not an agent -- it's an advisor that needs a human to act as its hands. Closing exactly these five gaps is what a harness is *for*, which is why the rest of this lesson defines it as four concrete parts rather than a vague "wrapper around the model."
+
+### A brief history: what people tried before "harness" was a concept
+
+The pain points above didn't go unnoticed -- developers tried several approaches before the harness concept crystallized into what it is today:
+
+1. **Manual chaining (2022)** -- write one prompt, copy its output by hand into the next prompt, repeat. It worked, barely, but was slow and extremely error-prone: one bad copy-paste and the whole chain was wrong.
+2. **Early frameworks, e.g. LangChain (2023)** -- introduced abstractions like "Chains" and "Agents" to formalize that manual process, but the developer still had to wire up most of the control logic themselves. This bought structure at the cost of real complexity -- these setups became notoriously hard to debug.
+3. **AutoGPT / BabyAGI (2023)** -- pushed further by letting the model loop and direct its own next steps with minimal human involvement. The demos were striking, but both were missing real guardrails and real context management, which showed up in practice as runs that looped pointlessly or drifted off task -- impressive proofs of concept, not stable enough for production work.
+
+Each attempt solved part of the problem but exposed another gap, which is exactly what pushed the field toward treating "harness" as a first-class concept: not one clever trick, but the full, deliberate combination of state, tool execution, feedback loops, and enforced boundaries covered below.
+
 ### The compact version: Agent = Model + Harness
 
 A useful shorthand for everything this course covers: **Agent = Model + Harness**. On its own, a model is a text generator -- it reasons about what to say next, but it has no memory of what happened earlier in a task beyond what's in its input, no way to actually touch a file or run a command, and nothing stopping it from doing something unsafe. The harness is what turns that text generator into something that can get real work done: it's what supplies state, tool execution, feedback loops, and enforced security around the model's output. If you didn't build the model yourself -- and if you're reading this, you almost certainly didn't -- the model is a given. The harness is the part you actually design, configure, and improve, and it's what the rest of this lesson (and course) is really about.
+
+### Another common picture: the car analogy
+
+A different way people describe this same split: think of a car. The **model** is the engine -- the raw power source. The **harness** is everything else you need to actually drive somewhere: the steering wheel, the brakes, the dashboard, the control systems. An engine by itself doesn't go anywhere useful; it needs a harness around it to be steerable, stoppable, and safe.
+
+Under this framing, a harness's job breaks down into four functions that map directly onto the four parts below:
+
+- **Actionable** -- lets the model actually invoke tools, not just describe what it would do. (This is the tool interface.)
+- **Looping** -- drives the repeated reason-act-observe cycle (often called a "ReAct loop" in the research literature) until the task is done. (This is the agent loop.)
+- **Enforcing** -- handles sandboxing and security so the model can't do something destructive or out of scope. (This is control mechanisms.)
+- **Contextual** -- manages what's in the model's working memory ("RAM") versus what gets persisted to longer-term storage ("disk"). (This is context management.)
+
+Same four ideas, different vocabulary -- which is itself worth noticing: once you know the four functions a harness has to perform, you'll recognize them under whatever names a particular write-up or product happens to use.
 
 ### The definition, broken into four parts
 
@@ -7639,9 +7674,44 @@ An agent harness is defined by four parts working together: an agent loop, a too
 
 "Agent harness" เป็นศัพท์เฉพาะในวงการเครื่องมือ AI ไม่ใช่ชื่อแบรนด์ -- มันอธิบายหมวดหมู่ของซอฟต์แวร์ และ Claude Code (เครื่องมือ CLI ที่คุณกำลังอ่านบทเรียนนี้อยู่ ถ้ากำลังเรียนไปด้วยลงมือทำไปด้วย) คือตัวอย่างจริงที่ทำงานได้จริงตัวหนึ่งของหมวดหมู่นี้
 
+### ทำไม Harness ถึงต้องเกิดขึ้น
+
+พอ LLM เริ่มมีความสามารถจริงจัง นักพัฒนาก็เจอ pain point ชุดเดียวกันนี้แทบจะทันที:
+
+- **ไม่มี state** -- ทุก API call เริ่มใหม่จากศูนย์ ไม่มีความจำว่าเกิดอะไรขึ้นมาก่อนหน้า
+- **ติดอยู่ "แค่ในหัว"** -- model บอกได้ว่าต้องทำอะไรต่อ แต่ไม่มีทางสั่งงาน tool ให้มันเกิดขึ้นจริง
+- **ไม่มีการกู้คืน** -- พังครั้งเดียวก็หยุดเลย ไม่มีกลไก retry หรือ recovery
+- **context หมด** -- งานที่ยาวพอจะมีความหมาย สุดท้ายก็เกินกว่าที่ model จะเก็บไว้ได้ในการเรียกครั้งเดียว
+- **ไม่มีขอบเขต** -- ไม่มีอะไรกำหนดว่า model ทำอะไรได้หรือไม่ได้ ความปลอดภัยเลยขึ้นอยู่กับ prompt ที่เขียนไว้ดีพอหรือเปล่าเท่านั้น
+
+เวอร์ชันที่เกิดขึ้นจริงมักออกมาเป็นคำบ่นที่คุ้นเคย: "ฉันให้ AI เขียนโค้ดให้ แต่มันบอกแค่ว่าต้องทำอะไร ฉันต้องนั่ง copy วางเองทุกขั้นตอน" model ที่เก่งแต่ไม่ได้ปิดช่องว่างทั้งห้านี้เลย ในทางปฏิบัติก็ยังไม่ใช่ agent -- มันคือที่ปรึกษาที่ต้องการคนมาเป็นมือไม้ให้ การปิดช่องว่างทั้งห้านี้เองคือสิ่งที่ harness มีไว้ *เพื่อ* ทำ ซึ่งเป็นเหตุผลที่บทเรียนที่เหลือนี้นิยามมันเป็นสี่ส่วนที่จับต้องได้ แทนที่จะเป็น "ตัวห่อหุ้มรอบๆ model" ที่คลุมเครือ
+
+### ประวัติย่อ: ก่อนที่ "harness" จะกลายเป็นแนวคิดจริงจัง
+
+pain point ข้างบนไม่ได้ถูกมองข้าม นักพัฒนาลองหลายวิธีก่อนที่แนวคิด harness จะตกผลึกมาเป็นแบบที่เห็นทุกวันนี้:
+
+1. **Manual chaining (2022)** -- เขียน prompt หนึ่งตัว เอา output มา copy ด้วยมือใส่เป็น prompt ถัดไป ทำซ้ำไปเรื่อยๆ มันพอใช้ได้ แต่ช้าและ error ง่ายมาก copy ผิดนิดเดียวทั้งสายก็พังหมด
+2. **Framework ยุคแรก เช่น LangChain (2023)** -- เริ่มมี abstraction อย่าง "Chain" และ "Agent" เพื่อทำให้กระบวนการมือนั้นเป็นทางการขึ้น แต่นักพัฒนายังต้อง wire logic ควบคุมส่วนใหญ่เองอยู่ดี ได้โครงสร้างมาแลกกับ complexity ที่สูงขึ้นจริง -- setup แบบนี้ขึ้นชื่อเรื่อง debug ยาก
+3. **AutoGPT / BabyAGI (2023)** -- ไปไกลกว่านั้นด้วยการปล่อยให้ model วน loop และสั่งขั้นตอนถัดไปของตัวเองโดยมีคนเข้าไปเกี่ยวข้องน้อยที่สุด demo ดูน่าทึ่งมาก แต่ทั้งคู่ขาด guardrail จริงและการจัดการ context จริง ซึ่งแสดงออกมาในทางปฏิบัติเป็นการวน loop ที่ไม่มีความหมายหรือหลุดออกนอกงาน -- พิสูจน์แนวคิดได้น่าประทับใจ แต่ยังไม่ stable พอสำหรับงาน production
+
+แต่ละความพยายามแก้ปัญหาได้บางส่วน แต่ก็เผยช่องว่างใหม่ขึ้นมา ซึ่งนี่แหละคือสิ่งที่ผลักดันวงการให้มอง "harness" เป็นแนวคิดหลักจริงจัง ไม่ใช่เทคนิคฉลาดอันเดียว แต่เป็นการรวมกันอย่างตั้งใจของ state, tool execution, feedback loop, และขอบเขตที่บังคับใช้จริง ตามที่จะพูดถึงต่อไปข้างล่างนี้
+
 ### แบบย่อ: Agent = Model + Harness
 
 ตัวย่อที่ใช้ได้ดีสำหรับทุกอย่างในคอร์สนี้: **Agent = Model + Harness** ลำพังแค่ Model มันคือเครื่องผลิตข้อความ (text generator) -- มันคิดว่าจะพูดอะไรต่อ แต่ไม่มีความจำเรื่องที่เกิดขึ้นก่อนหน้าในงานเดียวกันนอกเหนือจากที่อยู่ใน input ของมัน ไม่มีทางแตะไฟล์หรือรันคำสั่งได้จริง และไม่มีอะไรหยุดมันจากการทำสิ่งที่ไม่ปลอดภัย Harness คือสิ่งที่เปลี่ยนเครื่องผลิตข้อความนั้นให้กลายเป็นสิ่งที่ทำงานจริงได้ -- มันคือสิ่งที่ให้ state, tool execution, feedback loops, และ security ที่บังคับใช้จริงรอบๆ ผลลัพธ์ของ model ถ้าคุณไม่ได้สร้าง model เอง -- และถ้ากำลังอ่านอยู่นี้ แทบจะแน่นอนว่าไม่ได้สร้าง -- model คือสิ่งที่กำหนดมาให้แล้ว ส่วน harness คือสิ่งที่คุณออกแบบ ตั้งค่า และปรับปรุงได้จริง ซึ่งคือสิ่งที่บทเรียนนี้ (และคอร์สนี้) พูดถึงจริงๆ
+
+### อีกภาพหนึ่งที่ใช้อธิบายบ่อย: อุปมารถยนต์
+
+อีกวิธีหนึ่งที่คนใช้อธิบายการแบ่งนี้: ลองนึกถึงรถยนต์ **Model** คือเครื่องยนต์ (engine) -- แหล่งพลังงานดิบ **Harness** คือทุกอย่างที่เหลือที่ต้องมีเพื่อขับไปไหนมาไหนได้จริง: พวงมาลัย, เบรก, แผงหน้าปัด, ระบบควบคุม เครื่องยนต์อย่างเดียวไปไหนไม่ได้อย่างมีประโยชน์ -- มันต้องมี harness ห่อหุ้มเพื่อให้บังคับทิศทางได้, หยุดได้, และปลอดภัย
+
+ภายใต้กรอบนี้ หน้าที่ของ harness แบ่งเป็นสี่หน้าที่ ที่ตรงกับสี่ส่วนข้างล่างนี้พอดี:
+
+- **Actionable** -- ทำให้ model สั่งงาน tool ได้จริง ไม่ใช่แค่บอกว่าจะทำอะไร (คือ tool interface)
+- **Looping** -- ขับเคลื่อนวงจร reason-act-observe ที่ทำซ้ำ (มักเรียกว่า "ReAct loop" ในงานวิจัย) จนกว่างานจะเสร็จ (คือ agent loop)
+- **Enforcing** -- จัดการเรื่อง sandbox และความปลอดภัย เพื่อไม่ให้ model ทำอะไรที่ทำลายหรือเกินขอบเขต (คือ control mechanisms)
+- **Contextual** -- บริหารว่าอะไรอยู่ใน working memory ของ model ("RAM") เทียบกับอะไรที่เก็บแบบถาวรกว่า ("disk") (คือ context management)
+
+สี่แนวคิดเดิม แค่คำศัพท์ต่างออกไป -- ซึ่งเป็นสิ่งที่ควรสังเกต: พอรู้สี่หน้าที่ที่ harness ต้องทำแล้ว จะจำมันได้ไม่ว่าบทความหรือผลิตภัณฑ์ไหนจะเรียกมันว่าอะไร
 
 ### นิยาม แยกเป็นสี่ส่วน
 
