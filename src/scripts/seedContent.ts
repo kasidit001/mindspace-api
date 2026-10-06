@@ -7604,6 +7604,19 @@ external client ทุกตัวในบทเรียนก่อนหน�
 
 A useful shorthand for everything this course covers: **Agent = Model + Harness**. On its own, a model is a text generator -- it reasons about what to say next, but it has no memory of what happened earlier in a task beyond what's in its input, no way to actually touch a file or run a command, and nothing stopping it from doing something unsafe. The harness is what turns that text generator into something that can get real work done: it's what supplies state, tool execution, feedback loops, and enforced security around the model's output. If you didn't build the model yourself -- and if you're reading this, you almost certainly didn't -- the model is a given. The harness is the part you actually design, configure, and improve, and it's what the rest of this lesson (and course) is really about.
 
+### Another common picture: the car analogy
+
+A different way people describe this same split: think of a car. The **model** is the engine -- the raw power source. The **harness** is everything else you need to actually drive somewhere: the steering wheel, the brakes, the dashboard, the control systems. An engine by itself doesn't go anywhere useful; it needs a harness around it to be steerable, stoppable, and safe.
+
+Under this framing, a harness's job breaks down into four functions that map directly onto the four parts below:
+
+- **Actionable** -- lets the model actually invoke tools, not just describe what it would do. (This is the tool interface.)
+- **Looping** -- drives the repeated reason-act-observe cycle (often called a "ReAct loop" in the research literature) until the task is done. (This is the agent loop.)
+- **Enforcing** -- handles sandboxing and security so the model can't do something destructive or out of scope. (This is control mechanisms.)
+- **Contextual** -- manages what's in the model's working memory ("RAM") versus what gets persisted to longer-term storage ("disk"). (This is context management.)
+
+Same four ideas, different vocabulary -- which is itself worth noticing: once you know the four functions a harness has to perform, you'll recognize them under whatever names a particular write-up or product happens to use.
+
 ### The definition, broken into four parts
 
 An agent harness is the runtime layer that sits between a language model and the real world, and it needs four things to earn the name:
@@ -7642,6 +7655,19 @@ An agent harness is defined by four parts working together: an agent loop, a too
 ### แบบย่อ: Agent = Model + Harness
 
 ตัวย่อที่ใช้ได้ดีสำหรับทุกอย่างในคอร์สนี้: **Agent = Model + Harness** ลำพังแค่ Model มันคือเครื่องผลิตข้อความ (text generator) -- มันคิดว่าจะพูดอะไรต่อ แต่ไม่มีความจำเรื่องที่เกิดขึ้นก่อนหน้าในงานเดียวกันนอกเหนือจากที่อยู่ใน input ของมัน ไม่มีทางแตะไฟล์หรือรันคำสั่งได้จริง และไม่มีอะไรหยุดมันจากการทำสิ่งที่ไม่ปลอดภัย Harness คือสิ่งที่เปลี่ยนเครื่องผลิตข้อความนั้นให้กลายเป็นสิ่งที่ทำงานจริงได้ -- มันคือสิ่งที่ให้ state, tool execution, feedback loops, และ security ที่บังคับใช้จริงรอบๆ ผลลัพธ์ของ model ถ้าคุณไม่ได้สร้าง model เอง -- และถ้ากำลังอ่านอยู่นี้ แทบจะแน่นอนว่าไม่ได้สร้าง -- model คือสิ่งที่กำหนดมาให้แล้ว ส่วน harness คือสิ่งที่คุณออกแบบ ตั้งค่า และปรับปรุงได้จริง ซึ่งคือสิ่งที่บทเรียนนี้ (และคอร์สนี้) พูดถึงจริงๆ
+
+### อีกภาพหนึ่งที่ใช้อธิบายบ่อย: อุปมารถยนต์
+
+อีกวิธีหนึ่งที่คนใช้อธิบายการแบ่งนี้: ลองนึกถึงรถยนต์ **Model** คือเครื่องยนต์ (engine) -- แหล่งพลังงานดิบ **Harness** คือทุกอย่างที่เหลือที่ต้องมีเพื่อขับไปไหนมาไหนได้จริง: พวงมาลัย, เบรก, แผงหน้าปัด, ระบบควบคุม เครื่องยนต์อย่างเดียวไปไหนไม่ได้อย่างมีประโยชน์ -- มันต้องมี harness ห่อหุ้มเพื่อให้บังคับทิศทางได้, หยุดได้, และปลอดภัย
+
+ภายใต้กรอบนี้ หน้าที่ของ harness แบ่งเป็นสี่หน้าที่ ที่ตรงกับสี่ส่วนข้างล่างนี้พอดี:
+
+- **Actionable** -- ทำให้ model สั่งงาน tool ได้จริง ไม่ใช่แค่บอกว่าจะทำอะไร (คือ tool interface)
+- **Looping** -- ขับเคลื่อนวงจร reason-act-observe ที่ทำซ้ำ (มักเรียกว่า "ReAct loop" ในงานวิจัย) จนกว่างานจะเสร็จ (คือ agent loop)
+- **Enforcing** -- จัดการเรื่อง sandbox และความปลอดภัย เพื่อไม่ให้ model ทำอะไรที่ทำลายหรือเกินขอบเขต (คือ control mechanisms)
+- **Contextual** -- บริหารว่าอะไรอยู่ใน working memory ของ model ("RAM") เทียบกับอะไรที่เก็บแบบถาวรกว่า ("disk") (คือ context management)
+
+สี่แนวคิดเดิม แค่คำศัพท์ต่างออกไป -- ซึ่งเป็นสิ่งที่ควรสังเกต: พอรู้สี่หน้าที่ที่ harness ต้องทำแล้ว จะจำมันได้ไม่ว่าบทความหรือผลิตภัณฑ์ไหนจะเรียกมันว่าอะไร
 
 ### นิยาม แยกเป็นสี่ส่วน
 
