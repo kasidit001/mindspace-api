@@ -3,7 +3,6 @@ import { createNote as createNoteUseCase } from "../usecases/notes/createNote.us
 import { listNotes as listNotesUseCase } from "../usecases/notes/listNotes.usecase";
 import { BadRequestError } from "../utils/errors";
 
-// POST /api/notes  { content: string, lessonId?: string, source?: "manual" | "chat" }
 export async function createNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { content, lessonId, source } = req.body ?? {};
 
@@ -25,7 +24,6 @@ export async function createNote(req: Request, res: Response, next: NextFunction
   }
 }
 
-// GET /api/notes — the authenticated user's own notes; optionally filter with ?lessonId=
 export async function listNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { lessonId } = req.query;
