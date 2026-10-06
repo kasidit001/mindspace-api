@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 docker compose up -d        # start Postgres+pgvector (localhost:5434) — required before anything below
 bun install                 # install deps
 bun run dev                 # start API with hot reload (bun --watch index.ts), http://localhost:8080
-bun run seed                 # seed courses/lessons from src/scripts/seedContent.ts, and embed them
-                              # (embedding step needs OPENAI_API_KEY; skipped with a warning if unset)
+bun run seed                 # seed courses/lessons from src/mindspace/seeders/*.ts (one file per
+                              # course), and embed them (embedding step needs OPENAI_API_KEY;
+                              # skipped with a warning if unset)
 bun run migrate               # apply pending migrations (src/mindspace/migrations, via
                                 # src/mindspace/migrate.ts — not sequelize-cli, see
                                 # src/mindspace/README.md for why)
@@ -86,8 +87,8 @@ Model → Database`, strictly in that order — a layer only calls the one direc
 Tag.ts`/`CourseTag.ts`) give courses real, curated, queryable labels — distinct from
 `~/utils/courseTech.ts`'s frontend-only title-regex tech guess, which exists purely for
 display/filtering heuristics and isn't backed by any table. `src/services/tag.service.ts`'s
-`findOrCreateByName` is idempotent (safe to call every seed run); `seedContent.ts` doesn't
-carry tags itself — they're assigned per course slug in `src/scripts/seed.ts`'s
+`findOrCreateByName` is idempotent (safe to call every seed run); a seeder file doesn't
+carry tags itself — they're assigned per course slug in `src/mindspace/seed.ts`'s
 `COURSE_TAGS` map, so adding a new course means adding its tags there too.
 `findAllWithLessons()` includes `tags` on every course in `GET /api/courses` automatically
 (no controller/interface changes needed — same pass-through as every other included
@@ -100,7 +101,7 @@ under a draft course 404s exactly like a lesson that doesn't exist (no separate 
 enumeration-avoidance spirit as login), and the full-text search and pgvector similarity
 queries (`SearchRepository.ts`, `LessonEmbeddingRepository.ts`) both filter on it too, so a
 draft never surfaces via Cmd+K or gets cited by the chat tutor. `seed.ts` always seeds its
-courses as `published: true` — everything in `seedContent.ts` is finished catalog content, not
+courses as `published: true` — everything under `src/mindspace/seeders/` is finished catalog content, not
 draft material. There's no admin UI yet to toggle this on a course created outside the seed
 script; it's a data-model/gating layer only, ready for whenever that exists.
 

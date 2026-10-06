@@ -1,4 +1,4 @@
-# Migrations
+# Migrations & Seeders
 
 Schema changes going forward should be captured as migrations here, instead
 of relying only on `sequelize.sync()` (`src/models/index.ts`). `sync()` is
@@ -39,6 +39,24 @@ Each migration file's shape is unchanged from the `sequelize-cli` convention
 `migrate:generate` already scaffolds `.cjs` directly, so this is only a
 gotcha if you ever create a migration file by hand instead — keep it `.cjs`
 (see `20260914172404-create-roles.cjs` for the pattern).
+
+## Seeders
+
+```bash
+bun run seed               # load every ./seeders/*.ts file and upsert its course/lessons
+```
+
+Runs `src/mindspace/seed.ts`. Each course is its own file under `./seeders/`
+— `./seeders/<slug>.ts` exports one `SeedCourse` object as its `default`
+export, matching the course's own slug. `seed.ts` just reads the directory
+(`fs.readdirSync`, same pattern `migrate.ts` uses for migrations) and
+dynamically `import()`s each file — there's no index file to keep in sync.
+Adding a new course means creating a new file here, not appending to a
+shared one; the shared `SeedLesson`/`SeedLab`/`SeedCourse` types live in
+`./seeders/types.ts`.
+
+Per-course `COURSE_TAGS` and the embedding step stay in `seed.ts` itself —
+see its own comments.
 
 ## Existing tables predate this setup
 
