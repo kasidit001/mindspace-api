@@ -19,7 +19,6 @@ const COURSE_TAGS: Record<string, string[]> = {
   "claude-agent-skills": ["Claude", "AI Agents"],
   "nuxt-for-vue-developers": ["Nuxt", "Vue"],
   "claude-code-agent-harness": ["Claude", "AI Agents"],
-  "harness-agent-for-software-engineers": ["AI Agents", "DevOps"],
 };
 
 async function main() {
