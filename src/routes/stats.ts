@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as statsController from "../controllers/stats.controller";
+import * as statsController from "../controllers/StatsController";
 
 export const statsRouter = Router();
 

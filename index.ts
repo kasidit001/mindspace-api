@@ -1,5 +1,7 @@
 import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { connectDB } from "./src/config/database";
 import { syncModels } from "./src/models";
 import { coursesRouter } from "./src/routes/courses";
@@ -29,13 +31,40 @@ process.on("unhandledRejection", (reason) => {
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:3000";
 
 const app = express();
+// Security headers (OWASP A05 — Security Misconfiguration): disables
+// X-Powered-By, sets X-Content-Type-Options/X-Frame-Options/HSTS/etc.
+// CSP stays default-off — this is a pure JSON API, not a page-rendering
+// server, so there's no HTML response to protect with one.
+app.use(helmet());
 app.use(cors({ origin: WEB_ORIGIN }));
 app.use(express.json());
+
+// Global ceiling against blunt scraping/DoS, loose enough it never bothers a
+// real user; signup/login get a much tighter limit below (OWASP A07 —
+// brute-force/credential-stuffing protection).
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
+
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "TooManyRequestsError", message: "Too many attempts — try again later." },
+});
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use("/api/auth/signup", authRateLimiter);
+app.use("/api/auth/login", authRateLimiter);
 app.use("/api", authRouter);
 app.use("/api", coursesRouter);
 app.use("/api", chatRouter);

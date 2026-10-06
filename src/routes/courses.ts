@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { optionalAuth } from "../middlewares/auth.middleware";
-import * as coursesController from "../controllers/courses.controller";
+import * as coursesController from "../controllers/CoursesController";
 
 export const coursesRouter = Router();
 
