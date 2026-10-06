@@ -7612,6 +7612,16 @@ Once LLMs became genuinely capable, developers ran into the same handful of pain
 
 The real-world version of this shows up as a familiar complaint: "I asked the AI to write the code for me, but it only tells me what to do -- I still have to copy and paste every step myself." A capable model with none of these gaps closed is still, in practice, not an agent -- it's an advisor that needs a human to act as its hands. Closing exactly these five gaps is what a harness is *for*, which is why the rest of this lesson defines it as four concrete parts rather than a vague "wrapper around the model."
 
+### A brief history: what people tried before "harness" was a concept
+
+The pain points above didn't go unnoticed -- developers tried several approaches before the harness concept crystallized into what it is today:
+
+1. **Manual chaining (2022)** -- write one prompt, copy its output by hand into the next prompt, repeat. It worked, barely, but was slow and extremely error-prone: one bad copy-paste and the whole chain was wrong.
+2. **Early frameworks, e.g. LangChain (2023)** -- introduced abstractions like "Chains" and "Agents" to formalize that manual process, but the developer still had to wire up most of the control logic themselves. This bought structure at the cost of real complexity -- these setups became notoriously hard to debug.
+3. **AutoGPT / BabyAGI (2023)** -- pushed further by letting the model loop and direct its own next steps with minimal human involvement. The demos were striking, but both were missing real guardrails and real context management, which showed up in practice as runs that looped pointlessly or drifted off task -- impressive proofs of concept, not stable enough for production work.
+
+Each attempt solved part of the problem but exposed another gap, which is exactly what pushed the field toward treating "harness" as a first-class concept: not one clever trick, but the full, deliberate combination of state, tool execution, feedback loops, and enforced boundaries covered below.
+
 ### The compact version: Agent = Model + Harness
 
 A useful shorthand for everything this course covers: **Agent = Model + Harness**. On its own, a model is a text generator -- it reasons about what to say next, but it has no memory of what happened earlier in a task beyond what's in its input, no way to actually touch a file or run a command, and nothing stopping it from doing something unsafe. The harness is what turns that text generator into something that can get real work done: it's what supplies state, tool execution, feedback loops, and enforced security around the model's output. If you didn't build the model yourself -- and if you're reading this, you almost certainly didn't -- the model is a given. The harness is the part you actually design, configure, and improve, and it's what the rest of this lesson (and course) is really about.
@@ -7675,6 +7685,16 @@ An agent harness is defined by four parts working together: an agent loop, a too
 - **ไม่มีขอบเขต** -- ไม่มีอะไรกำหนดว่า model ทำอะไรได้หรือไม่ได้ ความปลอดภัยเลยขึ้นอยู่กับ prompt ที่เขียนไว้ดีพอหรือเปล่าเท่านั้น
 
 เวอร์ชันที่เกิดขึ้นจริงมักออกมาเป็นคำบ่นที่คุ้นเคย: "ฉันให้ AI เขียนโค้ดให้ แต่มันบอกแค่ว่าต้องทำอะไร ฉันต้องนั่ง copy วางเองทุกขั้นตอน" model ที่เก่งแต่ไม่ได้ปิดช่องว่างทั้งห้านี้เลย ในทางปฏิบัติก็ยังไม่ใช่ agent -- มันคือที่ปรึกษาที่ต้องการคนมาเป็นมือไม้ให้ การปิดช่องว่างทั้งห้านี้เองคือสิ่งที่ harness มีไว้ *เพื่อ* ทำ ซึ่งเป็นเหตุผลที่บทเรียนที่เหลือนี้นิยามมันเป็นสี่ส่วนที่จับต้องได้ แทนที่จะเป็น "ตัวห่อหุ้มรอบๆ model" ที่คลุมเครือ
+
+### ประวัติย่อ: ก่อนที่ "harness" จะกลายเป็นแนวคิดจริงจัง
+
+pain point ข้างบนไม่ได้ถูกมองข้าม นักพัฒนาลองหลายวิธีก่อนที่แนวคิด harness จะตกผลึกมาเป็นแบบที่เห็นทุกวันนี้:
+
+1. **Manual chaining (2022)** -- เขียน prompt หนึ่งตัว เอา output มา copy ด้วยมือใส่เป็น prompt ถัดไป ทำซ้ำไปเรื่อยๆ มันพอใช้ได้ แต่ช้าและ error ง่ายมาก copy ผิดนิดเดียวทั้งสายก็พังหมด
+2. **Framework ยุคแรก เช่น LangChain (2023)** -- เริ่มมี abstraction อย่าง "Chain" และ "Agent" เพื่อทำให้กระบวนการมือนั้นเป็นทางการขึ้น แต่นักพัฒนายังต้อง wire logic ควบคุมส่วนใหญ่เองอยู่ดี ได้โครงสร้างมาแลกกับ complexity ที่สูงขึ้นจริง -- setup แบบนี้ขึ้นชื่อเรื่อง debug ยาก
+3. **AutoGPT / BabyAGI (2023)** -- ไปไกลกว่านั้นด้วยการปล่อยให้ model วน loop และสั่งขั้นตอนถัดไปของตัวเองโดยมีคนเข้าไปเกี่ยวข้องน้อยที่สุด demo ดูน่าทึ่งมาก แต่ทั้งคู่ขาด guardrail จริงและการจัดการ context จริง ซึ่งแสดงออกมาในทางปฏิบัติเป็นการวน loop ที่ไม่มีความหมายหรือหลุดออกนอกงาน -- พิสูจน์แนวคิดได้น่าประทับใจ แต่ยังไม่ stable พอสำหรับงาน production
+
+แต่ละความพยายามแก้ปัญหาได้บางส่วน แต่ก็เผยช่องว่างใหม่ขึ้นมา ซึ่งนี่แหละคือสิ่งที่ผลักดันวงการให้มอง "harness" เป็นแนวคิดหลักจริงจัง ไม่ใช่เทคนิคฉลาดอันเดียว แต่เป็นการรวมกันอย่างตั้งใจของ state, tool execution, feedback loop, และขอบเขตที่บังคับใช้จริง ตามที่จะพูดถึงต่อไปข้างล่างนี้
 
 ### แบบย่อ: Agent = Model + Harness
 
