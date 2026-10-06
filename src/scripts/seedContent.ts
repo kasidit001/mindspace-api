@@ -7600,6 +7600,18 @@ external client ทุกตัวในบทเรียนก่อนหน�
 
 "Agent harness" is a term of art in the AI tooling world, not a brand name -- it describes a category of software, and Claude Code (the CLI tool you're reading this lesson in, if you're following along hands-on) is one real, working example of it.
 
+### Why a harness had to exist
+
+Once LLMs became genuinely capable, developers ran into the same handful of pain points almost immediately:
+
+- **No state** -- every API call started over from zero, with no memory of what had already happened.
+- **Stuck "in its head"** -- the model could describe what to do next, but had no way to actually invoke a tool and make it happen.
+- **No recovery** -- one failure and the whole thing just stopped, with no retry or recovery mechanism.
+- **Context runs out** -- any task long enough to matter eventually exceeded what the model could hold in a single call.
+- **No boundaries** -- nothing defined what the model was and wasn't allowed to do, so safety depended entirely on the prompt being well-behaved.
+
+The real-world version of this shows up as a familiar complaint: "I asked the AI to write the code for me, but it only tells me what to do -- I still have to copy and paste every step myself." A capable model with none of these gaps closed is still, in practice, not an agent -- it's an advisor that needs a human to act as its hands. Closing exactly these five gaps is what a harness is *for*, which is why the rest of this lesson defines it as four concrete parts rather than a vague "wrapper around the model."
+
 ### The compact version: Agent = Model + Harness
 
 A useful shorthand for everything this course covers: **Agent = Model + Harness**. On its own, a model is a text generator -- it reasons about what to say next, but it has no memory of what happened earlier in a task beyond what's in its input, no way to actually touch a file or run a command, and nothing stopping it from doing something unsafe. The harness is what turns that text generator into something that can get real work done: it's what supplies state, tool execution, feedback loops, and enforced security around the model's output. If you didn't build the model yourself -- and if you're reading this, you almost certainly didn't -- the model is a given. The harness is the part you actually design, configure, and improve, and it's what the rest of this lesson (and course) is really about.
@@ -7651,6 +7663,18 @@ An agent harness is defined by four parts working together: an agent loop, a too
         contentTh: `![What Is an Agent Harness diagram](/images/courses/claude-code-agent-harness/what-is-an-agent-harness.png)
 
 "Agent harness" เป็นศัพท์เฉพาะในวงการเครื่องมือ AI ไม่ใช่ชื่อแบรนด์ -- มันอธิบายหมวดหมู่ของซอฟต์แวร์ และ Claude Code (เครื่องมือ CLI ที่คุณกำลังอ่านบทเรียนนี้อยู่ ถ้ากำลังเรียนไปด้วยลงมือทำไปด้วย) คือตัวอย่างจริงที่ทำงานได้จริงตัวหนึ่งของหมวดหมู่นี้
+
+### ทำไม Harness ถึงต้องเกิดขึ้น
+
+พอ LLM เริ่มมีความสามารถจริงจัง นักพัฒนาก็เจอ pain point ชุดเดียวกันนี้แทบจะทันที:
+
+- **ไม่มี state** -- ทุก API call เริ่มใหม่จากศูนย์ ไม่มีความจำว่าเกิดอะไรขึ้นมาก่อนหน้า
+- **ติดอยู่ "แค่ในหัว"** -- model บอกได้ว่าต้องทำอะไรต่อ แต่ไม่มีทางสั่งงาน tool ให้มันเกิดขึ้นจริง
+- **ไม่มีการกู้คืน** -- พังครั้งเดียวก็หยุดเลย ไม่มีกลไก retry หรือ recovery
+- **context หมด** -- งานที่ยาวพอจะมีความหมาย สุดท้ายก็เกินกว่าที่ model จะเก็บไว้ได้ในการเรียกครั้งเดียว
+- **ไม่มีขอบเขต** -- ไม่มีอะไรกำหนดว่า model ทำอะไรได้หรือไม่ได้ ความปลอดภัยเลยขึ้นอยู่กับ prompt ที่เขียนไว้ดีพอหรือเปล่าเท่านั้น
+
+เวอร์ชันที่เกิดขึ้นจริงมักออกมาเป็นคำบ่นที่คุ้นเคย: "ฉันให้ AI เขียนโค้ดให้ แต่มันบอกแค่ว่าต้องทำอะไร ฉันต้องนั่ง copy วางเองทุกขั้นตอน" model ที่เก่งแต่ไม่ได้ปิดช่องว่างทั้งห้านี้เลย ในทางปฏิบัติก็ยังไม่ใช่ agent -- มันคือที่ปรึกษาที่ต้องการคนมาเป็นมือไม้ให้ การปิดช่องว่างทั้งห้านี้เองคือสิ่งที่ harness มีไว้ *เพื่อ* ทำ ซึ่งเป็นเหตุผลที่บทเรียนที่เหลือนี้นิยามมันเป็นสี่ส่วนที่จับต้องได้ แทนที่จะเป็น "ตัวห่อหุ้มรอบๆ model" ที่คลุมเครือ
 
 ### แบบย่อ: Agent = Model + Harness
 
