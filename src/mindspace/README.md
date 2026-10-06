@@ -15,7 +15,7 @@ bun run migrate:undo       # roll back the most recently applied migration
 bun run migrate:generate -- <name>   # scaffold a new migration file
 ```
 
-These run `src/db/migrate.ts`, a small dependency-free runner written for
+These run `src/mindspace/migrate.ts`, a small dependency-free runner written for
 this project — **not** `sequelize-cli`. `sequelize-cli` (and every version
 of the `umzug` package it, and `umzug` itself, depend on) unconditionally
 `require()`s `@rushstack/ts-command-line` at load time, and that hangs

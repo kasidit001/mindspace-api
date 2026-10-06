@@ -1,4 +1,4 @@
-import * as courseRepository from "../repositories/course.repository";
+import * as courseRepository from "../repositories/CourseRepository";
 
 export function getFeaturedCourses() {
   return courseRepository.findFeaturedWithLessonCounts();

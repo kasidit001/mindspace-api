@@ -1,4 +1,4 @@
-import * as progressRepository from "../repositories/progress.repository";
+import * as progressRepository from "../repositories/ProgressRepository";
 
 /** Idempotent: marks a lesson complete for the user, or refreshes completedAt if already marked. */
 export function completeLesson(userId: string, lessonId: string) {

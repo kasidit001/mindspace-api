@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { CHAT_MODEL, OPENROUTER_BASE_URL } from "../config/constants";
+import { CHAT_MODEL, OPENROUTER_BASE_URL } from "../utils/constants";
 import { searchSimilarChunks } from "./embedding.service";
 import type { RetrievedChunk } from "../interfaces/embedding.interface";
 import type { AskResult, StreamEvent } from "../interfaces/chat.interface";

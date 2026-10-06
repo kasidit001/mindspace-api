@@ -1,4 +1,4 @@
-import * as noteRepository from "../repositories/note.repository";
+import * as noteRepository from "../repositories/NoteRepository";
 import type { CreateNoteData } from "../interfaces/note.interface";
 
 export function createNote(data: CreateNoteData) {
