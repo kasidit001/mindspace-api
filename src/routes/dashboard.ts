@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as dashboardController from "../controllers/dashboard.controller";
+import * as dashboardController from "../controllers/DashboardController";
 import { requireAuth } from "../middlewares/auth.middleware";
 
 export const dashboardRouter = Router();

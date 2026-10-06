@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as notesController from "../controllers/notes.controller";
+import * as notesController from "../controllers/NotesController";
 import { requireAuth } from "../middlewares/auth.middleware";
 
 export const notesRouter = Router();
