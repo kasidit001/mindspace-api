@@ -1,4 +1,4 @@
-import * as lessonRepository from "../repositories/lesson.repository";
+import * as lessonRepository from "../repositories/LessonRepository";
 
 export function getLessonWithCourse(id: string, includeUnpublished = false) {
   return lessonRepository.findByIdWithCourse(id, includeUnpublished);

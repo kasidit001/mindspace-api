@@ -1,4 +1,4 @@
-import * as tagRepository from "../repositories/tag.repository";
+import * as tagRepository from "../repositories/TagRepository";
 
 export function listTags() {
   return tagRepository.findAll();
