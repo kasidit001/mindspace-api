@@ -3,7 +3,6 @@ import { signup as signupUseCase } from "../usecases/auth/signup.usecase";
 import { login as loginUseCase } from "../usecases/auth/login.usecase";
 import { BadRequestError } from "../utils/errors";
 
-// POST /api/auth/signup  { name: string, email: string, password: string }
 export async function signup(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { name, email, password } = req.body ?? {};
 
@@ -28,7 +27,6 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-// POST /api/auth/login  { email: string, password: string }
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { email, password } = req.body ?? {};
 
@@ -45,7 +43,6 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
-// GET /api/auth/me — returns the caller's own account for a valid session token.
 export function me(req: Request, res: Response): void {
   res.json({ user: req.user });
 }

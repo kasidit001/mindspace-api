@@ -39,6 +39,11 @@ export class Lesson extends Model<InferAttributes<Lesson>, InferCreationAttribut
   // Code Lab exercises (see LessonLab above) — null/empty on the
   // (currently overwhelming majority of) lessons that have none yet.
   declare labs: LessonLab[] | null;
+  // Optional sidebar group label (e.g. "The Layer Chain", "Deep Dive: Auth
+  // Stack") — null on nearly every course, which renders its lessons flat;
+  // only courses with a long, undifferentiated list set this.
+  declare sectionEn: string | null;
+  declare sectionTh: string | null;
   declare order: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -89,6 +94,16 @@ Lesson.init(
     labs: {
       type: DataTypes.JSONB,
       allowNull: true,
+    },
+    sectionEn: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "section_en",
+    },
+    sectionTh: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "section_th",
     },
     order: {
       type: DataTypes.INTEGER,

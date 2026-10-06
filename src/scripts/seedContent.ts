@@ -16,6 +16,13 @@ export interface SeedLesson {
    * free. Most lessons have no labs at all.
    */
   labs?: SeedLab[];
+  /**
+   * Optional sidebar group label (e.g. "The Layer Chain") — only set on
+   * courses with a long, undifferentiated lesson list; everything else
+   * stays flat in the sidebar, same as before this existed.
+   */
+  sectionEn?: string;
+  sectionTh?: string;
 }
 
 export interface SeedLab {
@@ -4056,6 +4063,8 @@ const { data: bookmarks, status, error, refresh } = await useFetch('/api/bookmar
         titleEn: "Where It Starts — server.ts + app.ts",
         titleTh: "จุดเริ่มต้น — server.ts + app.ts",
         order: 1,
+        sectionEn: "The Layer Chain",
+        sectionTh: "ไล่โค้ดตาม Layer",
         contentEn: `Before the next lesson (the fixed chain), you need to know how a request even reaches a Route. These two files are the real starting point — nothing runs without passing through them first.
 
 | File | What it does | Order |
@@ -4124,6 +4133,8 @@ app.use(errorHandler); // 6. MUST be last
         titleEn: "The Fixed Chain",
         titleTh: "The Fixed Chain (สายที่ตายตัว)",
         order: 2,
+        sectionEn: "The Layer Chain",
+        sectionTh: "ไล่โค้ดตาม Layer",
         contentEn: `Every feature — auth, events, CVEs, admin actions — flows through the same six stops, always in this order, never skipped, never reversed:
 
 **Route → Controller → UseCase → Service → Repository → Model → Database**
@@ -4166,6 +4177,8 @@ Six stops, one direction, no exceptions: Route → Controller → UseCase → Se
         titleEn: "How to Jump One Stop, at Each Layer",
         titleTh: "วิธีกระโดดข้ามสถานี ทีละ Layer",
         order: 3,
+        sectionEn: "The Layer Chain",
+        sectionTh: "ไล่โค้ดตาม Layer",
         contentEn: `Each layer hands off with a predictable, greppable signal. Learn the signal, not the file name.
 
 | Hop | Signal |
@@ -4196,12 +4209,31 @@ Every hand-off between layers has one predictable, greppable signal: an import, 
 ## สรุป
 
 ทุกการส่งไม้ต่อระหว่าง layer มีสัญญาณที่ grep เจอได้แน่นอนหนึ่งอย่าง: import, การเรียก \`new <X>UseCase(...)\`, การอ้างอิง \`this.<X>Service\`/\`this.<X>Repository\`, หรือ model ที่ destructure ออกมา จำสัญญาณไว้ ไม่ต้องจำ path ไฟล์ — สัญญาณจะพาไปหาไฟล์ให้เองทุกครั้ง`,
+        labs: [
+          {
+            id: "name-the-next-file",
+            title: "Name the Next File",
+            instructions: "Complete `nextFileFor` so it reads a `this.<X>Service.foo()` or `this.<X>Repository.foo()` reference line (the Service->Repository hop's signal, from this lesson) and returns the next file's path: `src/services/<X>Service.ts` or `src/repositories/<X>Repository.ts`.",
+            starterCode: `function nextFileFor(callLine: string): string {
+  // TODO: extract the "this.<X>Service" or "this.<X>Repository" reference
+  // from callLine, and return the matching file path.
+  return "";
+}`,
+            testCode: `check(nextFileFor("this.EventService.getAllWithPagination()"), "src/services/EventService.ts", "finds a Service reference");
+check(nextFileFor("this.UserRepository.findByEmail(email)"), "src/repositories/UserRepository.ts", "finds a Repository reference");
+check(nextFileFor("this.RoleService.getNameById(id)"), "src/services/RoleService.ts", "works for a different Service name");
+check(nextFileFor("this.UserCredentialRepository.updateByUserId(id, data)"), "src/repositories/UserCredentialRepository.ts", "works for a different Repository name");`,
+            hint: "A regex like `/this\\.(\\w+)(Service|Repository)\\./` captures both the name and which layer it is.",
+          },
+        ],
       },
       {
         slug: "foundations-under-the-chain",
         titleEn: "Foundations Under the Chain",
         titleTh: "รากฐานใต้สาย — abstracts, config, helper",
         order: 4,
+        sectionEn: "The Layer Chain",
+        sectionTh: "ไล่โค้ดตาม Layer",
         contentEn: `None of these three is a stop in the chain — no route runs through them directly. But every stop in the chain stands on all three. Know what each one does as a whole; no need to read file by file.
 
 | Directory | What it does | Why it matters for tracing |
@@ -4234,6 +4266,8 @@ Every hand-off between layers has one predictable, greppable signal: an import, 
         titleEn: "The Type Boundary — src/schema/",
         titleTh: "ขอบเขตของ Type — src/schema/",
         order: 5,
+        sectionEn: "The Layer Chain",
+        sectionTh: "ไล่โค้ดตาม Layer",
         contentEn: `The same piece of data changes its type name every time it crosses a stop — \`src/schema/\` holds all of them, organized by hand-off point, not by entity.
 
 | Directory | What it is | What it does | When it's used |
@@ -4314,6 +4348,8 @@ export interface IGetAllEventResponse { rows: IGetEventResponse[]; pagination: I
         titleEn: "The Gate Before Controller — src/middleware/",
         titleTh: "ด่านก่อนถึง Controller — src/middleware/",
         order: 6,
+        sectionEn: "The Layer Chain",
+        sectionTh: "ไล่โค้ดตาม Layer",
         contentEn: `Unlike \`abstracts\`/\`config\`/\`helper\`, this one sits in the actual path. Every request passes through it before reaching the Controller; it doesn't just stand underneath.
 
 | File | Verifies | Used at |
@@ -4376,6 +4412,8 @@ router.use(
         titleEn: "Worked Example A — Read Path GET /api/v1/events",
         titleTh: "ตัวอย่างจริง A — เส้นทางอ่าน GET /api/v1/events",
         order: 7,
+        sectionEn: "Worked Examples",
+        sectionTh: "ตัวอย่างจริง (Worked Examples)",
         contentEn: `One real endpoint, traced stop by stop. Same method works for any route in the repo.
 
 **1 - Mount** — \`src/routes/v1/index.ts\`. Find the prefix first — every mount lives in one file.
@@ -4472,6 +4510,8 @@ async execute(request) {
         titleEn: "Worked Example B — Write + Destructive Path DELETE /api/v1/system-admin/events/:eventId",
         titleTh: "ตัวอย่างจริง B — เส้นทางเขียน/ทำลาย DELETE /api/v1/system-admin/events/:eventId",
         order: 8,
+        sectionEn: "Worked Examples",
+        sectionTh: "ตัวอย่างจริง (Worked Examples)",
         contentEn: `Reads aren't enough — you need the "write" shape too, especially a destructive op with a password-gate and DB-only authorization (never JWT claims).
 
 **1 - Route** — \`src/routes/v1/system-admin.routes.ts\`. This mount carries \`requireRole(SYSTEM_ADMIN)\` at router level — not per-route.
@@ -4584,6 +4624,8 @@ endpoint แบบทำลายข้อมูลเพิ่ม 3 อย่�
         titleEn: "Error & Security Propagation",
         titleTh: "การไหลของ Error และ Security",
         order: 9,
+        sectionEn: "Worked Examples",
+        sectionTh: "ตัวอย่างจริง (Worked Examples)",
         contentEn: `These two flow across the layers, not down the chain — worth tracing separately.
 
 ### Error: thrown anywhere, caught once
@@ -4672,6 +4714,8 @@ Error และ authorization ทั้งคู่ตัดผ่านทุ�
         titleEn: "Full Naming Canon (find/get)",
         titleTh: "Naming Canon ฉบับเต็ม (find/get)",
         order: 10,
+        sectionEn: "Naming & Tooling Conventions",
+        sectionTh: "ธรรมเนียมการตั้งชื่อและเครื่องมือ",
         contentEn: `The prefix encodes the return contract — read the name, know the null-check obligation, without opening the implementation. Same rule at every layer (Service and Repository).
 
 | Prefix | Shape | Return contract | Caller obligation | Real example in repo |
@@ -4702,12 +4746,33 @@ Four prefixes, four contracts: \`find*\` may return \`null\` and demands a check
 ## สรุป
 
 สี่ prefix สี่สัญญา: \`find*\` อาจคืน \`null\` และต้องเช็กเสมอ; \`get*\` (แบบ list/aggregate) ไม่มีวันคืน \`null\`; \`get*By<Key>\` (record เดียว) การันตีมีค่าหรือ throw เองข้างใน; prefix ของ mutation (\`create*\`, \`update*By*\`, \`delete*By*\`) คืน record ที่สร้างหรือจำนวนแถวที่ถูกกระทบ canon นี้ยังไม่ถูก retrofit ทุกจุดในโค้ดจริง — \`RoleService.getNameById\` และ \`EventService.getById\` เป็นข้อยกเว้นที่บันทึกไว้ตามจริง ไม่ใช่เรื่องที่ต้องไปค้นพบเอาเองแบบยากๆ`,
+        labs: [
+          {
+            id: "classify-the-return-contract",
+            title: "Classify the Return Contract",
+            instructions: "Complete `classifyContract` so it reads a method name and returns which return contract it has, per this lesson's canon: `\"nullable\"` for `find<X>By<Key>`, `\"list\"` for `getAll<X>`/`get<X>Options`, `\"guaranteed\"` for `get<X>By<Key>`, `\"mutation\"` for `create<X>`/`update<X>By<Key>`/`delete<X>By<Key>`.",
+            starterCode: `function classifyContract(methodName: string): string {
+  // TODO: return "nullable" | "list" | "guaranteed" | "mutation"
+  return "";
+}`,
+            testCode: `check(classifyContract("findByUserId"), "nullable", "find*By* is nullable");
+check(classifyContract("getAllWithPagination"), "list", "getAll* is a list, never null");
+check(classifyContract("getOptions"), "list", "get*Options is a list, never null");
+check(classifyContract("getNameById"), "guaranteed", "get*By* (not getAll/Options) is guaranteed");
+check(classifyContract("create"), "mutation", "create* is a mutation");
+check(classifyContract("updateByUserId"), "mutation", "update*By* is a mutation");
+check(classifyContract("deleteByUserId"), "mutation", "delete*By* is a mutation");`,
+            hint: "Check the mutation prefixes (create/update/delete) first, then getAll/Options, then the remaining find*By*/get*By* cases.",
+          },
+        ],
       },
       {
         slug: "use-graphify-instead-of-grep-api",
         titleEn: "Use graphify Instead of grep",
         titleTh: "ใช้ graphify แทน grep",
         order: 11,
+        sectionEn: "Naming & Tooling Conventions",
+        sectionTh: "ธรรมเนียมการตั้งชื่อและเครื่องมือ",
         contentEn: `This repo ships a knowledge graph precisely so you don't hand-search for the next stop. It's the primary tool — raw grep/Read is the fallback.
 
 | You want | Run |
@@ -4740,6 +4805,8 @@ Four prefixes, four contracts: \`find*\` may return \`null\` and demands a check
         titleEn: "The Reusable Method",
         titleTh: "วิธีการที่ใช้ซ้ำได้",
         order: 12,
+        sectionEn: "Naming & Tooling Conventions",
+        sectionTh: "ธรรมเนียมการตั้งชื่อและเครื่องมือ",
         contentEn: `Apply this to any endpoint in the repo, front to back.
 
 1. Find the URL prefix's mount line in \`src/routes/v1/index.ts\` — tells you the route file and which middleware/role guards it.
@@ -4774,6 +4841,8 @@ Eight steps, applied identically to every endpoint in this repo: mount → route
         titleEn: "The Full Stack",
         titleTh: "Stack ทั้งหมดของโปรเจกต์",
         order: 13,
+        sectionEn: "Naming & Tooling Conventions",
+        sectionTh: "ธรรมเนียมการตั้งชื่อและเครื่องมือ",
         contentEn: `A quick reference for every major piece of secinsight-api's stack, read straight from \`package.json\` — worth having loaded before the deeper lessons that follow.
 
 | Category | Uses | Version |
@@ -4830,6 +4899,8 @@ Bun + Express + TypeScript ฝั่ง runtime, Sequelize/mysql2 ข้าม�
         titleEn: "Worked Example C — Login, MFA, and the Session Lifecycle",
         titleTh: "ตัวอย่างจริง C — Login, MFA และวงจรชีวิตของ Session",
         order: 14,
+        sectionEn: "Auth, Data & Integrations",
+        sectionTh: "Auth, ข้อมูล และการเชื่อมต่อภายนอก",
         contentEn: `\`POST /api/v1/auth/login\` -- picked because it doesn't end in one trip. It needs a follow-up call to \`POST /api/v1/auth/verify-mfa\` before the returned token can actually be used elsewhere, which is exactly why newcomers get confused seeing a 401 \`MFA verification required\` right after a "successful" login. It also has two guards in front of the controller (rate limit + reCAPTCHA) that the Event example never needed.
 
 ### 0. Mount -- where the path comes from
@@ -5192,6 +5263,8 @@ login ที่ "สำเร็จ" สร้างได้แค่ session �
         titleEn: "Database Schema — Users, Organizations & Subscriptions",
         titleTh: "Database Schema — Users, Organizations และ Subscriptions",
         order: 15,
+        sectionEn: "Auth, Data & Integrations",
+        sectionTh: "Auth, ข้อมูล และการเชื่อมต่อภายนอก",
         contentEn: `Model registration splits into two sets in \`src/models/index.ts\`: \`misp\` via \`SequelizeConnection.getClient('mispConnection')\`, and \`secinsight\` via \`SequelizeConnection.getClient('secinsightConnection')\`. Migrations only exist on the \`secinsight\` side (\`src/sequelize/secinsight/migrations/\`, 74 files as of this writing) -- there's no \`src/sequelize/misp\` migrations folder, because those tables belong to MISP itself, not to this app (see the next lesson).
 
 ### Users & login
@@ -5294,6 +5367,8 @@ Three clusters worth keeping mentally separate: identity (\`users\` + \`user_cre
         titleEn: "Database Schema — CVEs, AI Insight & the MISP Tables",
         titleTh: "Database Schema — CVE, AI Insight และตารางฝั่ง MISP",
         order: 16,
+        sectionEn: "Auth, Data & Integrations",
+        sectionTh: "Auth, ข้อมูล และการเชื่อมต่อภายนอก",
         contentEn: `Continuing from the users/organizations tables in the previous lesson -- this one covers the \`secinsight\` database's CVE and AI Insight tables, plus the \`misp\` database tables this app actually reads.
 
 ### CVEs, in \`secinsight\`
@@ -5378,6 +5453,8 @@ Two things worth flagging: \`thai_threat_news\` is registered in the \`misp\` co
         titleEn: "MISP Integration",
         titleTh: "การเชื่อมต่อกับ MISP",
         order: 17,
+        sectionEn: "Auth, Data & Integrations",
+        sectionTh: "Auth, ข้อมูล และการเชื่อมต่อภายนอก",
         contentEn: `MISP is an external threat-intelligence platform with its own database and its own REST API. SecInsight does not own MISP's data (\`CONTEXT.md:314-327\`) -- it's a consumer, and the integration is built around one firm rule.
 
 ### The rule: read from the DB, write through the API
@@ -5462,6 +5539,8 @@ MISP เป็นระบบภายนอกตัวเดียวที่
         titleEn: "Testing Practices",
         titleTh: "แนวทางการเทส",
         order: 18,
+        sectionEn: "Operations",
+        sectionTh: "งานปฏิบัติการ (Operations)",
         contentEn: `Two test suites, run separately, with a different mocking boundary each.
 
 | Suite | Command | Config | What's mocked |
@@ -5682,6 +5761,8 @@ describe('GetUserProfileUseCase', () => {
         titleEn: "Observability & Health Checks",
         titleTh: "Observability และ Health Check",
         order: 19,
+        sectionEn: "Operations",
+        sectionTh: "งานปฏิบัติการ (Operations)",
         contentEn: `### Logger
 
 Winston, wrapped in a \`Logger\` class (\`src/utils/Logger.ts\`), used as \`Logger.child({ component: 'X' })\` per module -- so every log line is tagged with which component emitted it. Log levels are winston's standard syslog set (\`error\`, \`warning\`, \`info\`, \`debug\`, ...).
@@ -5763,6 +5844,8 @@ Logging เป็น winston ที่แท็กตาม component รูป�
         titleEn: "Deployment & CI",
         titleTh: "การ Deploy และ CI",
         order: 20,
+        sectionEn: "Operations",
+        sectionTh: "งานปฏิบัติการ (Operations)",
         contentEn: `### Where it deploys
 
 Google Cloud Run, with images stored in Artifact Registry (\`asia-southeast1\`). Cloud Build handles the pipeline -- \`cloudbuild.yaml\` for production, \`cloudbuild.staging.yaml\` for staging -- in three steps: \`docker build\` -> \`docker push\` -> \`gcloud run deploy\`.
@@ -5867,6 +5950,8 @@ Deploy คือ Cloud Run ผ่าน Docker แบบสองขั้นแ
         titleEn: "Common Pitfalls",
         titleTh: "จุดที่หลงทางบ่อย",
         order: 21,
+        sectionEn: "Operations",
+        sectionTh: "งานปฏิบัติการ (Operations)",
         contentEn: `A collection of specific, real gotchas from this codebase -- the kind of thing that's obvious once you know it and confusing every time before that.
 
 1. **Got a token back but still hit 401.** The session is still \`PRE_ACCESS\` -- \`verify-mfa\` has to be called first. See step 5 of \`authMiddleware\` (\`src/middleware/auth.ts\`), covered in the login worked-example lesson.
@@ -5919,6 +6004,8 @@ Most of these pitfalls share a shape: something that looks like a bug (a silent 
         titleEn: "Two Connections, One ORM",
         titleTh: "สอง Connection, ORM ตัวเดียว",
         order: 22,
+        sectionEn: "Deep Dive: Sequelize",
+        sectionTh: "เจาะลึก: Sequelize",
         contentEn: `Sequelize and mysql2 (\`^6.37.8\` / \`^3.15.3\`) run against two separate MySQL databases from the same codebase, not one. \`src/models/index.ts\` registers every model against one of two connections:
 
 - \`secinsight\` -- via \`SequelizeConnection.getClient('secinsightConnection')\`
@@ -5965,6 +6052,8 @@ codebase เดียว MySQL server เดียว สองฐานข้�
         titleEn: "Modeling and Querying Across the Two Databases",
         titleTh: "การสร้าง Model และ Query ข้ามสองฐานข้อมูล",
         order: 23,
+        sectionEn: "Deep Dive: Sequelize",
+        sectionTh: "เจาะลึก: Sequelize",
         contentEn: `### Modeling a database you don't own
 
 Every model registered against the \`misp\` connection is configured to match MISP's actual schema exactly, not Sequelize's usual conventions: \`timestamps: false\` (MISP doesn't have \`createdAt\`/\`updatedAt\` the way this app's own tables do), no \`underscored\` option (every column's real name is mapped by hand via \`field\`), because the table belongs to someone else's application and Sequelize has to describe it as-is, not as this codebase would design it fresh.
@@ -6025,6 +6114,8 @@ async create(payload: TCreatePayload, transaction?: Transaction): Promise<UserSe
         titleEn: "Passwords and Account Lockout — bcrypt in UserService",
         titleTh: "รหัสผ่านและการล็อกบัญชี — bcrypt ใน UserService",
         order: 24,
+        sectionEn: "Deep Dive: Auth Stack",
+        sectionTh: "เจาะลึก: Auth Stack",
         contentEn: `\`bcrypt\` (\`^6.0.0\`) is the only library responsible for passwords in this stack -- and it only ever appears in one place, \`UserService.authenticate\` (\`src/services/UserService.ts:126-174\`):
 
 \`\`\`ts
@@ -6111,6 +6202,8 @@ return user;
         titleEn: "Signing and Verifying — JWT via jose",
         titleTh: "การ Sign และ Verify — JWT ผ่าน jose",
         order: 25,
+        sectionEn: "Deep Dive: Auth Stack",
+        sectionTh: "เจาะลึก: Auth Stack",
         contentEn: `JWTs in this codebase are HS256, signed and verified with \`jose\` (\`^6.1.3\`) -- no external full JWT library, and no asymmetric keys. \`TokenService\` (\`src/services/TokenService.ts\`) owns both directions.
 
 ### Issuing a token
@@ -6203,6 +6296,8 @@ public async signToken(payload: TSignTokenPayload): Promise<string> {
         titleEn: "The Session Table as the Source of Truth",
         titleTh: "ตาราง Session คือแหล่งความจริงหลัก",
         order: 26,
+        sectionEn: "Deep Dive: Auth Stack",
+        sectionTh: "เจาะลึก: Auth Stack",
         contentEn: `If \`jose\` proves a token wasn't forged, \`user_sessions\` is what actually decides whether that token is still good for anything. Every session has a \`type\` -- \`PRE_ACCESS\` or \`ACCESS\` -- and a handful of fields that together represent the session's real state independent of what's encoded in the JWT: \`accessToken\`, \`refreshTokenHash\`, \`isMfaVerified\`, \`accessTokenExpiresAt\`, \`refreshTokenExpiresAt\`, \`revokedAt\`.
 
 ### One session at a time, by design
@@ -6283,6 +6378,8 @@ login กับการยืนยัน MFA เป็นสองขั้น
         titleEn: "TOTP / MFA — otpauth in AuthVerifyMfaUseCase",
         titleTh: "TOTP / MFA — otpauth ใน AuthVerifyMfaUseCase",
         order: 27,
+        sectionEn: "Deep Dive: Auth Stack",
+        sectionTh: "เจาะลึก: Auth Stack",
         contentEn: `\`otpauth\` (\`^9.4.1\`) is the library behind this codebase's TOTP-based MFA, and like \`bcrypt\`, it's concentrated in one place: the OTP-validation step inside \`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`).
 
 ### What the use case actually checks, in order
@@ -6329,6 +6426,8 @@ Tying this back to the whole login flow: \`bcrypt\` proves you know the password
         titleEn: "What We Actually Know About Zod Here",
         titleTh: "สิ่งที่รู้จริงเกี่ยวกับ Zod ในที่นี้",
         order: 28,
+        sectionEn: "Deep Dive: Validation",
+        sectionTh: "เจาะลึก: Validation",
         contentEn: `This lesson is intentionally narrow. The only real Zod usage documented from this codebase is the \`login\` controller (\`src/controllers/AuthController.ts:27-54\`), and everything below is drawn from that one example -- not a general Zod tutorial, and not a survey of every schema in the app.
 
 ### The pattern: destructure first, validate second
@@ -6421,6 +6520,8 @@ login = async (req: Request, res: Response, next: NextFunction): Promise<void> =
         titleEn: "Rate Limiting User-Facing Endpoints",
         titleTh: "การจำกัดอัตราสำหรับ Endpoint ที่ผู้ใช้เรียก",
         order: 29,
+        sectionEn: "Deep Dive: External APIs",
+        sectionTh: "เจาะลึก: External APIs",
         contentEn: `\`rate-limiter-flexible\` (\`^9.0.1\`, in-memory -- not backed by Redis or another external store in this codebase) is the library behind every rate limit in this stack. It shows up as Express middleware applied per-route, not globally, and different endpoints get different limiter instances.
 
 ### The pattern, from the login route
@@ -6497,6 +6598,8 @@ router.post(
         titleEn: "The External Client Roster",
         titleTh: "รายชื่อ Client ภายนอกทั้งหมด",
         order: 30,
+        sectionEn: "Deep Dive: External APIs",
+        sectionTh: "เจาะลึก: External APIs",
         contentEn: `Every outbound HTTP call to a third-party service in this codebase goes through \`src/helper/axiosInstance.ts\`, built on \`axios\` (\`1.18.0\`) with \`axios-retry\` (\`^4.5.0\`). MISP gets its own lesson (in the layer-tracing course) because of its unusual read-via-DB/write-via-API split -- everything else here is a normal REST client, just with nine different auth schemes.
 
 | Client | Purpose | Auth |
@@ -6559,6 +6662,8 @@ External client เก้าตัว รากฐาน \`axios\`/\`axios-retry
         titleEn: "UpstreamError — Normalizing Failures From Services We Don't Own",
         titleTh: "UpstreamError — ทำให้ความล้มเหลวจากบริการที่ไม่ได้เป็นเจ้าของเป็นมาตรฐานเดียวกัน",
         order: 31,
+        sectionEn: "Deep Dive: External APIs",
+        sectionTh: "เจาะลึก: External APIs",
         contentEn: `Nine external clients with six different auth schemes still need to fail in one predictable, handleable way from the rest of this codebase's point of view. That's what the \`UpstreamError\` interceptor in \`axiosInstance.ts\` (\`:175-187\`, documented in the context of the MISP connection but applying to the shared axios setup) is for: an error coming back from any of these third-party services is converted into an \`UpstreamError\`, preserving the original service's HTTP status rather than always producing a generic one.
 
 ### Why status preservation matters
