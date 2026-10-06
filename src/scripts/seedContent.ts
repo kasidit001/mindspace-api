@@ -4046,9 +4046,9 @@ const { data: bookmarks, status, error, refresh } = await useFetch('/api/bookmar
   },
   {
     slug: "secinsight-api-layers",
-    title: "SecInsight API: Tracing the Codebase by Layers",
-    descriptionEn: `Not a tour of every file, but a repeatable method: every request in the SecInsight API codebase crosses the same fixed chain. Learn to jump the chain by class name and import statement, and trace any endpoint in minutes without reading unrelated code. A private reference course for tracing a real work codebase by its layers -- assumes general TypeScript/backend knowledge, not knowledge of this repo going in.`,
-    descriptionTh: `ไม่ใช่คู่มือไล่อ่านทุกไฟล์ แต่เป็นวิธีอ่านโค้ดที่ใช้ซ้ำได้ -- ทุก request ใน codebase ของ SecInsight API วิ่งผ่านสายเดียวกันเสมอ เรียนรู้วิธีกระโดดข้าม layer ด้วยชื่อ class กับ import statement แล้วไล่ endpoint ไหนก็ได้จบภายในไม่กี่นาที คอร์สอ้างอิงส่วนตัวสำหรับไล่อ่าน codebase งานจริงทีละ layer -- สมมุติว่ามีพื้นฐาน TypeScript/backend ทั่วไปอยู่แล้ว เพียงแต่ยังไม่รู้จัก repo นี้เป็นการเฉพาะ`,
+    title: "SecInsight API",
+    descriptionEn: `A private reference course on the SecInsight API codebase: start with a repeatable method for tracing any request across its fixed layer chain by class name and import statement, then go deep on specific parts of the stack -- Sequelize across two databases, the auth stack (bcrypt/jose/sessions/MFA), Zod validation, and external API clients + rate limiting. A private reference course -- assumes general TypeScript/backend knowledge, not knowledge of this repo going in.`,
+    descriptionTh: `คอร์สอ้างอิงส่วนตัวสำหรับ codebase ของ SecInsight API เริ่มจากวิธีไล่โค้ดที่ใช้ซ้ำได้ -- ทุก request วิ่งผ่านสาย layer เดียวกันเสมอ ไล่ข้าม layer ด้วยชื่อ class กับ import statement จากนั้นเจาะลึกส่วนเฉพาะของ stack -- Sequelize ข้ามสองฐานข้อมูล, auth stack (bcrypt/jose/session/MFA), Zod validation, และ external API client + rate limiting คอร์สอ้างอิงส่วนตัว -- สมมุติว่ามีพื้นฐาน TypeScript/backend ทั่วไปอยู่แล้ว เพียงแต่ยังไม่รู้จัก repo นี้เป็นการเฉพาะ`,
     published: false,
     lessons: [
       {
@@ -5914,6 +5914,686 @@ Most of these pitfalls share a shape: something that looks like a bug (a silent 
 
 จุดที่หลงทางส่วนใหญ่มีรูปแบบคล้ายกัน: สิ่งที่ดูเหมือนบั๊ก (query ว่างเปล่าแบบเงียบๆ, hook ที่ดูเหมือนไม่ทำอะไร, endpoint ที่ตอบ 401 ทันทีหลังล็อกอินสำเร็จ) จริงๆ แล้วเป็นการออกแบบตั้งใจ (ล็อกอินได้ทีละเครื่อง, บังคับเขียน MISP ผ่าน API) หรือเป็นจุดพังเล็กๆ ที่ระบุสาเหตุไว้แล้ว (คำสั่ง migration สองชื่อที่ไม่ตรงกันใน git hook) รู้ว่ากำลังเจอแบบไหนก่อนพยายาม "แก้" มันจะประหยัดเวลา debug ไปได้เยอะ`,
       },
+      {
+        slug: "two-connections-one-orm",
+        titleEn: "Two Connections, One ORM",
+        titleTh: "สอง Connection, ORM ตัวเดียว",
+        order: 22,
+        contentEn: `Sequelize and mysql2 (\`^6.37.8\` / \`^3.15.3\`) run against two separate MySQL databases from the same codebase, not one. \`src/models/index.ts\` registers every model against one of two connections:
+
+- \`secinsight\` -- via \`SequelizeConnection.getClient('secinsightConnection')\`
+- \`misp\` -- via \`SequelizeConnection.getClient('mispConnection')\`
+
+Both connections point at the same MySQL host/user (\`MYSQL_HOST\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`), differing only in database name (\`MYSQL_SECINSIGHT_NAME\` vs \`MYSQL_MISP_NAME\`). Two connections to the same server, not two servers.
+
+### Why migrations only exist for one side
+
+\`src/sequelize/secinsight/migrations/\` holds 74 migration files, run via \`sequelize-cli\` (\`^6.6.3\`). There is no \`src/sequelize/misp/migrations/\` folder at all -- and that's not an oversight. The \`misp\` database's schema belongs to the MISP application itself (see the MISP integration lesson in the layer-tracing course); this codebase reads that schema, it doesn't own or evolve it. Any script under \`package.json\` named \`db:misp:*\` that assumes a migrations folder exists on that side will fail on a missing path -- this is one of the documented pitfalls in the layer-tracing course, worth repeating here because it's specifically a Sequelize-configuration gotcha, not a business-logic one.
+
+Practical result: if you're adding a column, only \`secinsight\`-side models get a migration. If a \`misp\`-side model looks like it needs a schema change, that's a signal you're looking at the wrong repo -- the change belongs in MISP itself, not here.
+
+### What this means when you're not sure which database a model is in
+
+Before writing a query against an unfamiliar model, check which connection it's registered against in \`src/models/index.ts\`. Getting this wrong doesn't necessarily error immediately -- a query against the wrong logical database can still succeed against a table that happens to share a name, which is a slower failure to catch than an import error would be.
+
+## Conclusion
+
+One codebase, one MySQL server, two databases, two very different ownership models: \`secinsight\` gets tracked migrations because this app owns its schema; \`misp\` gets none because it doesn't. That asymmetry -- not just "two connections exist" -- is the fact worth carrying forward into the next lesson, which covers how the \`misp\`-side models are actually written to cope with not owning their own schema.`,
+        contentTh: `Sequelize กับ mysql2 (\`^6.37.8\` / \`^3.15.3\`) วิ่งเข้าฐานข้อมูล MySQL สองฐานที่แยกจากกันจริง ไม่ใช่ฐานเดียว \`src/models/index.ts\` ลงทะเบียน model แต่ละตัวเข้ากับหนึ่งในสอง connection:
+
+- \`secinsight\` -- ผ่าน \`SequelizeConnection.getClient('secinsightConnection')\`
+- \`misp\` -- ผ่าน \`SequelizeConnection.getClient('mispConnection')\`
+
+ทั้งสอง connection ชี้ไปที่ MySQL host/user เดียวกัน (\`MYSQL_HOST\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`) ต่างกันแค่ชื่อฐานข้อมูล (\`MYSQL_SECINSIGHT_NAME\` กับ \`MYSQL_MISP_NAME\`) เป็นสอง connection เข้า server เดียวกัน ไม่ใช่สอง server
+
+### ทำไม migration มีแค่ฝั่งเดียว
+
+\`src/sequelize/secinsight/migrations/\` มีไฟล์ migration 74 ไฟล์ รันผ่าน \`sequelize-cli\` (\`^6.6.3\`) ไม่มีโฟลเดอร์ \`src/sequelize/misp/migrations/\` เลย -- และนี่ไม่ใช่ความบกพร่อง schema ของฐาน \`misp\` เป็นของแอป MISP เอง (ดูบทเรียน MISP integration ในคอร์สไล่โค้ดทีละ layer) codebase นี้แค่อ่าน schema นั้น ไม่ได้เป็นเจ้าของหรือพัฒนามันต่อ สคริปต์ไหนใน \`package.json\` ที่ชื่อ \`db:misp:*\` แล้วสมมุติว่ามีโฟลเดอร์ migration อยู่ฝั่งนั้น จะรันแล้วหา path ไม่เจอ -- นี่เป็นหนึ่งในจุดที่หลงทางบ่อยที่เอกสารไว้ในคอร์สไล่โค้ดทีละ layer แล้ว แต่ควรพูดซ้ำตรงนี้เพราะมันเป็นเรื่องการตั้งค่า Sequelize โดยเฉพาะ ไม่ใช่ business logic
+
+ผลจริง: ถ้าจะเพิ่มคอลัมน์ มีแค่ model ฝั่ง \`secinsight\` เท่านั้นที่จะได้ migration ถ้า model ฝั่ง \`misp\` ดูเหมือนต้องแก้ schema นั่นคือสัญญาณว่ากำลังดู repo ผิดตัว -- การแก้ต้องไปที่ MISP เอง ไม่ใช่ที่นี่
+
+### ถ้าไม่แน่ใจว่า model อยู่ฐานไหน
+
+ก่อนเขียน query กับ model ที่ไม่คุ้น ให้เช็คก่อนว่ามันลงทะเบียนกับ connection ไหนใน \`src/models/index.ts\` ถ้าเข้าใจผิดตรงนี้ ไม่จำเป็นต้อง error ทันที -- query ที่เข้าฐานข้อมูลตรรกะผิดอาจสำเร็จได้ถ้าบังเอิญมีตารางชื่อตรงกัน ซึ่งเป็นความล้มเหลวที่จับได้ช้ากว่า error ตอน import มาก
+
+## สรุป
+
+codebase เดียว MySQL server เดียว สองฐานข้อมูล สองรูปแบบความเป็นเจ้าของที่ต่างกันมาก: \`secinsight\` มี migration ติดตามเพราะแอปนี้เป็นเจ้าของ schema เอง \`misp\` ไม่มีเลยเพราะไม่ใช่ ความไม่สมมาตรนี้ -- ไม่ใช่แค่ "มีสอง connection" -- คือข้อเท็จจริงที่ควรจำต่อไปในบทเรียนถัดไป ซึ่งพูดถึงว่า model ฝั่ง \`misp\` เขียนยังไงเพื่อรับมือกับการไม่ได้เป็นเจ้าของ schema ตัวเอง`,
+      },
+      {
+        slug: "modeling-across-two-databases",
+        titleEn: "Modeling and Querying Across the Two Databases",
+        titleTh: "การสร้าง Model และ Query ข้ามสองฐานข้อมูล",
+        order: 23,
+        contentEn: `### Modeling a database you don't own
+
+Every model registered against the \`misp\` connection is configured to match MISP's actual schema exactly, not Sequelize's usual conventions: \`timestamps: false\` (MISP doesn't have \`createdAt\`/\`updatedAt\` the way this app's own tables do), no \`underscored\` option (every column's real name is mapped by hand via \`field\`), because the table belongs to someone else's application and Sequelize has to describe it as-is, not as this codebase would design it fresh.
+
+One exception worth remembering: \`thai_threat_news\` is registered on the \`misp\` connection, but configured like a normal \`secinsight\`-style table (\`timestamps: true\`). It's not one of the true external MISP tables even though it lives in that database and connection -- it's this app's own table that happens to be colocated there.
+
+And \`User\` is registered on *both* connections. There's a \`users\` table in \`secinsight\` (this app's own users) and a \`users\` table in \`misp\` (MISP's own users, modeled here as \`MispUser\`) -- two genuinely different tables, not one model shared across databases.
+
+### The join key that isn't \`id\`
+
+Every CVE-related table (\`cves\`, \`cve_affected_configs\`, \`cve_references\`, \`cve_lab_assets\`, \`cve_trend_daily\`, \`organization_cve_matches\`) joins against \`cves\` using \`cveId\` -- a string like \`CVE-2024-1234\` -- not the numeric \`cves.id\` primary key. This is set explicitly in the association: \`sourceKey\`/\`targetKey: 'cveId'\` (\`Cve.ts:186-207\`). Writing a query or association the way you would for almost every other table here -- reaching for \`id\` -- doesn't error, it just silently returns nothing, because the join condition matches on a column that isn't populated the way you'd expect for a normal foreign key relationship.
+
+### A repository as the ORM boundary
+
+Every Sequelize model access goes through a repository -- nothing above that layer touches Sequelize directly. The pattern is often this thin, from \`UserSessionRepository.create\` (\`src/repositories/UserSessionRepository.ts:38-43\`):
+
+\`\`\`ts
+async create(payload: TCreatePayload, transaction?: Transaction): Promise<UserSessionSchema> {
+  return await UserSession.create(payload, { transaction });
+}
+\`\`\`
+
+Two things worth noticing even in three lines: the method accepts an optional \`transaction\` and passes it straight through to Sequelize -- letting a caller several layers up (a UseCase orchestrating multiple writes) decide whether this write is part of a larger atomic operation, without the repository itself needing any transaction-management logic. And the method is a pure pass-through with a typed payload and return shape -- when a repository method isn't this thin, that's usually a sign real domain logic has leaked into a layer that's supposed to be mechanical.
+
+## Conclusion
+
+Three concrete rules to carry forward: \`misp\`-side models describe someone else's schema literally (manual field mapping, no timestamps, no underscoring) except for the one deliberate exception (\`thai_threat_news\`); \`users\` exists as two unrelated tables depending on which connection you're looking through; and CVE tables join on the string \`cveId\`, not the numeric \`id\`, which is the single most common way a query against this cluster silently returns nothing instead of erroring.`,
+        contentTh: `### การสร้าง Model ให้ฐานข้อมูลที่ไม่ได้เป็นเจ้าของ
+
+Model ทุกตัวที่ลงทะเบียนกับ connection ของ \`misp\` ถูกตั้งค่าให้ตรงกับ schema จริงของ MISP เป๊ะๆ ไม่ใช่ตาม convention ปกติของ Sequelize: \`timestamps: false\` (MISP ไม่มี \`createdAt\`/\`updatedAt\` แบบที่ตารางของแอปนี้เองมี) ไม่ใช้ option \`underscored\` (ชื่อจริงของทุกคอลัมน์ต้อง map มือผ่าน \`field\`) เพราะตารางเป็นของแอปคนอื่น Sequelize ต้องอธิบายมันตามที่เป็นจริง ไม่ใช่ตามที่ codebase นี้จะออกแบบเองใหม่
+
+ข้อยกเว้นหนึ่งที่ควรจำ: \`thai_threat_news\` ลงทะเบียนอยู่ใน connection ของ \`misp\` แต่ตั้งค่าเหมือนตารางสไตล์ \`secinsight\` ปกติ (\`timestamps: true\`) มันไม่ใช่ตารางฝั่ง MISP จริงแม้จะอยู่ในฐานข้อมูลและ connection นั้น -- มันเป็นตารางของแอปนี้เองที่บังเอิญอยู่ร่วมที่นั่น
+
+และ \`User\` ลงทะเบียนอยู่ *ทั้งสอง* connection มีตาราง \`users\` ในฐาน \`secinsight\` (ผู้ใช้ของแอปนี้เอง) และตาราง \`users\` ในฐาน \`misp\` (ผู้ใช้ของ MISP เอง model เป็น \`MispUser\`) -- เป็นสองตารางที่ต่างกันจริงๆ ไม่ใช่ model เดียวที่แชร์กันข้ามฐานข้อมูล
+
+### Join key ที่ไม่ใช่ \`id\`
+
+ตารางที่เกี่ยวกับ CVE ทุกตัว (\`cves\`, \`cve_affected_configs\`, \`cve_references\`, \`cve_lab_assets\`, \`cve_trend_daily\`, \`organization_cve_matches\`) join กับ \`cves\` ด้วย \`cveId\` -- string เช่น \`CVE-2024-1234\` -- ไม่ใช่ primary key ตัวเลข \`cves.id\` ตั้งไว้ชัดเจนในความสัมพันธ์: \`sourceKey\`/\`targetKey: 'cveId'\` (\`Cve.ts:186-207\`) ถ้าเขียน query หรือ association แบบที่ใช้กับตารางอื่นเกือบทั้งหมดในที่นี้ -- ใช้ \`id\` -- จะไม่ error แต่จะได้ผลลัพธ์ว่างเปล่าแบบเงียบๆ เพราะเงื่อนไข join จับคู่กับคอลัมน์ที่ไม่ได้ใส่ข้อมูลแบบที่คาดหวังกับความสัมพันธ์ foreign key ปกติ
+
+### Repository เป็นขอบเขตของ ORM
+
+การเข้าถึง Sequelize model ทุกครั้งต้องผ่าน repository -- ไม่มี layer ไหนเหนือกว่านั้นแตะ Sequelize ตรงๆ รูปแบบมักจะบางขนาดนี้ จาก \`UserSessionRepository.create\` (\`src/repositories/UserSessionRepository.ts:38-43\`):
+
+\`\`\`ts
+async create(payload: TCreatePayload, transaction?: Transaction): Promise<UserSessionSchema> {
+  return await UserSession.create(payload, { transaction });
+}
+\`\`\`
+
+สองเรื่องที่ควรสังเกตแม้ในสามบรรทัด: method รับ \`transaction\` แบบ optional แล้วส่งต่อตรงไป Sequelize -- ทำให้ผู้เรียกที่อยู่สูงกว่าหลาย layer (UseCase ที่ orchestrate การเขียนหลายจุด) ตัดสินใจได้ว่าการเขียนนี้เป็นส่วนหนึ่งของ operation แบบ atomic ที่ใหญ่กว่าหรือไม่ โดย repository เองไม่ต้องมี logic จัดการ transaction เลย และ method นี้เป็น pass-through ล้วนๆ ด้วย payload และ return shape ที่มี type ชัดเจน -- เมื่อไหร่ที่ repository method ไม่บางขนาดนี้ มักเป็นสัญญาณว่ามี domain logic จริงรั่วเข้าไปใน layer ที่ควรจะเป็นแค่กลไก
+
+## สรุป
+
+สามกฎที่จับต้องได้ให้จำต่อไป: model ฝั่ง \`misp\` อธิบาย schema ของคนอื่นตรงตัวเป๊ะๆ (map field มือ ไม่มี timestamp ไม่ underscore) ยกเว้นข้อยกเว้นที่ตั้งใจไว้หนึ่งตัว (\`thai_threat_news\`); \`users\` มีอยู่เป็นสองตารางที่ไม่เกี่ยวกันเลยขึ้นอยู่กับว่ามองผ่าน connection ไหน; และตาราง CVE join กันด้วย string \`cveId\` ไม่ใช่ \`id\` แบบตัวเลข ซึ่งเป็นวิธีที่พบบ่อยที่สุดที่ query กับกลุ่มนี้จะคืนค่าว่างเปล่าแบบเงียบๆ แทนที่จะ error`,
+      },
+      {
+        slug: "passwords-and-lockout-bcrypt",
+        titleEn: "Passwords and Account Lockout — bcrypt in UserService",
+        titleTh: "รหัสผ่านและการล็อกบัญชี — bcrypt ใน UserService",
+        order: 24,
+        contentEn: `\`bcrypt\` (\`^6.0.0\`) is the only library responsible for passwords in this stack -- and it only ever appears in one place, \`UserService.authenticate\` (\`src/services/UserService.ts:126-174\`):
+
+\`\`\`ts
+const user = await this.UserRepository.findByEmail({ email: payload.email });
+if (!user) throw new AuthenticationError('Invalid email or password', { message: 'User not found' });
+if (!user.isActive) throw new AuthenticationError('Account is inactive', { message: 'Account is inactive' });
+if (user.lockedUntil && dayjs().isBefore(dayjs(user.lockedUntil))) {
+  throw new AuthenticationError('Account is locked', { message: 'Account has been locked due to too many failed login attempts' });
+}
+const credentials = await this.UserCredentialRepository.findByUserId({ userId: user.id });
+if (!credentials) throw new AuthenticationError('Invalid email or password', { message: 'Credentials not found' });
+
+const isValid = await bcrypt.compare(payload.password, credentials.value);
+if (!isValid) {
+  await this.handleFailedAttempt(user);
+  throw new AuthenticationError('Invalid email or password', { message: 'Invalid password' });
+}
+await this.resetFailedAttempts(user);
+return user;
+\`\`\`
+
+### The password hash lives in its own table
+
+\`credentials.value\` -- the bcrypt hash -- comes from \`user_credentials\`, not from a column on \`users\` itself. \`UserCredentialRepository.findByUserId\` is a separate lookup from \`UserRepository.findByEmail\`. If you're tracing an unfamiliar auth bug and only checking the \`users\` table, you're looking in the wrong place for the actual credential.
+
+### Two layers of protection, easy to conflate
+
+There are two separate lockout mechanisms in this codebase, and they operate independently:
+- **Per-account lockout**, here in \`UserService\` -- \`lockedUntil\` is a column on the user record itself, set by \`handleFailedAttempt\` after repeated bad passwords, and checked with \`dayjs().isBefore(dayjs(user.lockedUntil))\` before a password is even compared.
+- **Per-IP rate limiting**, in \`authRateLimit\` middleware (\`src/middleware/rateLimit.ts:118-137\`) -- which runs *before* this code is ever reached, gating on \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` regardless of which account is being targeted.
+
+They answer different questions: the middleware asks "has this IP tried too many times," this service asks "has this specific account failed too many times." A locked account and a rate-limited IP produce different error paths and can happen independently of each other.
+
+### The error message is deliberately generic
+
+Every failure branch above that could reveal whether an email exists -- user not found, credentials not found, wrong password -- throws the same client-facing message: \`Invalid email or password\`. The *real* reason lives in the \`AuthenticationError\`'s metadata (\`{ message: ... }\`), for logging, never sent to the client. This is the same account-enumeration-avoidance principle used elsewhere in this codebase's auth flow: a difference in wording between "no such user" and "wrong password" would let an attacker enumerate valid emails one guess at a time.
+
+## Conclusion
+
+\`bcrypt.compare\` is a single call, but everything around it in \`UserService.authenticate\` is deliberate: the hash lives in a separate table from the user record, account lockout and IP rate limiting are two independent gates that happen to sit in the same request path, and every failure that could leak account existence is flattened into one generic client-facing message regardless of which branch actually failed.`,
+        contentTh: `\`bcrypt\` (\`^6.0.0\`) เป็น library เดียวที่รับผิดชอบเรื่องรหัสผ่านใน stack นี้ -- และปรากฏอยู่ที่เดียวเท่านั้น คือ \`UserService.authenticate\` (\`src/services/UserService.ts:126-174\`):
+
+\`\`\`ts
+const user = await this.UserRepository.findByEmail({ email: payload.email });
+if (!user) throw new AuthenticationError('Invalid email or password', { message: 'User not found' });
+if (!user.isActive) throw new AuthenticationError('Account is inactive', { message: 'Account is inactive' });
+if (user.lockedUntil && dayjs().isBefore(dayjs(user.lockedUntil))) {
+  throw new AuthenticationError('Account is locked', { message: 'Account has been locked due to too many failed login attempts' });
+}
+const credentials = await this.UserCredentialRepository.findByUserId({ userId: user.id });
+if (!credentials) throw new AuthenticationError('Invalid email or password', { message: 'Credentials not found' });
+
+const isValid = await bcrypt.compare(payload.password, credentials.value);
+if (!isValid) {
+  await this.handleFailedAttempt(user);
+  throw new AuthenticationError('Invalid email or password', { message: 'Invalid password' });
+}
+await this.resetFailedAttempts(user);
+return user;
+\`\`\`
+
+### hash รหัสผ่านอยู่คนละตารางกับผู้ใช้
+
+\`credentials.value\` -- hash แบบ bcrypt -- มาจากตาราง \`user_credentials\` ไม่ใช่คอลัมน์บน \`users\` เอง \`UserCredentialRepository.findByUserId\` เป็นการค้นหาแยกจาก \`UserRepository.findByEmail\` ถ้ากำลังไล่บั๊ก auth ที่ไม่คุ้นแล้วเช็คแค่ตาราง \`users\` นั่นคือมองผิดที่สำหรับ credential จริง
+
+### สองชั้นการป้องกัน สับสนได้ง่าย
+
+มีกลไกล็อกสองแบบแยกกันในโค้ดนี้ และทำงานเป็นอิสระต่อกัน:
+- **ล็อกระดับบัญชี** ตรงนี้ใน \`UserService\` -- \`lockedUntil\` เป็นคอลัมน์บนแถวผู้ใช้เอง ตั้งค่าโดย \`handleFailedAttempt\` หลังใส่รหัสผิดซ้ำๆ และเช็คด้วย \`dayjs().isBefore(dayjs(user.lockedUntil))\` ก่อนจะเทียบรหัสผ่านด้วยซ้ำ
+- **จำกัดอัตราต่อ IP** ใน middleware \`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) -- ซึ่งรันก่อนจะมาถึงโค้ดนี้เลย โดยคุมตาม \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` ไม่สนว่ากำลังเล็งบัญชีไหน
+
+ทั้งสองตอบคำถามคนละข้อ: middleware ถามว่า "IP นี้ลองมากไปหรือยัง" ส่วน service นี้ถามว่า "บัญชีนี้ล้มเหลวมากไปหรือยัง" บัญชีที่ถูกล็อกกับ IP ที่โดน rate limit ให้ error path ต่างกัน และเกิดขึ้นเป็นอิสระต่อกันได้
+
+### ข้อความ error ตั้งใจให้กลางๆ
+
+ทุก branch ที่ล้มเหลวข้างบนที่อาจเผยว่า email มีอยู่จริงหรือไม่ -- ไม่พบผู้ใช้, ไม่พบ credential, รหัสผ่านผิด -- โยนข้อความเดียวกันหมดให้ client: \`Invalid email or password\` เหตุผล *จริง* อยู่ใน metadata ของ \`AuthenticationError\` (\`{ message: ... }\`) ไว้สำหรับ log เท่านั้น ไม่ส่งให้ client เลย นี่คือหลักการป้องกัน account enumeration แบบเดียวกับที่ใช้ในที่อื่นของ auth flow นี้: ถ้าข้อความ "ไม่มี user นี้" กับ "รหัสผ่านผิด" ต่างกัน จะเปิดช่องให้คนร้ายไล่เดา email ที่มีอยู่จริงได้ทีละครั้ง
+
+## สรุป
+
+\`bcrypt.compare\` เป็นแค่หนึ่งบรรทัด แต่ทุกอย่างรอบๆ มันใน \`UserService.authenticate\` ตั้งใจทั้งหมด: hash อยู่คนละตารางกับแถวผู้ใช้ ล็อกระดับบัญชีกับ rate limit ระดับ IP เป็นสองด่านอิสระที่บังเอิญอยู่ใน request path เดียวกัน และทุกความล้มเหลวที่อาจรั่วไหลว่าบัญชีมีอยู่จริงถูกรวบให้เหลือข้อความกลางๆ เดียวสำหรับ client ไม่ว่า branch ไหนจะล้มเหลวจริง`,
+      },
+      {
+        slug: "signing-verifying-jwt-jose",
+        titleEn: "Signing and Verifying — JWT via jose",
+        titleTh: "การ Sign และ Verify — JWT ผ่าน jose",
+        order: 25,
+        contentEn: `JWTs in this codebase are HS256, signed and verified with \`jose\` (\`^6.1.3\`) -- no external full JWT library, and no asymmetric keys. \`TokenService\` (\`src/services/TokenService.ts\`) owns both directions.
+
+### Issuing a token
+
+\`\`\`ts
+// 63-67
+public generateRefreshToken(): { refreshToken: string; hash: string } {
+  const refreshToken = randomUUID();
+  const hash = createHash('sha256').update(refreshToken).digest('hex');
+  return { refreshToken, hash };
+}
+
+// 75-86
+public async signToken(payload: TSignTokenPayload): Promise<string> {
+  const secret = getJwtSecret();
+  const jwt = await new jose.SignJWT(payload as JWTPayload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_ACCESS_EXPIRES_IN)
+    .sign(secret);
+  return jwt;
+}
+\`\`\`
+
+Two details worth noticing: the refresh token itself is a random UUID, not a JWT -- the client gets the raw UUID exactly once, and the database only ever stores its SHA-256 hash (\`refreshTokenHash\`). If the database were ever exposed, the stored hash alone can't be turned back into a usable refresh token. The access token, by contrast, is a real signed JWT with an expiration baked in via \`setExpirationTime(JWT_ACCESS_EXPIRES_IN)\`.
+
+### Verifying a token isn't the end of the check
+
+\`authMiddleware\` (\`src/middleware/auth.ts:59-158\`) runs on every request that needs a logged-in user, and \`jose\`'s signature check is only step 2 of 7:
+
+1. Read \`Authorization: Bearer <token>\` -- missing -> 401.
+2. \`TokenService.verifyToken\` checks the signature.
+3. \`validateSession({ accessToken })\` looks the session up in the database -- not found or expired -> 401.
+4. \`session.revokedAt\` is set -> 401 \`Session has been revoked\`.
+5. Session is still \`PRE_ACCESS\` or \`isMfaVerified\` is \`false\`, and the path isn't \`/api/v1/auth/verify-mfa\` or under \`/api/v1/mfa/\` -> 401 \`MFA verification required\`.
+6. If the token is close to expiring, a fresh one is issued in the \`X-New-Access-Token\` response header -- the client is responsible for picking this up and using it in place of the old one.
+7. The user is re-fetched from the database and attached to \`req.user\` -- authorization decisions downstream use the current DB row, not whatever role/permissions were baked into the token at signing time.
+
+A verified JWT signature only proves the token wasn't tampered with and hasn't technically expired -- it says nothing about whether the underlying session has been revoked, whether MFA has actually been completed, or whether the user's permissions have changed since the token was issued. Steps 3 through 7 exist precisely because a signature check alone is not enough here.
+
+## Conclusion
+
+\`jose\` handles signing and signature verification -- two calls, \`signToken\` and \`verifyToken\` -- but the surrounding session lookup in \`authMiddleware\` is what actually enforces revocation, MFA completion, and up-to-date permissions. Anyone treating "the JWT verified" as equivalent to "this request is fully authorized" is skipping five of the seven real checks.`,
+        contentTh: `JWT ในโค้ดนี้เป็น HS256 sign และ verify ด้วย \`jose\` (\`^6.1.3\`) -- ไม่มี external JWT library เต็มรูปแบบ และไม่ใช้ asymmetric key \`TokenService\` (\`src/services/TokenService.ts\`) เป็นเจ้าของทั้งสองทิศทาง
+
+### การออก token
+
+\`\`\`ts
+// 63-67
+public generateRefreshToken(): { refreshToken: string; hash: string } {
+  const refreshToken = randomUUID();
+  const hash = createHash('sha256').update(refreshToken).digest('hex');
+  return { refreshToken, hash };
+}
+
+// 75-86
+public async signToken(payload: TSignTokenPayload): Promise<string> {
+  const secret = getJwtSecret();
+  const jwt = await new jose.SignJWT(payload as JWTPayload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_ACCESS_EXPIRES_IN)
+    .sign(secret);
+  return jwt;
+}
+\`\`\`
+
+สองเรื่องที่ควรสังเกต: refresh token เองเป็น UUID สุ่ม ไม่ใช่ JWT -- client ได้ UUID ดิบครั้งเดียวเท่านั้น ส่วนฐานข้อมูลเก็บแค่ SHA-256 hash ของมัน (\`refreshTokenHash\`) ถ้าฐานข้อมูลรั่วขึ้นมา hash ที่เก็บไว้อย่างเดียวเอากลับไปใช้เป็น refresh token จริงไม่ได้ ส่วน access token ตรงข้ามกัน เป็น JWT ที่ sign จริง มีวันหมดอายุฝังไว้ผ่าน \`setExpirationTime(JWT_ACCESS_EXPIRES_IN)\`
+
+### การ verify token ไม่ใช่จุดจบของการเช็ก
+
+\`authMiddleware\` (\`src/middleware/auth.ts:59-158\`) รันทุก request ที่ต้องการผู้ใช้ล็อกอิน และการเช็กลายเซ็นของ \`jose\` เป็นแค่ขั้นที่ 2 จาก 7:
+
+1. อ่าน \`Authorization: Bearer <token>\` -- ไม่มี -> 401
+2. \`TokenService.verifyToken\` ตรวจลายเซ็น
+3. \`validateSession({ accessToken })\` หา session ใน DB -- ไม่เจอหรือหมดอายุ -> 401
+4. \`session.revokedAt\` มีค่า -> 401 \`Session has been revoked\`
+5. session ยังเป็น \`PRE_ACCESS\` หรือ \`isMfaVerified\` เป็น \`false\` และ path ไม่ใช่ \`/api/v1/auth/verify-mfa\` หรืออยู่ใต้ \`/api/v1/mfa/\` -> 401 \`MFA verification required\`
+6. ถ้า token ใกล้หมดอายุ จะออกตัวใหม่ใส่ response header \`X-New-Access-Token\` -- client มีหน้าที่รับและใช้ตัวใหม่แทนตัวเดิม
+7. ดึงผู้ใช้จากฐานข้อมูลใหม่แล้วใส่ใน \`req.user\` -- การตัดสินใจเรื่อง authorization ต่อจากนี้ใช้แถว DB ปัจจุบัน ไม่ใช่ role/permission ที่ฝังไว้ตอน sign token
+
+ลายเซ็น JWT ที่ verify ผ่าน พิสูจน์แค่ว่า token ไม่ถูกแก้ไขและยังไม่หมดอายุตามเทคนิค -- ไม่ได้บอกอะไรเลยว่า session ที่แท้จริงถูก revoke ไปหรือยัง, MFA ทำจริงหรือยัง, หรือสิทธิ์ผู้ใช้เปลี่ยนไปหรือยังตั้งแต่ตอนออก token ขั้นที่ 3 ถึง 7 มีอยู่เพราะการเช็กลายเซ็นอย่างเดียวไม่พอจริงๆ ในที่นี้
+
+## สรุป
+
+\`jose\` จัดการ sign กับ verify ลายเซ็น -- สองเรียก \`signToken\` กับ \`verifyToken\` -- แต่การหา session ใน \`authMiddleware\` รอบๆ มันต่างหากที่บังคับเรื่อง revocation, MFA เสร็จสมบูรณ์ และสิทธิ์ที่อัปเดตล่าสุด ใครที่คิดว่า "JWT verify ผ่านแล้ว" เท่ากับ "request นี้ authorize เต็มที่แล้ว" กำลังข้ามการเช็กจริงไปห้าจากเจ็ดขั้นตอน`,
+      },
+      {
+        slug: "session-table-source-of-truth",
+        titleEn: "The Session Table as the Source of Truth",
+        titleTh: "ตาราง Session คือแหล่งความจริงหลัก",
+        order: 26,
+        contentEn: `If \`jose\` proves a token wasn't forged, \`user_sessions\` is what actually decides whether that token is still good for anything. Every session has a \`type\` -- \`PRE_ACCESS\` or \`ACCESS\` -- and a handful of fields that together represent the session's real state independent of what's encoded in the JWT: \`accessToken\`, \`refreshTokenHash\`, \`isMfaVerified\`, \`accessTokenExpiresAt\`, \`refreshTokenExpiresAt\`, \`revokedAt\`.
+
+### One session at a time, by design
+
+\`AuthLoginUseCase\` (\`src/usecases/auth/AuthLoginUseCase.ts:61-139\`) calls \`UserSessionService.revokeAll(...)\` on every single login (line 95), before creating the new session. This means logging in on a second device silently revokes every session the account had elsewhere -- not a bug, a deliberate single-session-at-a-time policy. If you're debugging a report of "my session on device A died right after I logged in on device B," this is the entire explanation.
+
+### Why login doesn't grant full access immediately
+
+The session created at the end of login is \`PRE_ACCESS\`, not \`ACCESS\`:
+
+\`\`\`ts
+const createSessionPayload = {
+  userId: user.id,
+  type: SESSION_ACCESS_TYPE.PRE_ACCESS,
+  accessToken: token,
+  refreshTokenHash: hash,
+  isMfaVerified: false,
+  deviceInfo: deviceInfo ?? null,
+  ipAddress: ipAddress ?? null,
+  accessTokenExpiresAt: dayjs().add(ACCESS_TOKEN_EXPIRY_MS, 'ms').toDate(),
+  refreshTokenExpiresAt: dayjs().add(REFRESH_TOKEN_EXPIRY_MS, 'ms').toDate(),
+};
+\`\`\`
+
+Login and MFA verification are genuinely two separate steps at the data level, not just two separate HTTP calls -- the row's \`type\` and \`isMfaVerified\` are what \`authMiddleware\` step 5 actually checks to decide whether to block a request with \`MFA verification required\`.
+
+### Upgrading, not replacing
+
+\`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`) doesn't create a new session when MFA succeeds -- it calls \`UserSessionService.upgradeToFullAccess(sessionId)\`, which flips the *same* row's \`type\` to \`ACCESS\` and \`isMfaVerified\` to \`true\`. The access token issued at login keeps working unchanged; no new token is minted at this step. This is worth contrasting with the near-expiry token refresh in \`authMiddleware\` (step 6 of the previous lesson), which *does* mint a new token -- two different mechanisms, one that changes the token and one that changes only the session row it points to.
+
+### Revocation lives here, not in the token
+
+Because \`jose\` can't "un-sign" a token that's already been issued, revocation has to be enforced somewhere else -- and that somewhere is \`revokedAt\` on the session row, checked as step 4 of \`authMiddleware\`. A JWT with a perfectly valid signature and a future expiration date is still rejected the instant its session row is marked revoked. This is exactly why \`authMiddleware\` re-checks the database on every request instead of trusting the token payload alone -- a stateless JWT-only design couldn't support this kind of immediate revocation at all.
+
+## Conclusion
+
+The session table, not the JWT, is the actual source of truth for whether a login is still valid, whether MFA has been completed, and whether access has been revoked. \`revokeAll\`-on-every-login is what makes multi-device login look like "getting logged out elsewhere," and MFA verification is an upgrade to an existing session row, not a new token issuance -- two facts that explain nearly every session-related surprise in this stack.`,
+        contentTh: `ถ้า \`jose\` พิสูจน์ว่า token ไม่ถูกปลอม \`user_sessions\` คือตัวที่ตัดสินจริงๆ ว่า token นั้นยังใช้ได้อยู่ไหม ทุก session มี \`type\` -- \`PRE_ACCESS\` หรือ \`ACCESS\` -- และฟิลด์อีกกลุ่มที่รวมกันแทนสถานะจริงของ session โดยไม่ขึ้นกับสิ่งที่เข้ารหัสไว้ใน JWT: \`accessToken\`, \`refreshTokenHash\`, \`isMfaVerified\`, \`accessTokenExpiresAt\`, \`refreshTokenExpiresAt\`, \`revokedAt\`
+
+### ล็อกอินได้ทีละเครื่องโดยตั้งใจ
+
+\`AuthLoginUseCase\` (\`src/usecases/auth/AuthLoginUseCase.ts:61-139\`) เรียก \`UserSessionService.revokeAll(...)\` ทุกครั้งที่ล็อกอิน (บรรทัด 95) ก่อนจะสร้าง session ใหม่ นั่นแปลว่าล็อกอินเครื่องที่สองจะ revoke ทุก session ของบัญชีนั้นในที่อื่นแบบเงียบๆ -- ไม่ใช่บั๊ก เป็นนโยบายล็อกอินได้ทีละเครื่องที่ตั้งใจไว้ ถ้ากำลังไล่ปัญหาที่มีคนแจ้งว่า "session เครื่อง A หลุดทันทีหลังล็อกอินเครื่อง B" นี่คือคำอธิบายทั้งหมด
+
+### ทำไมล็อกอินไม่ได้สิทธิ์เต็มทันที
+
+session ที่สร้างตอนจบ login เป็น \`PRE_ACCESS\` ไม่ใช่ \`ACCESS\`:
+
+\`\`\`ts
+const createSessionPayload = {
+  userId: user.id,
+  type: SESSION_ACCESS_TYPE.PRE_ACCESS,
+  accessToken: token,
+  refreshTokenHash: hash,
+  isMfaVerified: false,
+  deviceInfo: deviceInfo ?? null,
+  ipAddress: ipAddress ?? null,
+  accessTokenExpiresAt: dayjs().add(ACCESS_TOKEN_EXPIRY_MS, 'ms').toDate(),
+  refreshTokenExpiresAt: dayjs().add(REFRESH_TOKEN_EXPIRY_MS, 'ms').toDate(),
+};
+\`\`\`
+
+login กับการยืนยัน MFA เป็นสองขั้นตอนที่แยกกันจริงในระดับข้อมูล ไม่ใช่แค่สอง HTTP call -- \`type\` กับ \`isMfaVerified\` ของแถวนี้คือสิ่งที่ขั้นที่ 5 ของ \`authMiddleware\` เช็กจริงเพื่อตัดสินว่าจะบล็อก request ด้วย \`MFA verification required\` หรือไม่
+
+### อัปเกรด ไม่ใช่แทนที่
+
+\`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`) ไม่ได้สร้าง session ใหม่เมื่อ MFA สำเร็จ -- มันเรียก \`UserSessionService.upgradeToFullAccess(sessionId)\` ซึ่งเปลี่ยน \`type\` ของแถว *เดิม* เป็น \`ACCESS\` และ \`isMfaVerified\` เป็น \`true\` access token ที่ออกตอน login ยังใช้งานต่อได้เหมือนเดิม ไม่มีการออก token ใหม่ในขั้นนี้ ควรเทียบกับการรีเฟรช token ตอนใกล้หมดอายุใน \`authMiddleware\` (ขั้นที่ 6 ในบทเรียนก่อนหน้า) ซึ่ง *มี* การออก token ใหม่จริง -- สองกลไกที่ต่างกัน อันหนึ่งเปลี่ยน token อีกอันเปลี่ยนแค่แถว session ที่มันชี้ไป
+
+### การ Revoke อยู่ตรงนี้ ไม่ใช่ใน token
+
+เพราะ \`jose\` "ถอนลายเซ็น" token ที่ออกไปแล้วไม่ได้ การ revoke เลยต้องบังคับที่อื่น -- ที่นั้นคือ \`revokedAt\` บนแถว session เช็กเป็นขั้นที่ 4 ของ \`authMiddleware\` JWT ที่ลายเซ็นถูกต้องเป๊ะและวันหมดอายุยังไม่ถึง ก็ยังถูกปฏิเสธทันทีที่แถว session ของมันถูกทำเครื่องหมาย revoke นี่คือเหตุผลที่ \`authMiddleware\` เช็กฐานข้อมูลซ้ำทุก request แทนที่จะเชื่อ payload ของ token อย่างเดียว -- design แบบ JWT-only ไร้สถานะจะรองรับการ revoke แบบทันทีนี้ไม่ได้เลย
+
+## สรุป
+
+ตาราง session ไม่ใช่ JWT คือแหล่งความจริงจริงๆ ว่า login ยังใช้ได้ไหม, MFA ทำแล้วหรือยัง, และสิทธิ์ถูก revoke ไปหรือยัง \`revokeAll\` ทุกครั้งที่ login คือสิ่งที่ทำให้ล็อกอินหลายเครื่องดูเหมือน "หลุดที่อื่น" และการยืนยัน MFA คือการอัปเกรดแถว session เดิม ไม่ใช่การออก token ใหม่ -- สองข้อเท็จจริงนี้อธิบายเรื่องแปลกใจเกี่ยวกับ session ใน stack นี้ได้เกือบทั้งหมด`,
+      },
+      {
+        slug: "totp-mfa-otpauth",
+        titleEn: "TOTP / MFA — otpauth in AuthVerifyMfaUseCase",
+        titleTh: "TOTP / MFA — otpauth ใน AuthVerifyMfaUseCase",
+        order: 27,
+        contentEn: `\`otpauth\` (\`^9.4.1\`) is the library behind this codebase's TOTP-based MFA, and like \`bcrypt\`, it's concentrated in one place: the OTP-validation step inside \`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`).
+
+### What the use case actually checks, in order
+
+1. Look up the session by its access token -- it must be \`PRE_ACCESS\`, not expired, and not revoked. (This is the same session-state reasoning as the previous lesson -- MFA verification can't proceed against a session that's already dead by any of the checks \`authMiddleware\` itself would apply.)
+2. Look up \`user_mfa.secret\` for the user -- this is the TOTP shared secret, provisioned when the user first enabled MFA (provisioning itself isn't covered by the source material this course draws from).
+3. Validate the submitted OTP code against that secret via \`UserMfaService.validateTotp\`. A wrong code throws a \`409 Invalid OTP code\` -- 409, not 401 or 400, distinguishing "your credentials were fine but this specific one-time code didn't check out" from an authentication failure or a malformed request.
+4. On success, \`UserSessionService.upgradeToFullAccess(sessionId)\` flips the existing session to \`ACCESS\`, as covered in the previous lesson -- no new token is issued here.
+
+### What isn't confirmed here
+
+The source material behind this course captures the shape of the check (\`user_mfa.secret\` in, \`UserMfaService.validateTotp\` as the verifier, a 409 on mismatch) but not \`otpauth\`'s own configuration inside \`validateTotp\` -- things like the time-step window, how many adjacent windows are tolerated for clock drift, or backup-code handling (\`user_mfa.backupCodes\` exists as a column, per the database-schema lesson in the layer-tracing course, but its actual usage path wasn't traced). Treat those as open questions to verify directly in \`UserMfaService\`, not as settled facts from this lesson.
+
+### Why this step exists at all, restated
+
+Tying this back to the whole login flow: \`bcrypt\` proves you know the password, \`jose\`'s signature proves the resulting token wasn't tampered with, and \`otpauth\` here proves you also hold the TOTP device the account was enrolled with. Each library covers a different kind of proof, and \`authMiddleware\`'s step 5 (from the JWT lesson) is what refuses to treat a session as fully authenticated until all three have actually happened -- password, valid token, and OTP, in that order, gated by the session row's own state rather than anything in the token payload.
+
+## Conclusion
+
+\`otpauth\`'s job here is narrow and well-defined -- validate one submitted code against one stored secret, inside one use case -- but the specifics of that validation (window tolerance, backup codes) aren't part of the verified record this course is built from. What is confirmed: a failed OTP is a 409, not an auth-layer 401, and success upgrades an existing \`PRE_ACCESS\` session rather than minting anything new.`,
+        contentTh: `\`otpauth\` (\`^9.4.1\`) คือ library เบื้องหลัง MFA แบบ TOTP ในโค้ดนี้ และเหมือน \`bcrypt\` มันกระจุกอยู่ที่เดียว คือขั้นตอนตรวจ OTP ข้างใน \`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`)
+
+### สิ่งที่ use case เช็กจริงๆ ตามลำดับ
+
+1. หา session จาก access token -- ต้องเป็น \`PRE_ACCESS\`, ยังไม่หมดอายุ, และยังไม่ถูก revoke (เป็นตรรกะสถานะ session แบบเดียวกับบทเรียนก่อนหน้า -- การยืนยัน MFA ดำเนินต่อกับ session ที่ตายไปแล้วตามเงื่อนไขที่ \`authMiddleware\` เองจะใช้ไม่ได้)
+2. หา \`user_mfa.secret\` ของผู้ใช้ -- นี่คือ shared secret ของ TOTP ที่ตั้งไว้ตอนผู้ใช้เปิด MFA ครั้งแรก (ขั้นตอนการตั้งค่าเองไม่อยู่ในเอกสารต้นทางที่คอร์สนี้อ้างอิง)
+3. ตรวจ OTP ที่ส่งมากับ secret นั้นผ่าน \`UserMfaService.validateTotp\` รหัสผิดจะโยน \`409 Invalid OTP code\` -- 409 ไม่ใช่ 401 หรือ 400 แยกความหมาย "credential ถูกแล้ว แต่รหัสครั้งเดียวนี้ไม่ผ่าน" ออกจาก authentication ล้มเหลวหรือ request ผิดรูปแบบ
+4. สำเร็จแล้ว \`UserSessionService.upgradeToFullAccess(sessionId)\` เปลี่ยน session เดิมเป็น \`ACCESS\` ตามที่กล่าวในบทเรียนก่อนหน้า -- ไม่มีการออก token ใหม่ในขั้นนี้
+
+### สิ่งที่ยังไม่ยืนยันในที่นี้
+
+เอกสารต้นทางที่คอร์สนี้อ้างอิงจับภาพรูปแบบของการเช็กได้ (\`user_mfa.secret\` เข้า, \`UserMfaService.validateTotp\` เป็นตัวตรวจ, 409 เมื่อไม่ตรง) แต่ไม่ได้บอกการตั้งค่าของ \`otpauth\` เองข้างใน \`validateTotp\` -- เช่น time-step window, ยอมรับ window ข้างเคียงกี่อันสำหรับ clock drift, หรือการจัดการ backup code (\`user_mfa.backupCodes\` มีอยู่เป็นคอลัมน์ ตามบทเรียน database schema ในคอร์สไล่โค้ดทีละ layer แต่เส้นทางการใช้งานจริงยังไม่ได้ไล่) ให้ถือว่าเป็นคำถามเปิดที่ต้องไปเช็กใน \`UserMfaService\` โดยตรง ไม่ใช่ข้อเท็จจริงที่ยืนยันแล้วจากบทเรียนนี้
+
+### ทำไมขั้นตอนนี้ถึงมีอยู่ พูดซ้ำอีกครั้ง
+
+ผูกกลับไปที่ flow login ทั้งหมด: \`bcrypt\` พิสูจน์ว่ารู้รหัสผ่าน, ลายเซ็นของ \`jose\` พิสูจน์ว่า token ที่ได้ไม่ถูกแก้ไข, และ \`otpauth\` ตรงนี้พิสูจน์ว่าถือ TOTP device ที่บัญชีลงทะเบียนไว้ด้วย แต่ละ library ครอบคลุมการพิสูจน์คนละแบบ และขั้นที่ 5 ของ \`authMiddleware\` (จากบทเรียนเรื่อง JWT) คือตัวที่ปฏิเสธไม่ให้ถือว่า session authenticate เต็มที่จนกว่าทั้งสามอย่างจะเกิดขึ้นจริง -- รหัสผ่าน, token ที่ valid, และ OTP ตามลำดับ คุมด้วยสถานะของแถว session เอง ไม่ใช่อะไรใน payload ของ token
+
+## สรุป
+
+หน้าที่ของ \`otpauth\` ตรงนี้แคบและชัดเจน -- ตรวจรหัสที่ส่งมาหนึ่งตัวกับ secret ที่เก็บไว้หนึ่งตัว ในหนึ่ง use case -- แต่รายละเอียดของการตรวจนั้น (window tolerance, backup code) ไม่ได้อยู่ในบันทึกที่ยืนยันแล้วซึ่งคอร์สนี้สร้างขึ้นมา สิ่งที่ยืนยันแล้ว: OTP ผิดคือ 409 ไม่ใช่ 401 ระดับ auth และความสำเร็จคืออัปเกรด session \`PRE_ACCESS\` เดิม ไม่ใช่ออกอะไรใหม่`,
+      },
+      {
+        slug: "what-we-know-about-zod-here",
+        titleEn: "What We Actually Know About Zod Here",
+        titleTh: "สิ่งที่รู้จริงเกี่ยวกับ Zod ในที่นี้",
+        order: 28,
+        contentEn: `This lesson is intentionally narrow. The only real Zod usage documented from this codebase is the \`login\` controller (\`src/controllers/AuthController.ts:27-54\`), and everything below is drawn from that one example -- not a general Zod tutorial, and not a survey of every schema in the app.
+
+### The pattern: destructure first, validate second
+
+\`\`\`ts
+login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    const payload = SLoginRequest.safeParse({ email, password });
+
+    if (!payload.success) {
+      const message = payload.error.issues[0]?.message;
+      throw new ValidationError(\`Invalid payload: \${message}\`);
+    }
+
+    const ipAddress = this.getClientIp(req);
+    const deviceInfo = this.getUserAgent(req);
+
+    const useCase = new AuthLoginUseCase(services);
+    const result = await useCase.execute(payload.data, ipAddress, deviceInfo);
+
+    this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
+  } catch (error) {
+    next(error);
+  }
+};
+\`\`\`
+
+The specific fields (\`email\`, \`password\`) are pulled off \`req.body\` *before* being handed to \`SLoginRequest.safeParse(...)\` -- the whole \`req.body\` is never passed directly into a schema. This means a schema here validates exactly what a controller explicitly decided to extract, not whatever a client happened to send.
+
+\`safeParse\` (not \`parse\`) is used, so a validation failure doesn't throw inside Zod itself -- it returns a \`{ success: false, error }\` result that the controller checks explicitly (\`if (!payload.success)\`), then converts into this codebase's own error type.
+
+### Where a validation failure ends up
+
+A failed \`safeParse\` becomes a \`ValidationError\`, built from \`payload.error.issues[0]?.message\` -- only the first issue's message, not the full list of every field that failed. That \`ValidationError\` is one of the \`AppError\` subclasses (see the layer-tracing course's error-propagation lesson); the catch-all error middleware maps it to a 400, and per the observability lesson, \`AppError\` instances get logged at \`warn\` level, not \`error\`.
+
+### What isn't confirmed here
+
+\`SLoginRequest\`'s own schema definition -- its field types, any \`.refine()\` calls, optional vs. required fields, custom error messages per field -- isn't part of the source material behind this course. Nor is whether every controller follows the destructure-then-\`safeParse\` pattern shown here, or whether some validate \`req.body\` directly. Treat this lesson as "one verified example of the pattern," not "the complete Zod contract for this codebase."
+
+## Conclusion
+
+One real fact, cleanly established: this codebase validates explicitly destructured fields with \`safeParse\`, never the raw request body, and converts a failure into a \`ValidationError\` using only the first Zod issue's message. Everything about actual schema shapes, and whether this pattern holds everywhere, remains open until more source material covers it.`,
+        contentTh: `บทเรียนนี้ตั้งใจให้แคบ การใช้ Zod จริงที่มีบันทึกไว้จาก codebase นี้มีแค่ controller \`login\` (\`src/controllers/AuthController.ts:27-54\`) และทุกอย่างข้างล่างดึงมาจากตัวอย่างเดียวนั้น -- ไม่ใช่ tutorial Zod ทั่วไป และไม่ใช่การสำรวจทุก schema ในแอป
+
+### รูปแบบ: แยกฟิลด์ก่อน แล้วค่อย validate
+
+\`\`\`ts
+login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email, password } = req.body;
+    const payload = SLoginRequest.safeParse({ email, password });
+
+    if (!payload.success) {
+      const message = payload.error.issues[0]?.message;
+      throw new ValidationError(\`Invalid payload: \${message}\`);
+    }
+
+    const ipAddress = this.getClientIp(req);
+    const deviceInfo = this.getUserAgent(req);
+
+    const useCase = new AuthLoginUseCase(services);
+    const result = await useCase.execute(payload.data, ipAddress, deviceInfo);
+
+    this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
+  } catch (error) {
+    next(error);
+  }
+};
+\`\`\`
+
+ฟิลด์ที่ต้องการ (\`email\`, \`password\`) ถูกดึงออกจาก \`req.body\` *ก่อน* จะส่งให้ \`SLoginRequest.safeParse(...)\` -- ไม่เคยส่ง \`req.body\` ทั้งก้อนเข้า schema ตรงๆ นั่นแปลว่า schema ตรงนี้ validate เฉพาะสิ่งที่ controller ตั้งใจดึงออกมาชัดเจนเท่านั้น ไม่ใช่อะไรก็ตามที่ client บังเอิญส่งมา
+
+ใช้ \`safeParse\` (ไม่ใช่ \`parse\`) ดังนั้นความล้มเหลวในการ validate จะไม่ throw ข้างใน Zod เอง -- มันคืนผลลัพธ์ \`{ success: false, error }\` ที่ controller เช็กเองชัดเจน (\`if (!payload.success)\`) แล้วแปลงเป็น error type ของ codebase นี้เอง
+
+### ความล้มเหลวไปจบที่ไหน
+
+\`safeParse\` ที่ล้มเหลวจะกลายเป็น \`ValidationError\` สร้างจาก \`payload.error.issues[0]?.message\` -- แค่ message ของ issue แรกเท่านั้น ไม่ใช่รายการทุกฟิลด์ที่ผิด \`ValidationError\` เป็นหนึ่งใน subclass ของ \`AppError\` (ดูบทเรียนเรื่อง error propagation ในคอร์สไล่โค้ดทีละ layer) error middleware กลางจะแปลงเป็น 400 และตามบทเรียน observability instance ของ \`AppError\` จะ log ที่ระดับ \`warn\` ไม่ใช่ \`error\`
+
+### สิ่งที่ยังไม่ยืนยันในที่นี้
+
+การนิยาม schema ของ \`SLoginRequest\` เอง -- type ของแต่ละฟิลด์, การเรียก \`.refine()\` ใดๆ, ฟิลด์ optional หรือ required, ข้อความ error เฉพาะแต่ละฟิลด์ -- ไม่ได้อยู่ในเอกสารต้นทางของคอร์สนี้ รวมถึงไม่รู้ว่าทุก controller ใช้ pattern แยกฟิลด์ก่อนแล้ว \`safeParse\` แบบนี้เหมือนกันหมดหรือบาง controller validate \`req.body\` ตรงๆ ให้ถือว่าบทเรียนนี้คือ "ตัวอย่างที่ยืนยันแล้วหนึ่งตัวอย่างของรูปแบบ" ไม่ใช่ "สัญญาครบถ้วนของ Zod ใน codebase นี้"
+
+## สรุป
+
+ข้อเท็จจริงจริงหนึ่งข้อที่ยืนยันชัดเจน: codebase นี้ validate ฟิลด์ที่แยกออกมาชัดเจนด้วย \`safeParse\` ไม่เคย validate request body ดิบ และแปลงความล้มเหลวเป็น \`ValidationError\` โดยใช้แค่ message ของ Zod issue แรกเท่านั้น ทุกอย่างเกี่ยวกับรูปร่าง schema จริง และว่า pattern นี้ใช้ทั่วทั้งแอปหรือไม่ ยังเป็นคำถามเปิดจนกว่าจะมีเอกสารต้นทางที่ครอบคลุมมากกว่านี้`,
+      },
+      {
+        slug: "rate-limiting-user-facing-endpoints",
+        titleEn: "Rate Limiting User-Facing Endpoints",
+        titleTh: "การจำกัดอัตราสำหรับ Endpoint ที่ผู้ใช้เรียก",
+        order: 29,
+        contentEn: `\`rate-limiter-flexible\` (\`^9.0.1\`, in-memory -- not backed by Redis or another external store in this codebase) is the library behind every rate limit in this stack. It shows up as Express middleware applied per-route, not globally, and different endpoints get different limiter instances.
+
+### The pattern, from the login route
+
+\`\`\`ts
+router.post(
+  '/login',
+  authRateLimit,
+  recaptchaMiddleware('login'),
+  authController.login
+);
+\`\`\`
+
+\`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) limits attempts per IP address, governed by two env vars: \`AUTH_MAX_ATTEMPTS\` and \`AUTH_WINDOW_MINUTES\`. Exceeding the limit throws a \`RateLimitError\`, mapped to HTTP 429.
+
+### Different endpoints, different limiter instances
+
+The same route file (\`src/routes/v1/auth.routes.ts\`) shows this isn't a single global limiter reused everywhere:
+
+| Method + path | Middleware |
+| --- | --- |
+| \`POST /login\` | \`authRateLimit\` |
+| \`POST /password-setup\` | \`authRateLimit\` |
+| \`POST /forgot-password\` | \`authRateLimit\`, \`forgotPasswordEmailRateLimit\` |
+| \`POST /verify-mfa\` | \`authRateLimit\`, \`authMiddleware\` |
+
+\`/forgot-password\` stacks *two* limiters -- \`authRateLimit\` (the same general one) plus a dedicated \`forgotPasswordEmailRateLimit\`. The env-var groupings back this up: alongside \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` there's a separate \`FORGOT_PASSWORD_MAX_ATTEMPTS\` (with its own \`*_WINDOW_MINUTES\` counterpart), plus app-wide \`API_MAX_REQUESTS\` and \`PUBLIC_MAX_REQUESTS\` for general traffic shaping outside the auth-specific endpoints. A forgot-password abuse pattern (someone hammering the email-sending endpoint specifically, as opposed to generic login brute-forcing) gets its own, separately-tunable ceiling rather than sharing a budget with ordinary login attempts.
+
+### In-memory means per-process
+
+Because \`rate-limiter-flexible\` is configured in-memory here rather than against a shared store, its counters live inside a single running process. Worth keeping in mind for anything about this stack that eventually runs as more than one instance behind a load balancer -- a detail the source material behind this course doesn't resolve either way, so treat it as a question to raise with whoever owns the deploy setup rather than an assumption to build on.
+
+## Conclusion
+
+Rate limiting here is deliberately per-concern, not one blanket rule: general auth attempts, forgot-password specifically, and general API/public traffic each have their own limiter and their own env-var-tunable ceiling, all built on the same in-memory \`rate-limiter-flexible\` library and all producing the same \`RateLimitError\` -> 429 outcome when exceeded.`,
+        contentTh: `\`rate-limiter-flexible\` (\`^9.0.1\`, แบบ in-memory -- ไม่ได้ใช้ Redis หรือ store ภายนอกอื่นในโค้ดนี้) คือ library เบื้องหลังการจำกัดอัตราทุกจุดใน stack นี้ ปรากฏเป็น Express middleware ที่ใส่ต่อ route ไม่ใช่ระดับ global และแต่ละ endpoint ใช้ limiter instance คนละตัว
+
+### รูปแบบ จาก route ของ login
+
+\`\`\`ts
+router.post(
+  '/login',
+  authRateLimit,
+  recaptchaMiddleware('login'),
+  authController.login
+);
+\`\`\`
+
+\`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) จำกัดจำนวนครั้งต่อ IP คุมด้วย env var สองตัว: \`AUTH_MAX_ATTEMPTS\` และ \`AUTH_WINDOW_MINUTES\` เกินขีดจำกัดจะโยน \`RateLimitError\` แปลงเป็น HTTP 429
+
+### endpoint ต่างกัน ใช้ limiter instance ต่างกัน
+
+ไฟล์ route เดียวกัน (\`src/routes/v1/auth.routes.ts\`) แสดงให้เห็นว่านี่ไม่ใช่ limiter เดียวที่ใช้ซ้ำทุกที่:
+
+| Method + path | Middleware |
+| --- | --- |
+| \`POST /login\` | \`authRateLimit\` |
+| \`POST /password-setup\` | \`authRateLimit\` |
+| \`POST /forgot-password\` | \`authRateLimit\`, \`forgotPasswordEmailRateLimit\` |
+| \`POST /verify-mfa\` | \`authRateLimit\`, \`authMiddleware\` |
+
+\`/forgot-password\` ซ้อน limiter *สอง* ตัว -- \`authRateLimit\` (ตัวทั่วไปเดิม) บวก \`forgotPasswordEmailRateLimit\` เฉพาะทาง กลุ่ม env var ก็ยืนยันเรื่องนี้: นอกจาก \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` ยังมี \`FORGOT_PASSWORD_MAX_ATTEMPTS\` แยกต่างหาก (พร้อม \`*_WINDOW_MINUTES\` คู่กัน) บวก \`API_MAX_REQUESTS\` และ \`PUBLIC_MAX_REQUESTS\` ระดับแอปสำหรับควบคุม traffic ทั่วไปนอกเหนือจาก endpoint เฉพาะ auth รูปแบบการโจมตี forgot-password (มีคนยิง endpoint ส่ง email ถี่ๆ โดยเฉพาะ ต่างจากการ brute-force login ทั่วไป) จึงมีเพดานของตัวเองที่ปรับแยกได้ ไม่ต้องแชร์งบกับความพยายาม login ปกติ
+
+### In-memory แปลว่าต่อ process
+
+เพราะ \`rate-limiter-flexible\` ตั้งค่าแบบ in-memory ในที่นี้แทนที่จะใช้ store กลางที่แชร์กัน ตัวนับของมันอยู่แค่ใน process เดียวที่รันอยู่ ควรจำไว้ถ้า stack นี้จะรันมากกว่าหนึ่ง instance หลัง load balancer ในอนาคต -- รายละเอียดที่เอกสารต้นทางของคอร์สนี้ยังไม่สรุปไปทางไหน ให้ถือเป็นคำถามที่ต้องถามคนดูแล deploy แทนที่จะสรุปเอาเอง
+
+## สรุป
+
+การจำกัดอัตราในที่นี้ตั้งใจแยกตามเรื่อง ไม่ใช่กฎเดียวครอบคลุมหมด: ความพยายาม auth ทั่วไป, forgot-password โดยเฉพาะ, และ traffic ทั่วไป/public ต่างมี limiter และเพดานที่ปรับผ่าน env var ของตัวเอง ทั้งหมดสร้างบน \`rate-limiter-flexible\` แบบ in-memory ตัวเดียวกัน และให้ผลลัพธ์เดียวกันเมื่อเกินขีดจำกัด คือ \`RateLimitError\` -> 429`,
+      },
+      {
+        slug: "the-external-client-roster",
+        titleEn: "The External Client Roster",
+        titleTh: "รายชื่อ Client ภายนอกทั้งหมด",
+        order: 30,
+        contentEn: `Every outbound HTTP call to a third-party service in this codebase goes through \`src/helper/axiosInstance.ts\`, built on \`axios\` (\`1.18.0\`) with \`axios-retry\` (\`^4.5.0\`). MISP gets its own lesson (in the layer-tracing course) because of its unusual read-via-DB/write-via-API split -- everything else here is a normal REST client, just with nine different auth schemes.
+
+| Client | Purpose | Auth |
+| --- | --- | --- |
+| \`OpenRouterApi\` | LLM summarization/analysis for AI Insight | \`Bearer\`, retries 3x |
+| \`VulnerabilityRegisterApi\` | CVE catalog | \`apiKey\` header, built-in rate limiting |
+| \`FirstEpssApi\` / \`CisaKevApi\` / \`CirclCveApi\` | EPSS scores / KEV list / CVE details | none, retries 3x |
+| \`CveCrowdApi\` | CVE trend data | \`Bearer\` |
+| \`SpgVulnerabilityApi\` | CVE-related labs and repos | HMAC-signs every request |
+| \`SocSecinsightApi\` | organization SOC dashboard | \`X-Api-Key\` |
+| \`BlueskyApi\` / \`NewsFeedApi\` | threat news feeds | JWT session / none |
+| \`RecaptchaApi\` | reCAPTCHA verification | API key |
+
+### No single auth pattern -- and that's expected
+
+Six different authentication shapes across nine clients: Bearer tokens, a custom \`apiKey\` header, no auth at all, a custom \`X-Api-Key\` header, a JWT session, and per-request HMAC signing. This isn't inconsistency in this codebase's own design -- each client's auth scheme is dictated by whatever the third-party service itself requires. The useful habit is checking this table (or the real \`axiosInstance.ts\`) before assuming any two external calls share a pattern, rather than copying one client's auth handling onto another.
+
+### The retry pattern isn't universal either
+
+"Retries 3x" is explicitly called out for \`OpenRouterApi\`, \`FirstEpssApi\`, \`CisaKevApi\`, and \`CirclCveApi\` -- likely via \`axios-retry\`'s interceptor configuration, though the exact retry conditions (which status codes, backoff strategy) aren't part of the source material this lesson draws from. Several other clients in the table have no retry behavior noted at all. Don't assume retry-on-failure is a blanket property of every client just because the library that enables it (\`axios-retry\`) is a shared dependency -- it has to be configured per client, and evidently isn't configured identically everywhere.
+
+### The one client that doesn't fit the "just call an API" model
+
+\`SpgVulnerabilityApi\` signs every request with HMAC rather than sending a static credential -- a materially different integration shape from the rest of the table (a static Bearer token or API key is presented once per request as-is; an HMAC signature has to be computed fresh per request, typically over some combination of the request body, a timestamp, and a shared secret). This is worth flagging specifically because it's the one client here where "just copy how another client authenticates" would produce a client that doesn't actually work.
+
+## Conclusion
+
+Nine external clients, one shared \`axios\`/\`axios-retry\` foundation, and no assumption that should carry across all of them: auth scheme, retry behavior, and request-signing all vary client-by-client according to what each third-party service demands -- check the specific client before assuming it behaves like its neighbor in the table.`,
+        contentTh: `ทุกการเรียก HTTP ออกไปยังบริการภายนอกในโค้ดนี้ผ่าน \`src/helper/axiosInstance.ts\` สร้างบน \`axios\` (\`1.18.0\`) กับ \`axios-retry\` (\`^4.5.0\`) MISP มีบทเรียนของตัวเอง (ในคอร์สไล่โค้ดทีละ layer) เพราะการแยกอ่านผ่าน DB/เขียนผ่าน API ที่ไม่เหมือนใคร -- ที่เหลือในนี้เป็น REST client ปกติ เพียงแต่มี auth scheme ต่างกันเก้าแบบ
+
+| Client | ใช้ทำอะไร | Auth |
+| --- | --- | --- |
+| \`OpenRouterApi\` | LLM สรุป/วิเคราะห์ AI Insight | \`Bearer\`, retry 3 ครั้ง |
+| \`VulnerabilityRegisterApi\` | ดึงแค็ตตาล็อก CVE | \`apiKey\` header, จำกัดความถี่ในตัว |
+| \`FirstEpssApi\` / \`CisaKevApi\` / \`CirclCveApi\` | คะแนน EPSS / รายการ KEV / รายละเอียด CVE | ไม่มี, retry 3 ครั้ง |
+| \`CveCrowdApi\` | ข้อมูลเทรนด์ CVE | \`Bearer\` |
+| \`SpgVulnerabilityApi\` | lab และ repo ที่เกี่ยวกับ CVE | HMAC ลงลายเซ็นทุก request |
+| \`SocSecinsightApi\` | แดชบอร์ด SOC ขององค์กร | \`X-Api-Key\` |
+| \`BlueskyApi\` / \`NewsFeedApi\` | ดึงข่าวภัยคุกคาม | JWT session / ไม่มี |
+| \`RecaptchaApi\` | ตรวจ reCAPTCHA | API key |
+
+### ไม่มี pattern auth เดียว -- และเป็นเรื่องคาดหวังได้
+
+หกรูปแบบ authentication ต่างกันใน 9 client: Bearer token, custom header \`apiKey\`, ไม่มี auth เลย, custom header \`X-Api-Key\`, JWT session, และการลงลายเซ็น HMAC ต่อ request นี่ไม่ใช่ความไม่สอดคล้องในดีไซน์ของ codebase นี้เอง -- auth scheme ของแต่ละ client ถูกกำหนดโดยสิ่งที่บริการภายนอกนั้นต้องการเอง นิสัยที่มีประโยชน์คือเช็คตารางนี้ (หรือ \`axiosInstance.ts\` จริง) ก่อนสมมุติว่าสอง client ภายนอกใช้ pattern เดียวกัน แทนที่จะก็อปปี้การจัดการ auth ของ client หนึ่งไปใช้กับอีกตัว
+
+### รูปแบบ retry ก็ไม่ได้ใช้ทุกที่เหมือนกัน
+
+"retry 3 ครั้ง" ถูกระบุไว้ชัดเจนสำหรับ \`OpenRouterApi\`, \`FirstEpssApi\`, \`CisaKevApi\`, และ \`CirclCveApi\` -- น่าจะผ่าน interceptor configuration ของ \`axios-retry\` แม้เงื่อนไข retry ที่แท้จริง (status code ไหน, backoff strategy) จะไม่ได้อยู่ในเอกสารต้นทางที่บทเรียนนี้อ้างอิง client อื่นๆ ในตารางไม่มีการระบุพฤติกรรม retry เลย อย่าสมมุติว่า retry-on-failure เป็นคุณสมบัติครอบคลุมทุก client เพียงเพราะ library ที่เปิดใช้งานได้ (\`axios-retry\`) เป็น dependency ที่ใช้ร่วมกัน -- มันต้องตั้งค่าแยกต่อ client และเห็นชัดว่าไม่ได้ตั้งเหมือนกันทุกที่
+
+### client ที่ไม่เข้ากับโมเดล "เรียก API เฉยๆ"
+
+\`SpgVulnerabilityApi\` ลงลายเซ็น HMAC ทุก request แทนที่จะส่ง credential แบบคงที่ -- เป็นรูปแบบการเชื่อมต่อที่ต่างจากตารางที่เหลือชัดเจน (Bearer token หรือ API key แบบคงที่ถูกส่งไปตรงๆ ทุก request; ลายเซ็น HMAC ต้องคำนวณใหม่ทุกครั้ง โดยทั่วไปคือรวม request body, timestamp, และ shared secret เข้าด้วยกัน) ควรเน้นเป็นพิเศษเพราะเป็น client เดียวในนี้ที่ "ก็อปปี้วิธี authenticate ของ client อื่นมาใช้" จะได้ client ที่ใช้งานจริงไม่ได้
+
+## สรุป
+
+External client เก้าตัว รากฐาน \`axios\`/\`axios-retry\` เดียวกัน แต่ไม่มีข้อสมมุติไหนที่ใช้ได้กับทุกตัว: auth scheme, พฤติกรรม retry, และการลงลายเซ็น request ต่างกันไปตาม client แต่ละตัวตามที่บริการภายนอกนั้นต้องการ -- เช็ค client เฉพาะตัวก่อนสมมุติว่ามันทำงานเหมือนตัวข้างเคียงในตาราง`,
+      },
+      {
+        slug: "upstream-error-normalizing-failures",
+        titleEn: "UpstreamError — Normalizing Failures From Services We Don't Own",
+        titleTh: "UpstreamError — ทำให้ความล้มเหลวจากบริการที่ไม่ได้เป็นเจ้าของเป็นมาตรฐานเดียวกัน",
+        order: 31,
+        contentEn: `Nine external clients with six different auth schemes still need to fail in one predictable, handleable way from the rest of this codebase's point of view. That's what the \`UpstreamError\` interceptor in \`axiosInstance.ts\` (\`:175-187\`, documented in the context of the MISP connection but applying to the shared axios setup) is for: an error coming back from any of these third-party services is converted into an \`UpstreamError\`, preserving the original service's HTTP status rather than always producing a generic one.
+
+### Why status preservation matters
+
+An \`UpstreamError\` that keeps MISP's or \`CisaKevApi\`'s actual status code -- a 404, a 429, a 503 -- lets the rest of the application (and its own error-handling middleware) tell the difference between "this external service is down" and "this external service says the resource doesn't exist," without every caller having to know the specifics of nine different APIs' error formats. It's the same instinct as the \`AppError\` hierarchy for this codebase's own errors (see the layer-tracing course's error-propagation lesson): one predictable shape, wrapping many different underlying causes.
+
+### Where this connects to what's missing
+
+The exact conditions under which \`UpstreamError\` is thrown versus when \`axios-retry\` gets a chance to retry first isn't spelled out in the source material -- a retry presumably happens before the interceptor gives up and normalizes the failure, but the ordering and interaction between "retry 3x" (noted for four of the nine clients) and this interceptor isn't confirmed. That's a legitimate thing to verify directly in \`axiosInstance.ts\` rather than assume from this lesson.
+
+### The MISP write path is the one exception worth remembering
+
+Every external client in the previous lesson is called for reads or one-way notifications. MISP is the only one of the nine-plus integrations in this codebase where writes also happen through this same client infrastructure (\`mispAdminApi\`, per the MISP integration lesson) -- meaning a failed MISP write surfaces as the same kind of \`UpstreamError\` as a failed read from any other service, even though creating or deleting an event is a materially riskier operation than fetching a CVE score. Whether callers of \`mispAdminApi\` do anything special to handle a write-specific \`UpstreamError\` differently from a read-specific one isn't part of the record this course is built from.
+
+## Conclusion
+
+Whatever the specific service, whatever its auth scheme or retry configuration, a failure from any of them lands in this codebase as the same \`UpstreamError\` shape with the original status preserved -- the point of the interceptor is that nothing above \`axiosInstance.ts\` needs to know which of the nine services it's actually talking to in order to handle a failure sensibly.`,
+        contentTh: `External client เก้าตัวที่มีหก auth scheme ต่างกัน ก็ยังต้องล้มเหลวในแบบที่คาดเดาได้และจัดการได้แบบเดียวจากมุมมองของโค้ดที่เหลือทั้งหมด นั่นคือหน้าที่ของ interceptor \`UpstreamError\` ใน \`axiosInstance.ts\` (\`:175-187\` เอกสารไว้ในบริบทการเชื่อมต่อ MISP แต่ใช้กับ axios setup ที่แชร์กันทั้งหมด): error ที่ตอบกลับมาจากบริการภายนอกตัวไหนก็ตามในเก้าตัวนี้ จะถูกแปลงเป็น \`UpstreamError\` โดยคง HTTP status ของบริการต้นทางไว้ ไม่ใช่ตอบ status กลางๆ เสมอ
+
+### ทำไมการคง status ถึงสำคัญ
+
+\`UpstreamError\` ที่คง status จริงของ MISP หรือ \`CisaKevApi\` ไว้ -- 404, 429, 503 -- ทำให้ส่วนที่เหลือของแอป (และ error-handling middleware ของมันเอง) แยกความแตกต่างระหว่าง "บริการภายนอกนี้ล่ม" กับ "บริการภายนอกนี้บอกว่าไม่มี resource นี้" ได้ โดยไม่ต้องให้ผู้เรียกทุกคนรู้รายละเอียดรูปแบบ error ของ API เก้าตัวที่ต่างกัน เป็นสัญชาตญาณเดียวกับ hierarchy ของ \`AppError\` สำหรับ error ของ codebase นี้เอง (ดูบทเรียนเรื่อง error propagation ในคอร์สไล่โค้ดทีละ layer) รูปร่างเดียวที่คาดเดาได้ ห่อหุ้มสาเหตุที่แท้จริงหลายแบบ
+
+### จุดที่เชื่อมกับสิ่งที่ยังขาด
+
+เงื่อนไขที่แท้จริงว่า \`UpstreamError\` ถูกโยนเมื่อไหร่ เทียบกับตอนที่ \`axios-retry\` มีโอกาส retry ก่อน ไม่ได้ระบุไว้ชัดในเอกสารต้นทาง -- คาดว่า retry น่าจะเกิดก่อนที่ interceptor จะยอมแพ้แล้วทำให้ error เป็นมาตรฐาน แต่ลำดับและปฏิสัมพันธ์ระหว่าง "retry 3 ครั้ง" (ระบุไว้สำหรับสี่ในเก้า client) กับ interceptor ตัวนี้ยังไม่ยืนยัน เป็นเรื่องที่ควรไปเช็กใน \`axiosInstance.ts\` โดยตรง ไม่ใช่สมมุติเอาจากบทเรียนนี้
+
+### เส้นทางเขียนของ MISP คือข้อยกเว้นที่ควรจำ
+
+external client ทุกตัวในบทเรียนก่อนหน้าถูกเรียกเพื่ออ่านหรือแจ้งเตือนทางเดียว MISP เป็นตัวเดียวในบรรดา integration ทั้งเก้ากว่าตัวของ codebase นี้ที่การเขียนก็เกิดผ่านโครงสร้าง client เดียวกันนี้ด้วย (\`mispAdminApi\` ตามบทเรียน MISP integration) -- แปลว่าการเขียน MISP ที่ล้มเหลว จะปรากฏเป็น \`UpstreamError\` แบบเดียวกับการอ่านที่ล้มเหลวจากบริการอื่น แม้ว่าการสร้างหรือลบ event จะเป็น operation ที่เสี่ยงกว่าการดึงคะแนน CVE มาก ว่าผู้เรียก \`mispAdminApi\` จะจัดการ \`UpstreamError\` เฉพาะการเขียนต่างจากการอ่านเป็นพิเศษหรือไม่ ไม่ได้อยู่ในบันทึกที่คอร์สนี้สร้างขึ้นมา
+
+## สรุป
+
+ไม่ว่าจะเป็นบริการไหน auth scheme หรือการตั้งค่า retry แบบใด ความล้มเหลวจากบริการไหนก็ตามในเก้าตัวนี้จะลงเอยในโค้ดนี้เป็น \`UpstreamError\` รูปร่างเดียวกัน โดยคง status เดิมไว้ -- จุดประสงค์ของ interceptor คือไม่ต้องมีอะไรเหนือ \`axiosInstance.ts\` ที่ต้องรู้ว่ากำลังคุยกับบริการไหนในเก้าตัวนี้ เพื่อจะจัดการความล้มเหลวได้อย่างสมเหตุสมผล`,
+      },
     ],
   },
   {
@@ -6866,722 +7546,6 @@ const handleVerifyMfaEnroll = async (enrollOtp) => {
 ## สรุป
 
 การเข้าหน้าที่ป้องกันไว้ครั้งแรกแตะไฟล์จริง 11 ไฟล์ และผ่านด่านที่แยกกัน 7 จุด — ไม่มีด่านไหนรู้จักด่านอื่นเลย \`middleware/auth.ts\` เช็กแค่ session + สถานะ MFA เท่านั้น; role gating, consent, และ flow การ enroll MFA ต่างอยู่คนละไฟล์ แต่ละไฟล์เช็ก state ปัจจุบันของ \`authStore\` แยกกันเอง journey จริงของ user คือสิ่งที่โผล่ขึ้นเองเมื่อทุกด่านทำงานเรียงกัน ไม่ใช่ controller ตัวเดียวคุมทั้งหมด — ซึ่งเป็นคุณสมบัติ "ไม่มีไฟล์ไหนรู้ภาพรวม" แบบเดียวกับที่บทเรียนเรื่อง fixed chain ของคอร์สนี้แสดงให้เห็นทีละ layer มาตลอด`,
-      },
-    ],
-  },
-  {
-    slug: "secinsight-stack-sequelize",
-    title: "SecInsight Stack — Sequelize Across Two Databases",
-    descriptionEn: `A focused look at one piece of the secinsight-api stack: Sequelize + mysql2, split across two live MySQL databases with very different rules for each. Pulled from the same real codebase as the layer-tracing course, but organized around the ORM itself rather than a single request's path through it. A private reference course -- assumes the layer-tracing course or equivalent familiarity with this repo.`,
-    descriptionTh: `เจาะลึกส่วนหนึ่งของ stack ใน secinsight-api: Sequelize + mysql2 ที่แยกเป็นสองฐานข้อมูล MySQL จริง แต่ละฐานมีกติกาต่างกันมาก ดึงมาจาก codebase จริงชุดเดียวกับคอร์สไล่โค้ดทีละ layer แต่จัดกลุ่มใหม่ตาม ORM เอง แทนที่จะตามเส้นทางของ request เดียว คอร์สอ้างอิงส่วนตัว -- สมมุติว่าผ่านคอร์สไล่โค้ดทีละ layer หรือคุ้นเคย repo นี้ในระดับใกล้เคียงกันมาแล้ว`,
-    published: false,
-    lessons: [
-      {
-        slug: "two-connections-one-orm",
-        titleEn: "Two Connections, One ORM",
-        titleTh: "สอง Connection, ORM ตัวเดียว",
-        order: 1,
-        contentEn: `Sequelize and mysql2 (\`^6.37.8\` / \`^3.15.3\`) run against two separate MySQL databases from the same codebase, not one. \`src/models/index.ts\` registers every model against one of two connections:
-
-- \`secinsight\` -- via \`SequelizeConnection.getClient('secinsightConnection')\`
-- \`misp\` -- via \`SequelizeConnection.getClient('mispConnection')\`
-
-Both connections point at the same MySQL host/user (\`MYSQL_HOST\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`), differing only in database name (\`MYSQL_SECINSIGHT_NAME\` vs \`MYSQL_MISP_NAME\`). Two connections to the same server, not two servers.
-
-### Why migrations only exist for one side
-
-\`src/sequelize/secinsight/migrations/\` holds 74 migration files, run via \`sequelize-cli\` (\`^6.6.3\`). There is no \`src/sequelize/misp/migrations/\` folder at all -- and that's not an oversight. The \`misp\` database's schema belongs to the MISP application itself (see the MISP integration lesson in the layer-tracing course); this codebase reads that schema, it doesn't own or evolve it. Any script under \`package.json\` named \`db:misp:*\` that assumes a migrations folder exists on that side will fail on a missing path -- this is one of the documented pitfalls in the layer-tracing course, worth repeating here because it's specifically a Sequelize-configuration gotcha, not a business-logic one.
-
-Practical result: if you're adding a column, only \`secinsight\`-side models get a migration. If a \`misp\`-side model looks like it needs a schema change, that's a signal you're looking at the wrong repo -- the change belongs in MISP itself, not here.
-
-### What this means when you're not sure which database a model is in
-
-Before writing a query against an unfamiliar model, check which connection it's registered against in \`src/models/index.ts\`. Getting this wrong doesn't necessarily error immediately -- a query against the wrong logical database can still succeed against a table that happens to share a name, which is a slower failure to catch than an import error would be.
-
-## Conclusion
-
-One codebase, one MySQL server, two databases, two very different ownership models: \`secinsight\` gets tracked migrations because this app owns its schema; \`misp\` gets none because it doesn't. That asymmetry -- not just "two connections exist" -- is the fact worth carrying forward into the next lesson, which covers how the \`misp\`-side models are actually written to cope with not owning their own schema.`,
-        contentTh: `Sequelize กับ mysql2 (\`^6.37.8\` / \`^3.15.3\`) วิ่งเข้าฐานข้อมูล MySQL สองฐานที่แยกจากกันจริง ไม่ใช่ฐานเดียว \`src/models/index.ts\` ลงทะเบียน model แต่ละตัวเข้ากับหนึ่งในสอง connection:
-
-- \`secinsight\` -- ผ่าน \`SequelizeConnection.getClient('secinsightConnection')\`
-- \`misp\` -- ผ่าน \`SequelizeConnection.getClient('mispConnection')\`
-
-ทั้งสอง connection ชี้ไปที่ MySQL host/user เดียวกัน (\`MYSQL_HOST\`, \`MYSQL_USER\`, \`MYSQL_PASSWORD\`) ต่างกันแค่ชื่อฐานข้อมูล (\`MYSQL_SECINSIGHT_NAME\` กับ \`MYSQL_MISP_NAME\`) เป็นสอง connection เข้า server เดียวกัน ไม่ใช่สอง server
-
-### ทำไม migration มีแค่ฝั่งเดียว
-
-\`src/sequelize/secinsight/migrations/\` มีไฟล์ migration 74 ไฟล์ รันผ่าน \`sequelize-cli\` (\`^6.6.3\`) ไม่มีโฟลเดอร์ \`src/sequelize/misp/migrations/\` เลย -- และนี่ไม่ใช่ความบกพร่อง schema ของฐาน \`misp\` เป็นของแอป MISP เอง (ดูบทเรียน MISP integration ในคอร์สไล่โค้ดทีละ layer) codebase นี้แค่อ่าน schema นั้น ไม่ได้เป็นเจ้าของหรือพัฒนามันต่อ สคริปต์ไหนใน \`package.json\` ที่ชื่อ \`db:misp:*\` แล้วสมมุติว่ามีโฟลเดอร์ migration อยู่ฝั่งนั้น จะรันแล้วหา path ไม่เจอ -- นี่เป็นหนึ่งในจุดที่หลงทางบ่อยที่เอกสารไว้ในคอร์สไล่โค้ดทีละ layer แล้ว แต่ควรพูดซ้ำตรงนี้เพราะมันเป็นเรื่องการตั้งค่า Sequelize โดยเฉพาะ ไม่ใช่ business logic
-
-ผลจริง: ถ้าจะเพิ่มคอลัมน์ มีแค่ model ฝั่ง \`secinsight\` เท่านั้นที่จะได้ migration ถ้า model ฝั่ง \`misp\` ดูเหมือนต้องแก้ schema นั่นคือสัญญาณว่ากำลังดู repo ผิดตัว -- การแก้ต้องไปที่ MISP เอง ไม่ใช่ที่นี่
-
-### ถ้าไม่แน่ใจว่า model อยู่ฐานไหน
-
-ก่อนเขียน query กับ model ที่ไม่คุ้น ให้เช็คก่อนว่ามันลงทะเบียนกับ connection ไหนใน \`src/models/index.ts\` ถ้าเข้าใจผิดตรงนี้ ไม่จำเป็นต้อง error ทันที -- query ที่เข้าฐานข้อมูลตรรกะผิดอาจสำเร็จได้ถ้าบังเอิญมีตารางชื่อตรงกัน ซึ่งเป็นความล้มเหลวที่จับได้ช้ากว่า error ตอน import มาก
-
-## สรุป
-
-codebase เดียว MySQL server เดียว สองฐานข้อมูล สองรูปแบบความเป็นเจ้าของที่ต่างกันมาก: \`secinsight\` มี migration ติดตามเพราะแอปนี้เป็นเจ้าของ schema เอง \`misp\` ไม่มีเลยเพราะไม่ใช่ ความไม่สมมาตรนี้ -- ไม่ใช่แค่ "มีสอง connection" -- คือข้อเท็จจริงที่ควรจำต่อไปในบทเรียนถัดไป ซึ่งพูดถึงว่า model ฝั่ง \`misp\` เขียนยังไงเพื่อรับมือกับการไม่ได้เป็นเจ้าของ schema ตัวเอง`,
-      },
-      {
-        slug: "modeling-across-two-databases",
-        titleEn: "Modeling and Querying Across the Two Databases",
-        titleTh: "การสร้าง Model และ Query ข้ามสองฐานข้อมูล",
-        order: 2,
-        contentEn: `### Modeling a database you don't own
-
-Every model registered against the \`misp\` connection is configured to match MISP's actual schema exactly, not Sequelize's usual conventions: \`timestamps: false\` (MISP doesn't have \`createdAt\`/\`updatedAt\` the way this app's own tables do), no \`underscored\` option (every column's real name is mapped by hand via \`field\`), because the table belongs to someone else's application and Sequelize has to describe it as-is, not as this codebase would design it fresh.
-
-One exception worth remembering: \`thai_threat_news\` is registered on the \`misp\` connection, but configured like a normal \`secinsight\`-style table (\`timestamps: true\`). It's not one of the true external MISP tables even though it lives in that database and connection -- it's this app's own table that happens to be colocated there.
-
-And \`User\` is registered on *both* connections. There's a \`users\` table in \`secinsight\` (this app's own users) and a \`users\` table in \`misp\` (MISP's own users, modeled here as \`MispUser\`) -- two genuinely different tables, not one model shared across databases.
-
-### The join key that isn't \`id\`
-
-Every CVE-related table (\`cves\`, \`cve_affected_configs\`, \`cve_references\`, \`cve_lab_assets\`, \`cve_trend_daily\`, \`organization_cve_matches\`) joins against \`cves\` using \`cveId\` -- a string like \`CVE-2024-1234\` -- not the numeric \`cves.id\` primary key. This is set explicitly in the association: \`sourceKey\`/\`targetKey: 'cveId'\` (\`Cve.ts:186-207\`). Writing a query or association the way you would for almost every other table here -- reaching for \`id\` -- doesn't error, it just silently returns nothing, because the join condition matches on a column that isn't populated the way you'd expect for a normal foreign key relationship.
-
-### A repository as the ORM boundary
-
-Every Sequelize model access goes through a repository -- nothing above that layer touches Sequelize directly. The pattern is often this thin, from \`UserSessionRepository.create\` (\`src/repositories/UserSessionRepository.ts:38-43\`):
-
-\`\`\`ts
-async create(payload: TCreatePayload, transaction?: Transaction): Promise<UserSessionSchema> {
-  return await UserSession.create(payload, { transaction });
-}
-\`\`\`
-
-Two things worth noticing even in three lines: the method accepts an optional \`transaction\` and passes it straight through to Sequelize -- letting a caller several layers up (a UseCase orchestrating multiple writes) decide whether this write is part of a larger atomic operation, without the repository itself needing any transaction-management logic. And the method is a pure pass-through with a typed payload and return shape -- when a repository method isn't this thin, that's usually a sign real domain logic has leaked into a layer that's supposed to be mechanical.
-
-## Conclusion
-
-Three concrete rules to carry forward: \`misp\`-side models describe someone else's schema literally (manual field mapping, no timestamps, no underscoring) except for the one deliberate exception (\`thai_threat_news\`); \`users\` exists as two unrelated tables depending on which connection you're looking through; and CVE tables join on the string \`cveId\`, not the numeric \`id\`, which is the single most common way a query against this cluster silently returns nothing instead of erroring.`,
-        contentTh: `### การสร้าง Model ให้ฐานข้อมูลที่ไม่ได้เป็นเจ้าของ
-
-Model ทุกตัวที่ลงทะเบียนกับ connection ของ \`misp\` ถูกตั้งค่าให้ตรงกับ schema จริงของ MISP เป๊ะๆ ไม่ใช่ตาม convention ปกติของ Sequelize: \`timestamps: false\` (MISP ไม่มี \`createdAt\`/\`updatedAt\` แบบที่ตารางของแอปนี้เองมี) ไม่ใช้ option \`underscored\` (ชื่อจริงของทุกคอลัมน์ต้อง map มือผ่าน \`field\`) เพราะตารางเป็นของแอปคนอื่น Sequelize ต้องอธิบายมันตามที่เป็นจริง ไม่ใช่ตามที่ codebase นี้จะออกแบบเองใหม่
-
-ข้อยกเว้นหนึ่งที่ควรจำ: \`thai_threat_news\` ลงทะเบียนอยู่ใน connection ของ \`misp\` แต่ตั้งค่าเหมือนตารางสไตล์ \`secinsight\` ปกติ (\`timestamps: true\`) มันไม่ใช่ตารางฝั่ง MISP จริงแม้จะอยู่ในฐานข้อมูลและ connection นั้น -- มันเป็นตารางของแอปนี้เองที่บังเอิญอยู่ร่วมที่นั่น
-
-และ \`User\` ลงทะเบียนอยู่ *ทั้งสอง* connection มีตาราง \`users\` ในฐาน \`secinsight\` (ผู้ใช้ของแอปนี้เอง) และตาราง \`users\` ในฐาน \`misp\` (ผู้ใช้ของ MISP เอง model เป็น \`MispUser\`) -- เป็นสองตารางที่ต่างกันจริงๆ ไม่ใช่ model เดียวที่แชร์กันข้ามฐานข้อมูล
-
-### Join key ที่ไม่ใช่ \`id\`
-
-ตารางที่เกี่ยวกับ CVE ทุกตัว (\`cves\`, \`cve_affected_configs\`, \`cve_references\`, \`cve_lab_assets\`, \`cve_trend_daily\`, \`organization_cve_matches\`) join กับ \`cves\` ด้วย \`cveId\` -- string เช่น \`CVE-2024-1234\` -- ไม่ใช่ primary key ตัวเลข \`cves.id\` ตั้งไว้ชัดเจนในความสัมพันธ์: \`sourceKey\`/\`targetKey: 'cveId'\` (\`Cve.ts:186-207\`) ถ้าเขียน query หรือ association แบบที่ใช้กับตารางอื่นเกือบทั้งหมดในที่นี้ -- ใช้ \`id\` -- จะไม่ error แต่จะได้ผลลัพธ์ว่างเปล่าแบบเงียบๆ เพราะเงื่อนไข join จับคู่กับคอลัมน์ที่ไม่ได้ใส่ข้อมูลแบบที่คาดหวังกับความสัมพันธ์ foreign key ปกติ
-
-### Repository เป็นขอบเขตของ ORM
-
-การเข้าถึง Sequelize model ทุกครั้งต้องผ่าน repository -- ไม่มี layer ไหนเหนือกว่านั้นแตะ Sequelize ตรงๆ รูปแบบมักจะบางขนาดนี้ จาก \`UserSessionRepository.create\` (\`src/repositories/UserSessionRepository.ts:38-43\`):
-
-\`\`\`ts
-async create(payload: TCreatePayload, transaction?: Transaction): Promise<UserSessionSchema> {
-  return await UserSession.create(payload, { transaction });
-}
-\`\`\`
-
-สองเรื่องที่ควรสังเกตแม้ในสามบรรทัด: method รับ \`transaction\` แบบ optional แล้วส่งต่อตรงไป Sequelize -- ทำให้ผู้เรียกที่อยู่สูงกว่าหลาย layer (UseCase ที่ orchestrate การเขียนหลายจุด) ตัดสินใจได้ว่าการเขียนนี้เป็นส่วนหนึ่งของ operation แบบ atomic ที่ใหญ่กว่าหรือไม่ โดย repository เองไม่ต้องมี logic จัดการ transaction เลย และ method นี้เป็น pass-through ล้วนๆ ด้วย payload และ return shape ที่มี type ชัดเจน -- เมื่อไหร่ที่ repository method ไม่บางขนาดนี้ มักเป็นสัญญาณว่ามี domain logic จริงรั่วเข้าไปใน layer ที่ควรจะเป็นแค่กลไก
-
-## สรุป
-
-สามกฎที่จับต้องได้ให้จำต่อไป: model ฝั่ง \`misp\` อธิบาย schema ของคนอื่นตรงตัวเป๊ะๆ (map field มือ ไม่มี timestamp ไม่ underscore) ยกเว้นข้อยกเว้นที่ตั้งใจไว้หนึ่งตัว (\`thai_threat_news\`); \`users\` มีอยู่เป็นสองตารางที่ไม่เกี่ยวกันเลยขึ้นอยู่กับว่ามองผ่าน connection ไหน; และตาราง CVE join กันด้วย string \`cveId\` ไม่ใช่ \`id\` แบบตัวเลข ซึ่งเป็นวิธีที่พบบ่อยที่สุดที่ query กับกลุ่มนี้จะคืนค่าว่างเปล่าแบบเงียบๆ แทนที่จะ error`,
-      },
-    ],
-  },
-  {
-    slug: "secinsight-stack-auth",
-    title: "SecInsight Stack — Auth: JWT, Sessions & MFA",
-    descriptionEn: `The authentication stack in secinsight-api, taken apart library by library: bcrypt for passwords, jose for JWTs, a DB-backed session table for revocation, and otpauth for TOTP-based MFA. Builds on the same login/verify-mfa code already traced end-to-end in the layer-tracing course's worked example, but organized around what each library is actually responsible for. A private reference course -- assumes the layer-tracing course's login worked example.`,
-    descriptionTh: `รื้อ auth stack ของ secinsight-api ออกทีละ library: bcrypt สำหรับรหัสผ่าน, jose สำหรับ JWT, ตาราง session ใน DB สำหรับการ revoke, และ otpauth สำหรับ MFA แบบ TOTP ต่อยอดจากโค้ด login/verify-mfa ชุดเดียวกับที่ไล่จบครบวงจรแล้วใน worked example ของคอร์สไล่โค้ดทีละ layer แต่จัดกลุ่มใหม่ตามหน้าที่จริงของแต่ละ library คอร์สอ้างอิงส่วนตัว -- สมมุติว่าผ่าน worked example เรื่อง login ในคอร์สไล่โค้ดทีละ layer มาแล้ว`,
-    published: false,
-    lessons: [
-      {
-        slug: "passwords-and-lockout-bcrypt",
-        titleEn: "Passwords and Account Lockout — bcrypt in UserService",
-        titleTh: "รหัสผ่านและการล็อกบัญชี — bcrypt ใน UserService",
-        order: 1,
-        contentEn: `\`bcrypt\` (\`^6.0.0\`) is the only library responsible for passwords in this stack -- and it only ever appears in one place, \`UserService.authenticate\` (\`src/services/UserService.ts:126-174\`):
-
-\`\`\`ts
-const user = await this.UserRepository.findByEmail({ email: payload.email });
-if (!user) throw new AuthenticationError('Invalid email or password', { message: 'User not found' });
-if (!user.isActive) throw new AuthenticationError('Account is inactive', { message: 'Account is inactive' });
-if (user.lockedUntil && dayjs().isBefore(dayjs(user.lockedUntil))) {
-  throw new AuthenticationError('Account is locked', { message: 'Account has been locked due to too many failed login attempts' });
-}
-const credentials = await this.UserCredentialRepository.findByUserId({ userId: user.id });
-if (!credentials) throw new AuthenticationError('Invalid email or password', { message: 'Credentials not found' });
-
-const isValid = await bcrypt.compare(payload.password, credentials.value);
-if (!isValid) {
-  await this.handleFailedAttempt(user);
-  throw new AuthenticationError('Invalid email or password', { message: 'Invalid password' });
-}
-await this.resetFailedAttempts(user);
-return user;
-\`\`\`
-
-### The password hash lives in its own table
-
-\`credentials.value\` -- the bcrypt hash -- comes from \`user_credentials\`, not from a column on \`users\` itself. \`UserCredentialRepository.findByUserId\` is a separate lookup from \`UserRepository.findByEmail\`. If you're tracing an unfamiliar auth bug and only checking the \`users\` table, you're looking in the wrong place for the actual credential.
-
-### Two layers of protection, easy to conflate
-
-There are two separate lockout mechanisms in this codebase, and they operate independently:
-- **Per-account lockout**, here in \`UserService\` -- \`lockedUntil\` is a column on the user record itself, set by \`handleFailedAttempt\` after repeated bad passwords, and checked with \`dayjs().isBefore(dayjs(user.lockedUntil))\` before a password is even compared.
-- **Per-IP rate limiting**, in \`authRateLimit\` middleware (\`src/middleware/rateLimit.ts:118-137\`) -- which runs *before* this code is ever reached, gating on \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` regardless of which account is being targeted.
-
-They answer different questions: the middleware asks "has this IP tried too many times," this service asks "has this specific account failed too many times." A locked account and a rate-limited IP produce different error paths and can happen independently of each other.
-
-### The error message is deliberately generic
-
-Every failure branch above that could reveal whether an email exists -- user not found, credentials not found, wrong password -- throws the same client-facing message: \`Invalid email or password\`. The *real* reason lives in the \`AuthenticationError\`'s metadata (\`{ message: ... }\`), for logging, never sent to the client. This is the same account-enumeration-avoidance principle used elsewhere in this codebase's auth flow: a difference in wording between "no such user" and "wrong password" would let an attacker enumerate valid emails one guess at a time.
-
-## Conclusion
-
-\`bcrypt.compare\` is a single call, but everything around it in \`UserService.authenticate\` is deliberate: the hash lives in a separate table from the user record, account lockout and IP rate limiting are two independent gates that happen to sit in the same request path, and every failure that could leak account existence is flattened into one generic client-facing message regardless of which branch actually failed.`,
-        contentTh: `\`bcrypt\` (\`^6.0.0\`) เป็น library เดียวที่รับผิดชอบเรื่องรหัสผ่านใน stack นี้ -- และปรากฏอยู่ที่เดียวเท่านั้น คือ \`UserService.authenticate\` (\`src/services/UserService.ts:126-174\`):
-
-\`\`\`ts
-const user = await this.UserRepository.findByEmail({ email: payload.email });
-if (!user) throw new AuthenticationError('Invalid email or password', { message: 'User not found' });
-if (!user.isActive) throw new AuthenticationError('Account is inactive', { message: 'Account is inactive' });
-if (user.lockedUntil && dayjs().isBefore(dayjs(user.lockedUntil))) {
-  throw new AuthenticationError('Account is locked', { message: 'Account has been locked due to too many failed login attempts' });
-}
-const credentials = await this.UserCredentialRepository.findByUserId({ userId: user.id });
-if (!credentials) throw new AuthenticationError('Invalid email or password', { message: 'Credentials not found' });
-
-const isValid = await bcrypt.compare(payload.password, credentials.value);
-if (!isValid) {
-  await this.handleFailedAttempt(user);
-  throw new AuthenticationError('Invalid email or password', { message: 'Invalid password' });
-}
-await this.resetFailedAttempts(user);
-return user;
-\`\`\`
-
-### hash รหัสผ่านอยู่คนละตารางกับผู้ใช้
-
-\`credentials.value\` -- hash แบบ bcrypt -- มาจากตาราง \`user_credentials\` ไม่ใช่คอลัมน์บน \`users\` เอง \`UserCredentialRepository.findByUserId\` เป็นการค้นหาแยกจาก \`UserRepository.findByEmail\` ถ้ากำลังไล่บั๊ก auth ที่ไม่คุ้นแล้วเช็คแค่ตาราง \`users\` นั่นคือมองผิดที่สำหรับ credential จริง
-
-### สองชั้นการป้องกัน สับสนได้ง่าย
-
-มีกลไกล็อกสองแบบแยกกันในโค้ดนี้ และทำงานเป็นอิสระต่อกัน:
-- **ล็อกระดับบัญชี** ตรงนี้ใน \`UserService\` -- \`lockedUntil\` เป็นคอลัมน์บนแถวผู้ใช้เอง ตั้งค่าโดย \`handleFailedAttempt\` หลังใส่รหัสผิดซ้ำๆ และเช็คด้วย \`dayjs().isBefore(dayjs(user.lockedUntil))\` ก่อนจะเทียบรหัสผ่านด้วยซ้ำ
-- **จำกัดอัตราต่อ IP** ใน middleware \`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) -- ซึ่งรันก่อนจะมาถึงโค้ดนี้เลย โดยคุมตาม \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` ไม่สนว่ากำลังเล็งบัญชีไหน
-
-ทั้งสองตอบคำถามคนละข้อ: middleware ถามว่า "IP นี้ลองมากไปหรือยัง" ส่วน service นี้ถามว่า "บัญชีนี้ล้มเหลวมากไปหรือยัง" บัญชีที่ถูกล็อกกับ IP ที่โดน rate limit ให้ error path ต่างกัน และเกิดขึ้นเป็นอิสระต่อกันได้
-
-### ข้อความ error ตั้งใจให้กลางๆ
-
-ทุก branch ที่ล้มเหลวข้างบนที่อาจเผยว่า email มีอยู่จริงหรือไม่ -- ไม่พบผู้ใช้, ไม่พบ credential, รหัสผ่านผิด -- โยนข้อความเดียวกันหมดให้ client: \`Invalid email or password\` เหตุผล *จริง* อยู่ใน metadata ของ \`AuthenticationError\` (\`{ message: ... }\`) ไว้สำหรับ log เท่านั้น ไม่ส่งให้ client เลย นี่คือหลักการป้องกัน account enumeration แบบเดียวกับที่ใช้ในที่อื่นของ auth flow นี้: ถ้าข้อความ "ไม่มี user นี้" กับ "รหัสผ่านผิด" ต่างกัน จะเปิดช่องให้คนร้ายไล่เดา email ที่มีอยู่จริงได้ทีละครั้ง
-
-## สรุป
-
-\`bcrypt.compare\` เป็นแค่หนึ่งบรรทัด แต่ทุกอย่างรอบๆ มันใน \`UserService.authenticate\` ตั้งใจทั้งหมด: hash อยู่คนละตารางกับแถวผู้ใช้ ล็อกระดับบัญชีกับ rate limit ระดับ IP เป็นสองด่านอิสระที่บังเอิญอยู่ใน request path เดียวกัน และทุกความล้มเหลวที่อาจรั่วไหลว่าบัญชีมีอยู่จริงถูกรวบให้เหลือข้อความกลางๆ เดียวสำหรับ client ไม่ว่า branch ไหนจะล้มเหลวจริง`,
-      },
-      {
-        slug: "signing-verifying-jwt-jose",
-        titleEn: "Signing and Verifying — JWT via jose",
-        titleTh: "การ Sign และ Verify — JWT ผ่าน jose",
-        order: 2,
-        contentEn: `JWTs in this codebase are HS256, signed and verified with \`jose\` (\`^6.1.3\`) -- no external full JWT library, and no asymmetric keys. \`TokenService\` (\`src/services/TokenService.ts\`) owns both directions.
-
-### Issuing a token
-
-\`\`\`ts
-// 63-67
-public generateRefreshToken(): { refreshToken: string; hash: string } {
-  const refreshToken = randomUUID();
-  const hash = createHash('sha256').update(refreshToken).digest('hex');
-  return { refreshToken, hash };
-}
-
-// 75-86
-public async signToken(payload: TSignTokenPayload): Promise<string> {
-  const secret = getJwtSecret();
-  const jwt = await new jose.SignJWT(payload as JWTPayload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(JWT_ACCESS_EXPIRES_IN)
-    .sign(secret);
-  return jwt;
-}
-\`\`\`
-
-Two details worth noticing: the refresh token itself is a random UUID, not a JWT -- the client gets the raw UUID exactly once, and the database only ever stores its SHA-256 hash (\`refreshTokenHash\`). If the database were ever exposed, the stored hash alone can't be turned back into a usable refresh token. The access token, by contrast, is a real signed JWT with an expiration baked in via \`setExpirationTime(JWT_ACCESS_EXPIRES_IN)\`.
-
-### Verifying a token isn't the end of the check
-
-\`authMiddleware\` (\`src/middleware/auth.ts:59-158\`) runs on every request that needs a logged-in user, and \`jose\`'s signature check is only step 2 of 7:
-
-1. Read \`Authorization: Bearer <token>\` -- missing -> 401.
-2. \`TokenService.verifyToken\` checks the signature.
-3. \`validateSession({ accessToken })\` looks the session up in the database -- not found or expired -> 401.
-4. \`session.revokedAt\` is set -> 401 \`Session has been revoked\`.
-5. Session is still \`PRE_ACCESS\` or \`isMfaVerified\` is \`false\`, and the path isn't \`/api/v1/auth/verify-mfa\` or under \`/api/v1/mfa/\` -> 401 \`MFA verification required\`.
-6. If the token is close to expiring, a fresh one is issued in the \`X-New-Access-Token\` response header -- the client is responsible for picking this up and using it in place of the old one.
-7. The user is re-fetched from the database and attached to \`req.user\` -- authorization decisions downstream use the current DB row, not whatever role/permissions were baked into the token at signing time.
-
-A verified JWT signature only proves the token wasn't tampered with and hasn't technically expired -- it says nothing about whether the underlying session has been revoked, whether MFA has actually been completed, or whether the user's permissions have changed since the token was issued. Steps 3 through 7 exist precisely because a signature check alone is not enough here.
-
-## Conclusion
-
-\`jose\` handles signing and signature verification -- two calls, \`signToken\` and \`verifyToken\` -- but the surrounding session lookup in \`authMiddleware\` is what actually enforces revocation, MFA completion, and up-to-date permissions. Anyone treating "the JWT verified" as equivalent to "this request is fully authorized" is skipping five of the seven real checks.`,
-        contentTh: `JWT ในโค้ดนี้เป็น HS256 sign และ verify ด้วย \`jose\` (\`^6.1.3\`) -- ไม่มี external JWT library เต็มรูปแบบ และไม่ใช้ asymmetric key \`TokenService\` (\`src/services/TokenService.ts\`) เป็นเจ้าของทั้งสองทิศทาง
-
-### การออก token
-
-\`\`\`ts
-// 63-67
-public generateRefreshToken(): { refreshToken: string; hash: string } {
-  const refreshToken = randomUUID();
-  const hash = createHash('sha256').update(refreshToken).digest('hex');
-  return { refreshToken, hash };
-}
-
-// 75-86
-public async signToken(payload: TSignTokenPayload): Promise<string> {
-  const secret = getJwtSecret();
-  const jwt = await new jose.SignJWT(payload as JWTPayload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(JWT_ACCESS_EXPIRES_IN)
-    .sign(secret);
-  return jwt;
-}
-\`\`\`
-
-สองเรื่องที่ควรสังเกต: refresh token เองเป็น UUID สุ่ม ไม่ใช่ JWT -- client ได้ UUID ดิบครั้งเดียวเท่านั้น ส่วนฐานข้อมูลเก็บแค่ SHA-256 hash ของมัน (\`refreshTokenHash\`) ถ้าฐานข้อมูลรั่วขึ้นมา hash ที่เก็บไว้อย่างเดียวเอากลับไปใช้เป็น refresh token จริงไม่ได้ ส่วน access token ตรงข้ามกัน เป็น JWT ที่ sign จริง มีวันหมดอายุฝังไว้ผ่าน \`setExpirationTime(JWT_ACCESS_EXPIRES_IN)\`
-
-### การ verify token ไม่ใช่จุดจบของการเช็ก
-
-\`authMiddleware\` (\`src/middleware/auth.ts:59-158\`) รันทุก request ที่ต้องการผู้ใช้ล็อกอิน และการเช็กลายเซ็นของ \`jose\` เป็นแค่ขั้นที่ 2 จาก 7:
-
-1. อ่าน \`Authorization: Bearer <token>\` -- ไม่มี -> 401
-2. \`TokenService.verifyToken\` ตรวจลายเซ็น
-3. \`validateSession({ accessToken })\` หา session ใน DB -- ไม่เจอหรือหมดอายุ -> 401
-4. \`session.revokedAt\` มีค่า -> 401 \`Session has been revoked\`
-5. session ยังเป็น \`PRE_ACCESS\` หรือ \`isMfaVerified\` เป็น \`false\` และ path ไม่ใช่ \`/api/v1/auth/verify-mfa\` หรืออยู่ใต้ \`/api/v1/mfa/\` -> 401 \`MFA verification required\`
-6. ถ้า token ใกล้หมดอายุ จะออกตัวใหม่ใส่ response header \`X-New-Access-Token\` -- client มีหน้าที่รับและใช้ตัวใหม่แทนตัวเดิม
-7. ดึงผู้ใช้จากฐานข้อมูลใหม่แล้วใส่ใน \`req.user\` -- การตัดสินใจเรื่อง authorization ต่อจากนี้ใช้แถว DB ปัจจุบัน ไม่ใช่ role/permission ที่ฝังไว้ตอน sign token
-
-ลายเซ็น JWT ที่ verify ผ่าน พิสูจน์แค่ว่า token ไม่ถูกแก้ไขและยังไม่หมดอายุตามเทคนิค -- ไม่ได้บอกอะไรเลยว่า session ที่แท้จริงถูก revoke ไปหรือยัง, MFA ทำจริงหรือยัง, หรือสิทธิ์ผู้ใช้เปลี่ยนไปหรือยังตั้งแต่ตอนออก token ขั้นที่ 3 ถึง 7 มีอยู่เพราะการเช็กลายเซ็นอย่างเดียวไม่พอจริงๆ ในที่นี้
-
-## สรุป
-
-\`jose\` จัดการ sign กับ verify ลายเซ็น -- สองเรียก \`signToken\` กับ \`verifyToken\` -- แต่การหา session ใน \`authMiddleware\` รอบๆ มันต่างหากที่บังคับเรื่อง revocation, MFA เสร็จสมบูรณ์ และสิทธิ์ที่อัปเดตล่าสุด ใครที่คิดว่า "JWT verify ผ่านแล้ว" เท่ากับ "request นี้ authorize เต็มที่แล้ว" กำลังข้ามการเช็กจริงไปห้าจากเจ็ดขั้นตอน`,
-      },
-      {
-        slug: "session-table-source-of-truth",
-        titleEn: "The Session Table as the Source of Truth",
-        titleTh: "ตาราง Session คือแหล่งความจริงหลัก",
-        order: 3,
-        contentEn: `If \`jose\` proves a token wasn't forged, \`user_sessions\` is what actually decides whether that token is still good for anything. Every session has a \`type\` -- \`PRE_ACCESS\` or \`ACCESS\` -- and a handful of fields that together represent the session's real state independent of what's encoded in the JWT: \`accessToken\`, \`refreshTokenHash\`, \`isMfaVerified\`, \`accessTokenExpiresAt\`, \`refreshTokenExpiresAt\`, \`revokedAt\`.
-
-### One session at a time, by design
-
-\`AuthLoginUseCase\` (\`src/usecases/auth/AuthLoginUseCase.ts:61-139\`) calls \`UserSessionService.revokeAll(...)\` on every single login (line 95), before creating the new session. This means logging in on a second device silently revokes every session the account had elsewhere -- not a bug, a deliberate single-session-at-a-time policy. If you're debugging a report of "my session on device A died right after I logged in on device B," this is the entire explanation.
-
-### Why login doesn't grant full access immediately
-
-The session created at the end of login is \`PRE_ACCESS\`, not \`ACCESS\`:
-
-\`\`\`ts
-const createSessionPayload = {
-  userId: user.id,
-  type: SESSION_ACCESS_TYPE.PRE_ACCESS,
-  accessToken: token,
-  refreshTokenHash: hash,
-  isMfaVerified: false,
-  deviceInfo: deviceInfo ?? null,
-  ipAddress: ipAddress ?? null,
-  accessTokenExpiresAt: dayjs().add(ACCESS_TOKEN_EXPIRY_MS, 'ms').toDate(),
-  refreshTokenExpiresAt: dayjs().add(REFRESH_TOKEN_EXPIRY_MS, 'ms').toDate(),
-};
-\`\`\`
-
-Login and MFA verification are genuinely two separate steps at the data level, not just two separate HTTP calls -- the row's \`type\` and \`isMfaVerified\` are what \`authMiddleware\` step 5 actually checks to decide whether to block a request with \`MFA verification required\`.
-
-### Upgrading, not replacing
-
-\`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`) doesn't create a new session when MFA succeeds -- it calls \`UserSessionService.upgradeToFullAccess(sessionId)\`, which flips the *same* row's \`type\` to \`ACCESS\` and \`isMfaVerified\` to \`true\`. The access token issued at login keeps working unchanged; no new token is minted at this step. This is worth contrasting with the near-expiry token refresh in \`authMiddleware\` (step 6 of the previous lesson), which *does* mint a new token -- two different mechanisms, one that changes the token and one that changes only the session row it points to.
-
-### Revocation lives here, not in the token
-
-Because \`jose\` can't "un-sign" a token that's already been issued, revocation has to be enforced somewhere else -- and that somewhere is \`revokedAt\` on the session row, checked as step 4 of \`authMiddleware\`. A JWT with a perfectly valid signature and a future expiration date is still rejected the instant its session row is marked revoked. This is exactly why \`authMiddleware\` re-checks the database on every request instead of trusting the token payload alone -- a stateless JWT-only design couldn't support this kind of immediate revocation at all.
-
-## Conclusion
-
-The session table, not the JWT, is the actual source of truth for whether a login is still valid, whether MFA has been completed, and whether access has been revoked. \`revokeAll\`-on-every-login is what makes multi-device login look like "getting logged out elsewhere," and MFA verification is an upgrade to an existing session row, not a new token issuance -- two facts that explain nearly every session-related surprise in this stack.`,
-        contentTh: `ถ้า \`jose\` พิสูจน์ว่า token ไม่ถูกปลอม \`user_sessions\` คือตัวที่ตัดสินจริงๆ ว่า token นั้นยังใช้ได้อยู่ไหม ทุก session มี \`type\` -- \`PRE_ACCESS\` หรือ \`ACCESS\` -- และฟิลด์อีกกลุ่มที่รวมกันแทนสถานะจริงของ session โดยไม่ขึ้นกับสิ่งที่เข้ารหัสไว้ใน JWT: \`accessToken\`, \`refreshTokenHash\`, \`isMfaVerified\`, \`accessTokenExpiresAt\`, \`refreshTokenExpiresAt\`, \`revokedAt\`
-
-### ล็อกอินได้ทีละเครื่องโดยตั้งใจ
-
-\`AuthLoginUseCase\` (\`src/usecases/auth/AuthLoginUseCase.ts:61-139\`) เรียก \`UserSessionService.revokeAll(...)\` ทุกครั้งที่ล็อกอิน (บรรทัด 95) ก่อนจะสร้าง session ใหม่ นั่นแปลว่าล็อกอินเครื่องที่สองจะ revoke ทุก session ของบัญชีนั้นในที่อื่นแบบเงียบๆ -- ไม่ใช่บั๊ก เป็นนโยบายล็อกอินได้ทีละเครื่องที่ตั้งใจไว้ ถ้ากำลังไล่ปัญหาที่มีคนแจ้งว่า "session เครื่อง A หลุดทันทีหลังล็อกอินเครื่อง B" นี่คือคำอธิบายทั้งหมด
-
-### ทำไมล็อกอินไม่ได้สิทธิ์เต็มทันที
-
-session ที่สร้างตอนจบ login เป็น \`PRE_ACCESS\` ไม่ใช่ \`ACCESS\`:
-
-\`\`\`ts
-const createSessionPayload = {
-  userId: user.id,
-  type: SESSION_ACCESS_TYPE.PRE_ACCESS,
-  accessToken: token,
-  refreshTokenHash: hash,
-  isMfaVerified: false,
-  deviceInfo: deviceInfo ?? null,
-  ipAddress: ipAddress ?? null,
-  accessTokenExpiresAt: dayjs().add(ACCESS_TOKEN_EXPIRY_MS, 'ms').toDate(),
-  refreshTokenExpiresAt: dayjs().add(REFRESH_TOKEN_EXPIRY_MS, 'ms').toDate(),
-};
-\`\`\`
-
-login กับการยืนยัน MFA เป็นสองขั้นตอนที่แยกกันจริงในระดับข้อมูล ไม่ใช่แค่สอง HTTP call -- \`type\` กับ \`isMfaVerified\` ของแถวนี้คือสิ่งที่ขั้นที่ 5 ของ \`authMiddleware\` เช็กจริงเพื่อตัดสินว่าจะบล็อก request ด้วย \`MFA verification required\` หรือไม่
-
-### อัปเกรด ไม่ใช่แทนที่
-
-\`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`) ไม่ได้สร้าง session ใหม่เมื่อ MFA สำเร็จ -- มันเรียก \`UserSessionService.upgradeToFullAccess(sessionId)\` ซึ่งเปลี่ยน \`type\` ของแถว *เดิม* เป็น \`ACCESS\` และ \`isMfaVerified\` เป็น \`true\` access token ที่ออกตอน login ยังใช้งานต่อได้เหมือนเดิม ไม่มีการออก token ใหม่ในขั้นนี้ ควรเทียบกับการรีเฟรช token ตอนใกล้หมดอายุใน \`authMiddleware\` (ขั้นที่ 6 ในบทเรียนก่อนหน้า) ซึ่ง *มี* การออก token ใหม่จริง -- สองกลไกที่ต่างกัน อันหนึ่งเปลี่ยน token อีกอันเปลี่ยนแค่แถว session ที่มันชี้ไป
-
-### การ Revoke อยู่ตรงนี้ ไม่ใช่ใน token
-
-เพราะ \`jose\` "ถอนลายเซ็น" token ที่ออกไปแล้วไม่ได้ การ revoke เลยต้องบังคับที่อื่น -- ที่นั้นคือ \`revokedAt\` บนแถว session เช็กเป็นขั้นที่ 4 ของ \`authMiddleware\` JWT ที่ลายเซ็นถูกต้องเป๊ะและวันหมดอายุยังไม่ถึง ก็ยังถูกปฏิเสธทันทีที่แถว session ของมันถูกทำเครื่องหมาย revoke นี่คือเหตุผลที่ \`authMiddleware\` เช็กฐานข้อมูลซ้ำทุก request แทนที่จะเชื่อ payload ของ token อย่างเดียว -- design แบบ JWT-only ไร้สถานะจะรองรับการ revoke แบบทันทีนี้ไม่ได้เลย
-
-## สรุป
-
-ตาราง session ไม่ใช่ JWT คือแหล่งความจริงจริงๆ ว่า login ยังใช้ได้ไหม, MFA ทำแล้วหรือยัง, และสิทธิ์ถูก revoke ไปหรือยัง \`revokeAll\` ทุกครั้งที่ login คือสิ่งที่ทำให้ล็อกอินหลายเครื่องดูเหมือน "หลุดที่อื่น" และการยืนยัน MFA คือการอัปเกรดแถว session เดิม ไม่ใช่การออก token ใหม่ -- สองข้อเท็จจริงนี้อธิบายเรื่องแปลกใจเกี่ยวกับ session ใน stack นี้ได้เกือบทั้งหมด`,
-      },
-      {
-        slug: "totp-mfa-otpauth",
-        titleEn: "TOTP / MFA — otpauth in AuthVerifyMfaUseCase",
-        titleTh: "TOTP / MFA — otpauth ใน AuthVerifyMfaUseCase",
-        order: 4,
-        contentEn: `\`otpauth\` (\`^9.4.1\`) is the library behind this codebase's TOTP-based MFA, and like \`bcrypt\`, it's concentrated in one place: the OTP-validation step inside \`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`).
-
-### What the use case actually checks, in order
-
-1. Look up the session by its access token -- it must be \`PRE_ACCESS\`, not expired, and not revoked. (This is the same session-state reasoning as the previous lesson -- MFA verification can't proceed against a session that's already dead by any of the checks \`authMiddleware\` itself would apply.)
-2. Look up \`user_mfa.secret\` for the user -- this is the TOTP shared secret, provisioned when the user first enabled MFA (provisioning itself isn't covered by the source material this course draws from).
-3. Validate the submitted OTP code against that secret via \`UserMfaService.validateTotp\`. A wrong code throws a \`409 Invalid OTP code\` -- 409, not 401 or 400, distinguishing "your credentials were fine but this specific one-time code didn't check out" from an authentication failure or a malformed request.
-4. On success, \`UserSessionService.upgradeToFullAccess(sessionId)\` flips the existing session to \`ACCESS\`, as covered in the previous lesson -- no new token is issued here.
-
-### What isn't confirmed here
-
-The source material behind this course captures the shape of the check (\`user_mfa.secret\` in, \`UserMfaService.validateTotp\` as the verifier, a 409 on mismatch) but not \`otpauth\`'s own configuration inside \`validateTotp\` -- things like the time-step window, how many adjacent windows are tolerated for clock drift, or backup-code handling (\`user_mfa.backupCodes\` exists as a column, per the database-schema lesson in the layer-tracing course, but its actual usage path wasn't traced). Treat those as open questions to verify directly in \`UserMfaService\`, not as settled facts from this lesson.
-
-### Why this step exists at all, restated
-
-Tying this back to the whole login flow: \`bcrypt\` proves you know the password, \`jose\`'s signature proves the resulting token wasn't tampered with, and \`otpauth\` here proves you also hold the TOTP device the account was enrolled with. Each library covers a different kind of proof, and \`authMiddleware\`'s step 5 (from the JWT lesson) is what refuses to treat a session as fully authenticated until all three have actually happened -- password, valid token, and OTP, in that order, gated by the session row's own state rather than anything in the token payload.
-
-## Conclusion
-
-\`otpauth\`'s job here is narrow and well-defined -- validate one submitted code against one stored secret, inside one use case -- but the specifics of that validation (window tolerance, backup codes) aren't part of the verified record this course is built from. What is confirmed: a failed OTP is a 409, not an auth-layer 401, and success upgrades an existing \`PRE_ACCESS\` session rather than minting anything new.`,
-        contentTh: `\`otpauth\` (\`^9.4.1\`) คือ library เบื้องหลัง MFA แบบ TOTP ในโค้ดนี้ และเหมือน \`bcrypt\` มันกระจุกอยู่ที่เดียว คือขั้นตอนตรวจ OTP ข้างใน \`AuthVerifyMfaUseCase\` (\`src/usecases/auth/AuthVerifyMfaUseCase.ts:46-150\`)
-
-### สิ่งที่ use case เช็กจริงๆ ตามลำดับ
-
-1. หา session จาก access token -- ต้องเป็น \`PRE_ACCESS\`, ยังไม่หมดอายุ, และยังไม่ถูก revoke (เป็นตรรกะสถานะ session แบบเดียวกับบทเรียนก่อนหน้า -- การยืนยัน MFA ดำเนินต่อกับ session ที่ตายไปแล้วตามเงื่อนไขที่ \`authMiddleware\` เองจะใช้ไม่ได้)
-2. หา \`user_mfa.secret\` ของผู้ใช้ -- นี่คือ shared secret ของ TOTP ที่ตั้งไว้ตอนผู้ใช้เปิด MFA ครั้งแรก (ขั้นตอนการตั้งค่าเองไม่อยู่ในเอกสารต้นทางที่คอร์สนี้อ้างอิง)
-3. ตรวจ OTP ที่ส่งมากับ secret นั้นผ่าน \`UserMfaService.validateTotp\` รหัสผิดจะโยน \`409 Invalid OTP code\` -- 409 ไม่ใช่ 401 หรือ 400 แยกความหมาย "credential ถูกแล้ว แต่รหัสครั้งเดียวนี้ไม่ผ่าน" ออกจาก authentication ล้มเหลวหรือ request ผิดรูปแบบ
-4. สำเร็จแล้ว \`UserSessionService.upgradeToFullAccess(sessionId)\` เปลี่ยน session เดิมเป็น \`ACCESS\` ตามที่กล่าวในบทเรียนก่อนหน้า -- ไม่มีการออก token ใหม่ในขั้นนี้
-
-### สิ่งที่ยังไม่ยืนยันในที่นี้
-
-เอกสารต้นทางที่คอร์สนี้อ้างอิงจับภาพรูปแบบของการเช็กได้ (\`user_mfa.secret\` เข้า, \`UserMfaService.validateTotp\` เป็นตัวตรวจ, 409 เมื่อไม่ตรง) แต่ไม่ได้บอกการตั้งค่าของ \`otpauth\` เองข้างใน \`validateTotp\` -- เช่น time-step window, ยอมรับ window ข้างเคียงกี่อันสำหรับ clock drift, หรือการจัดการ backup code (\`user_mfa.backupCodes\` มีอยู่เป็นคอลัมน์ ตามบทเรียน database schema ในคอร์สไล่โค้ดทีละ layer แต่เส้นทางการใช้งานจริงยังไม่ได้ไล่) ให้ถือว่าเป็นคำถามเปิดที่ต้องไปเช็กใน \`UserMfaService\` โดยตรง ไม่ใช่ข้อเท็จจริงที่ยืนยันแล้วจากบทเรียนนี้
-
-### ทำไมขั้นตอนนี้ถึงมีอยู่ พูดซ้ำอีกครั้ง
-
-ผูกกลับไปที่ flow login ทั้งหมด: \`bcrypt\` พิสูจน์ว่ารู้รหัสผ่าน, ลายเซ็นของ \`jose\` พิสูจน์ว่า token ที่ได้ไม่ถูกแก้ไข, และ \`otpauth\` ตรงนี้พิสูจน์ว่าถือ TOTP device ที่บัญชีลงทะเบียนไว้ด้วย แต่ละ library ครอบคลุมการพิสูจน์คนละแบบ และขั้นที่ 5 ของ \`authMiddleware\` (จากบทเรียนเรื่อง JWT) คือตัวที่ปฏิเสธไม่ให้ถือว่า session authenticate เต็มที่จนกว่าทั้งสามอย่างจะเกิดขึ้นจริง -- รหัสผ่าน, token ที่ valid, และ OTP ตามลำดับ คุมด้วยสถานะของแถว session เอง ไม่ใช่อะไรใน payload ของ token
-
-## สรุป
-
-หน้าที่ของ \`otpauth\` ตรงนี้แคบและชัดเจน -- ตรวจรหัสที่ส่งมาหนึ่งตัวกับ secret ที่เก็บไว้หนึ่งตัว ในหนึ่ง use case -- แต่รายละเอียดของการตรวจนั้น (window tolerance, backup code) ไม่ได้อยู่ในบันทึกที่ยืนยันแล้วซึ่งคอร์สนี้สร้างขึ้นมา สิ่งที่ยืนยันแล้ว: OTP ผิดคือ 409 ไม่ใช่ 401 ระดับ auth และความสำเร็จคืออัปเกรด session \`PRE_ACCESS\` เดิม ไม่ใช่ออกอะไรใหม่`,
-      },
-    ],
-  },
-  {
-    slug: "secinsight-stack-zod-errors",
-    title: "SecInsight Stack — Validation & Error Handling with Zod",
-    descriptionEn: `What's actually verified about Zod usage in secinsight-api, from the one real controller example on record -- deliberately short rather than padded, since the source material doesn't cover Zod schema definitions or advanced patterns yet. A private reference course -- more will be added here once a deeper intake is available.`,
-    descriptionTh: `สิ่งที่ยืนยันได้จริงเกี่ยวกับการใช้ Zod ใน secinsight-api จากตัวอย่าง controller จริงหนึ่งเดียวที่มีบันทึกไว้ -- ตั้งใจให้สั้นแทนที่จะเติมให้ยาว เพราะเอกสารต้นทางยังไม่ครอบคลุมการนิยาม schema หรือ pattern ขั้นสูงของ Zod คอร์สอ้างอิงส่วนตัว -- จะเพิ่มเนื้อหาต่อเมื่อมี intake ที่ลึกกว่านี้`,
-    published: false,
-    lessons: [
-      {
-        slug: "what-we-know-about-zod-here",
-        titleEn: "What We Actually Know About Zod Here",
-        titleTh: "สิ่งที่รู้จริงเกี่ยวกับ Zod ในที่นี้",
-        order: 1,
-        contentEn: `This lesson is intentionally narrow. The only real Zod usage documented from this codebase is the \`login\` controller (\`src/controllers/AuthController.ts:27-54\`), and everything below is drawn from that one example -- not a general Zod tutorial, and not a survey of every schema in the app.
-
-### The pattern: destructure first, validate second
-
-\`\`\`ts
-login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { email, password } = req.body;
-    const payload = SLoginRequest.safeParse({ email, password });
-
-    if (!payload.success) {
-      const message = payload.error.issues[0]?.message;
-      throw new ValidationError(\`Invalid payload: \${message}\`);
-    }
-
-    const ipAddress = this.getClientIp(req);
-    const deviceInfo = this.getUserAgent(req);
-
-    const useCase = new AuthLoginUseCase(services);
-    const result = await useCase.execute(payload.data, ipAddress, deviceInfo);
-
-    this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
-  } catch (error) {
-    next(error);
-  }
-};
-\`\`\`
-
-The specific fields (\`email\`, \`password\`) are pulled off \`req.body\` *before* being handed to \`SLoginRequest.safeParse(...)\` -- the whole \`req.body\` is never passed directly into a schema. This means a schema here validates exactly what a controller explicitly decided to extract, not whatever a client happened to send.
-
-\`safeParse\` (not \`parse\`) is used, so a validation failure doesn't throw inside Zod itself -- it returns a \`{ success: false, error }\` result that the controller checks explicitly (\`if (!payload.success)\`), then converts into this codebase's own error type.
-
-### Where a validation failure ends up
-
-A failed \`safeParse\` becomes a \`ValidationError\`, built from \`payload.error.issues[0]?.message\` -- only the first issue's message, not the full list of every field that failed. That \`ValidationError\` is one of the \`AppError\` subclasses (see the layer-tracing course's error-propagation lesson); the catch-all error middleware maps it to a 400, and per the observability lesson, \`AppError\` instances get logged at \`warn\` level, not \`error\`.
-
-### What isn't confirmed here
-
-\`SLoginRequest\`'s own schema definition -- its field types, any \`.refine()\` calls, optional vs. required fields, custom error messages per field -- isn't part of the source material behind this course. Nor is whether every controller follows the destructure-then-\`safeParse\` pattern shown here, or whether some validate \`req.body\` directly. Treat this lesson as "one verified example of the pattern," not "the complete Zod contract for this codebase."
-
-## Conclusion
-
-One real fact, cleanly established: this codebase validates explicitly destructured fields with \`safeParse\`, never the raw request body, and converts a failure into a \`ValidationError\` using only the first Zod issue's message. Everything about actual schema shapes, and whether this pattern holds everywhere, remains open until more source material covers it.`,
-        contentTh: `บทเรียนนี้ตั้งใจให้แคบ การใช้ Zod จริงที่มีบันทึกไว้จาก codebase นี้มีแค่ controller \`login\` (\`src/controllers/AuthController.ts:27-54\`) และทุกอย่างข้างล่างดึงมาจากตัวอย่างเดียวนั้น -- ไม่ใช่ tutorial Zod ทั่วไป และไม่ใช่การสำรวจทุก schema ในแอป
-
-### รูปแบบ: แยกฟิลด์ก่อน แล้วค่อย validate
-
-\`\`\`ts
-login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { email, password } = req.body;
-    const payload = SLoginRequest.safeParse({ email, password });
-
-    if (!payload.success) {
-      const message = payload.error.issues[0]?.message;
-      throw new ValidationError(\`Invalid payload: \${message}\`);
-    }
-
-    const ipAddress = this.getClientIp(req);
-    const deviceInfo = this.getUserAgent(req);
-
-    const useCase = new AuthLoginUseCase(services);
-    const result = await useCase.execute(payload.data, ipAddress, deviceInfo);
-
-    this.sendSuccess(res, { data: result }, HTTP_STATUS.OK);
-  } catch (error) {
-    next(error);
-  }
-};
-\`\`\`
-
-ฟิลด์ที่ต้องการ (\`email\`, \`password\`) ถูกดึงออกจาก \`req.body\` *ก่อน* จะส่งให้ \`SLoginRequest.safeParse(...)\` -- ไม่เคยส่ง \`req.body\` ทั้งก้อนเข้า schema ตรงๆ นั่นแปลว่า schema ตรงนี้ validate เฉพาะสิ่งที่ controller ตั้งใจดึงออกมาชัดเจนเท่านั้น ไม่ใช่อะไรก็ตามที่ client บังเอิญส่งมา
-
-ใช้ \`safeParse\` (ไม่ใช่ \`parse\`) ดังนั้นความล้มเหลวในการ validate จะไม่ throw ข้างใน Zod เอง -- มันคืนผลลัพธ์ \`{ success: false, error }\` ที่ controller เช็กเองชัดเจน (\`if (!payload.success)\`) แล้วแปลงเป็น error type ของ codebase นี้เอง
-
-### ความล้มเหลวไปจบที่ไหน
-
-\`safeParse\` ที่ล้มเหลวจะกลายเป็น \`ValidationError\` สร้างจาก \`payload.error.issues[0]?.message\` -- แค่ message ของ issue แรกเท่านั้น ไม่ใช่รายการทุกฟิลด์ที่ผิด \`ValidationError\` เป็นหนึ่งใน subclass ของ \`AppError\` (ดูบทเรียนเรื่อง error propagation ในคอร์สไล่โค้ดทีละ layer) error middleware กลางจะแปลงเป็น 400 และตามบทเรียน observability instance ของ \`AppError\` จะ log ที่ระดับ \`warn\` ไม่ใช่ \`error\`
-
-### สิ่งที่ยังไม่ยืนยันในที่นี้
-
-การนิยาม schema ของ \`SLoginRequest\` เอง -- type ของแต่ละฟิลด์, การเรียก \`.refine()\` ใดๆ, ฟิลด์ optional หรือ required, ข้อความ error เฉพาะแต่ละฟิลด์ -- ไม่ได้อยู่ในเอกสารต้นทางของคอร์สนี้ รวมถึงไม่รู้ว่าทุก controller ใช้ pattern แยกฟิลด์ก่อนแล้ว \`safeParse\` แบบนี้เหมือนกันหมดหรือบาง controller validate \`req.body\` ตรงๆ ให้ถือว่าบทเรียนนี้คือ "ตัวอย่างที่ยืนยันแล้วหนึ่งตัวอย่างของรูปแบบ" ไม่ใช่ "สัญญาครบถ้วนของ Zod ใน codebase นี้"
-
-## สรุป
-
-ข้อเท็จจริงจริงหนึ่งข้อที่ยืนยันชัดเจน: codebase นี้ validate ฟิลด์ที่แยกออกมาชัดเจนด้วย \`safeParse\` ไม่เคย validate request body ดิบ และแปลงความล้มเหลวเป็น \`ValidationError\` โดยใช้แค่ message ของ Zod issue แรกเท่านั้น ทุกอย่างเกี่ยวกับรูปร่าง schema จริง และว่า pattern นี้ใช้ทั่วทั้งแอปหรือไม่ ยังเป็นคำถามเปิดจนกว่าจะมีเอกสารต้นทางที่ครอบคลุมมากกว่านี้`,
-      },
-    ],
-  },
-  {
-    slug: "secinsight-stack-external-apis",
-    title: "SecInsight Stack — External APIs & Rate Limiting",
-    descriptionEn: `How secinsight-api talks to the outside world and protects itself from being talked to too much: rate-limiter-flexible for inbound throttling, and a roster of nine external REST clients built on axios/axios-retry, each with its own auth scheme and normalized through one error-handling pattern. A private reference course.`,
-    descriptionTh: `secinsight-api คุยกับโลกภายนอกยังไง และป้องกันตัวเองจากการถูกเรียกมากเกินไปยังไง: rate-limiter-flexible สำหรับจำกัดอัตราขาเข้า และ external REST client เก้าตัวที่สร้างบน axios/axios-retry แต่ละตัวมี auth scheme ของตัวเอง แล้วรวมการจัดการ error ให้เป็นแบบเดียวกัน คอร์สอ้างอิงส่วนตัว`,
-    published: false,
-    lessons: [
-      {
-        slug: "rate-limiting-user-facing-endpoints",
-        titleEn: "Rate Limiting User-Facing Endpoints",
-        titleTh: "การจำกัดอัตราสำหรับ Endpoint ที่ผู้ใช้เรียก",
-        order: 1,
-        contentEn: `\`rate-limiter-flexible\` (\`^9.0.1\`, in-memory -- not backed by Redis or another external store in this codebase) is the library behind every rate limit in this stack. It shows up as Express middleware applied per-route, not globally, and different endpoints get different limiter instances.
-
-### The pattern, from the login route
-
-\`\`\`ts
-router.post(
-  '/login',
-  authRateLimit,
-  recaptchaMiddleware('login'),
-  authController.login
-);
-\`\`\`
-
-\`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) limits attempts per IP address, governed by two env vars: \`AUTH_MAX_ATTEMPTS\` and \`AUTH_WINDOW_MINUTES\`. Exceeding the limit throws a \`RateLimitError\`, mapped to HTTP 429.
-
-### Different endpoints, different limiter instances
-
-The same route file (\`src/routes/v1/auth.routes.ts\`) shows this isn't a single global limiter reused everywhere:
-
-| Method + path | Middleware |
-| --- | --- |
-| \`POST /login\` | \`authRateLimit\` |
-| \`POST /password-setup\` | \`authRateLimit\` |
-| \`POST /forgot-password\` | \`authRateLimit\`, \`forgotPasswordEmailRateLimit\` |
-| \`POST /verify-mfa\` | \`authRateLimit\`, \`authMiddleware\` |
-
-\`/forgot-password\` stacks *two* limiters -- \`authRateLimit\` (the same general one) plus a dedicated \`forgotPasswordEmailRateLimit\`. The env-var groupings back this up: alongside \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` there's a separate \`FORGOT_PASSWORD_MAX_ATTEMPTS\` (with its own \`*_WINDOW_MINUTES\` counterpart), plus app-wide \`API_MAX_REQUESTS\` and \`PUBLIC_MAX_REQUESTS\` for general traffic shaping outside the auth-specific endpoints. A forgot-password abuse pattern (someone hammering the email-sending endpoint specifically, as opposed to generic login brute-forcing) gets its own, separately-tunable ceiling rather than sharing a budget with ordinary login attempts.
-
-### In-memory means per-process
-
-Because \`rate-limiter-flexible\` is configured in-memory here rather than against a shared store, its counters live inside a single running process. Worth keeping in mind for anything about this stack that eventually runs as more than one instance behind a load balancer -- a detail the source material behind this course doesn't resolve either way, so treat it as a question to raise with whoever owns the deploy setup rather than an assumption to build on.
-
-## Conclusion
-
-Rate limiting here is deliberately per-concern, not one blanket rule: general auth attempts, forgot-password specifically, and general API/public traffic each have their own limiter and their own env-var-tunable ceiling, all built on the same in-memory \`rate-limiter-flexible\` library and all producing the same \`RateLimitError\` -> 429 outcome when exceeded.`,
-        contentTh: `\`rate-limiter-flexible\` (\`^9.0.1\`, แบบ in-memory -- ไม่ได้ใช้ Redis หรือ store ภายนอกอื่นในโค้ดนี้) คือ library เบื้องหลังการจำกัดอัตราทุกจุดใน stack นี้ ปรากฏเป็น Express middleware ที่ใส่ต่อ route ไม่ใช่ระดับ global และแต่ละ endpoint ใช้ limiter instance คนละตัว
-
-### รูปแบบ จาก route ของ login
-
-\`\`\`ts
-router.post(
-  '/login',
-  authRateLimit,
-  recaptchaMiddleware('login'),
-  authController.login
-);
-\`\`\`
-
-\`authRateLimit\` (\`src/middleware/rateLimit.ts:118-137\`) จำกัดจำนวนครั้งต่อ IP คุมด้วย env var สองตัว: \`AUTH_MAX_ATTEMPTS\` และ \`AUTH_WINDOW_MINUTES\` เกินขีดจำกัดจะโยน \`RateLimitError\` แปลงเป็น HTTP 429
-
-### endpoint ต่างกัน ใช้ limiter instance ต่างกัน
-
-ไฟล์ route เดียวกัน (\`src/routes/v1/auth.routes.ts\`) แสดงให้เห็นว่านี่ไม่ใช่ limiter เดียวที่ใช้ซ้ำทุกที่:
-
-| Method + path | Middleware |
-| --- | --- |
-| \`POST /login\` | \`authRateLimit\` |
-| \`POST /password-setup\` | \`authRateLimit\` |
-| \`POST /forgot-password\` | \`authRateLimit\`, \`forgotPasswordEmailRateLimit\` |
-| \`POST /verify-mfa\` | \`authRateLimit\`, \`authMiddleware\` |
-
-\`/forgot-password\` ซ้อน limiter *สอง* ตัว -- \`authRateLimit\` (ตัวทั่วไปเดิม) บวก \`forgotPasswordEmailRateLimit\` เฉพาะทาง กลุ่ม env var ก็ยืนยันเรื่องนี้: นอกจาก \`AUTH_MAX_ATTEMPTS\`/\`AUTH_WINDOW_MINUTES\` ยังมี \`FORGOT_PASSWORD_MAX_ATTEMPTS\` แยกต่างหาก (พร้อม \`*_WINDOW_MINUTES\` คู่กัน) บวก \`API_MAX_REQUESTS\` และ \`PUBLIC_MAX_REQUESTS\` ระดับแอปสำหรับควบคุม traffic ทั่วไปนอกเหนือจาก endpoint เฉพาะ auth รูปแบบการโจมตี forgot-password (มีคนยิง endpoint ส่ง email ถี่ๆ โดยเฉพาะ ต่างจากการ brute-force login ทั่วไป) จึงมีเพดานของตัวเองที่ปรับแยกได้ ไม่ต้องแชร์งบกับความพยายาม login ปกติ
-
-### In-memory แปลว่าต่อ process
-
-เพราะ \`rate-limiter-flexible\` ตั้งค่าแบบ in-memory ในที่นี้แทนที่จะใช้ store กลางที่แชร์กัน ตัวนับของมันอยู่แค่ใน process เดียวที่รันอยู่ ควรจำไว้ถ้า stack นี้จะรันมากกว่าหนึ่ง instance หลัง load balancer ในอนาคต -- รายละเอียดที่เอกสารต้นทางของคอร์สนี้ยังไม่สรุปไปทางไหน ให้ถือเป็นคำถามที่ต้องถามคนดูแล deploy แทนที่จะสรุปเอาเอง
-
-## สรุป
-
-การจำกัดอัตราในที่นี้ตั้งใจแยกตามเรื่อง ไม่ใช่กฎเดียวครอบคลุมหมด: ความพยายาม auth ทั่วไป, forgot-password โดยเฉพาะ, และ traffic ทั่วไป/public ต่างมี limiter และเพดานที่ปรับผ่าน env var ของตัวเอง ทั้งหมดสร้างบน \`rate-limiter-flexible\` แบบ in-memory ตัวเดียวกัน และให้ผลลัพธ์เดียวกันเมื่อเกินขีดจำกัด คือ \`RateLimitError\` -> 429`,
-      },
-      {
-        slug: "the-external-client-roster",
-        titleEn: "The External Client Roster",
-        titleTh: "รายชื่อ Client ภายนอกทั้งหมด",
-        order: 2,
-        contentEn: `Every outbound HTTP call to a third-party service in this codebase goes through \`src/helper/axiosInstance.ts\`, built on \`axios\` (\`1.18.0\`) with \`axios-retry\` (\`^4.5.0\`). MISP gets its own lesson (in the layer-tracing course) because of its unusual read-via-DB/write-via-API split -- everything else here is a normal REST client, just with nine different auth schemes.
-
-| Client | Purpose | Auth |
-| --- | --- | --- |
-| \`OpenRouterApi\` | LLM summarization/analysis for AI Insight | \`Bearer\`, retries 3x |
-| \`VulnerabilityRegisterApi\` | CVE catalog | \`apiKey\` header, built-in rate limiting |
-| \`FirstEpssApi\` / \`CisaKevApi\` / \`CirclCveApi\` | EPSS scores / KEV list / CVE details | none, retries 3x |
-| \`CveCrowdApi\` | CVE trend data | \`Bearer\` |
-| \`SpgVulnerabilityApi\` | CVE-related labs and repos | HMAC-signs every request |
-| \`SocSecinsightApi\` | organization SOC dashboard | \`X-Api-Key\` |
-| \`BlueskyApi\` / \`NewsFeedApi\` | threat news feeds | JWT session / none |
-| \`RecaptchaApi\` | reCAPTCHA verification | API key |
-
-### No single auth pattern -- and that's expected
-
-Six different authentication shapes across nine clients: Bearer tokens, a custom \`apiKey\` header, no auth at all, a custom \`X-Api-Key\` header, a JWT session, and per-request HMAC signing. This isn't inconsistency in this codebase's own design -- each client's auth scheme is dictated by whatever the third-party service itself requires. The useful habit is checking this table (or the real \`axiosInstance.ts\`) before assuming any two external calls share a pattern, rather than copying one client's auth handling onto another.
-
-### The retry pattern isn't universal either
-
-"Retries 3x" is explicitly called out for \`OpenRouterApi\`, \`FirstEpssApi\`, \`CisaKevApi\`, and \`CirclCveApi\` -- likely via \`axios-retry\`'s interceptor configuration, though the exact retry conditions (which status codes, backoff strategy) aren't part of the source material this lesson draws from. Several other clients in the table have no retry behavior noted at all. Don't assume retry-on-failure is a blanket property of every client just because the library that enables it (\`axios-retry\`) is a shared dependency -- it has to be configured per client, and evidently isn't configured identically everywhere.
-
-### The one client that doesn't fit the "just call an API" model
-
-\`SpgVulnerabilityApi\` signs every request with HMAC rather than sending a static credential -- a materially different integration shape from the rest of the table (a static Bearer token or API key is presented once per request as-is; an HMAC signature has to be computed fresh per request, typically over some combination of the request body, a timestamp, and a shared secret). This is worth flagging specifically because it's the one client here where "just copy how another client authenticates" would produce a client that doesn't actually work.
-
-## Conclusion
-
-Nine external clients, one shared \`axios\`/\`axios-retry\` foundation, and no assumption that should carry across all of them: auth scheme, retry behavior, and request-signing all vary client-by-client according to what each third-party service demands -- check the specific client before assuming it behaves like its neighbor in the table.`,
-        contentTh: `ทุกการเรียก HTTP ออกไปยังบริการภายนอกในโค้ดนี้ผ่าน \`src/helper/axiosInstance.ts\` สร้างบน \`axios\` (\`1.18.0\`) กับ \`axios-retry\` (\`^4.5.0\`) MISP มีบทเรียนของตัวเอง (ในคอร์สไล่โค้ดทีละ layer) เพราะการแยกอ่านผ่าน DB/เขียนผ่าน API ที่ไม่เหมือนใคร -- ที่เหลือในนี้เป็น REST client ปกติ เพียงแต่มี auth scheme ต่างกันเก้าแบบ
-
-| Client | ใช้ทำอะไร | Auth |
-| --- | --- | --- |
-| \`OpenRouterApi\` | LLM สรุป/วิเคราะห์ AI Insight | \`Bearer\`, retry 3 ครั้ง |
-| \`VulnerabilityRegisterApi\` | ดึงแค็ตตาล็อก CVE | \`apiKey\` header, จำกัดความถี่ในตัว |
-| \`FirstEpssApi\` / \`CisaKevApi\` / \`CirclCveApi\` | คะแนน EPSS / รายการ KEV / รายละเอียด CVE | ไม่มี, retry 3 ครั้ง |
-| \`CveCrowdApi\` | ข้อมูลเทรนด์ CVE | \`Bearer\` |
-| \`SpgVulnerabilityApi\` | lab และ repo ที่เกี่ยวกับ CVE | HMAC ลงลายเซ็นทุก request |
-| \`SocSecinsightApi\` | แดชบอร์ด SOC ขององค์กร | \`X-Api-Key\` |
-| \`BlueskyApi\` / \`NewsFeedApi\` | ดึงข่าวภัยคุกคาม | JWT session / ไม่มี |
-| \`RecaptchaApi\` | ตรวจ reCAPTCHA | API key |
-
-### ไม่มี pattern auth เดียว -- และเป็นเรื่องคาดหวังได้
-
-หกรูปแบบ authentication ต่างกันใน 9 client: Bearer token, custom header \`apiKey\`, ไม่มี auth เลย, custom header \`X-Api-Key\`, JWT session, และการลงลายเซ็น HMAC ต่อ request นี่ไม่ใช่ความไม่สอดคล้องในดีไซน์ของ codebase นี้เอง -- auth scheme ของแต่ละ client ถูกกำหนดโดยสิ่งที่บริการภายนอกนั้นต้องการเอง นิสัยที่มีประโยชน์คือเช็คตารางนี้ (หรือ \`axiosInstance.ts\` จริง) ก่อนสมมุติว่าสอง client ภายนอกใช้ pattern เดียวกัน แทนที่จะก็อปปี้การจัดการ auth ของ client หนึ่งไปใช้กับอีกตัว
-
-### รูปแบบ retry ก็ไม่ได้ใช้ทุกที่เหมือนกัน
-
-"retry 3 ครั้ง" ถูกระบุไว้ชัดเจนสำหรับ \`OpenRouterApi\`, \`FirstEpssApi\`, \`CisaKevApi\`, และ \`CirclCveApi\` -- น่าจะผ่าน interceptor configuration ของ \`axios-retry\` แม้เงื่อนไข retry ที่แท้จริง (status code ไหน, backoff strategy) จะไม่ได้อยู่ในเอกสารต้นทางที่บทเรียนนี้อ้างอิง client อื่นๆ ในตารางไม่มีการระบุพฤติกรรม retry เลย อย่าสมมุติว่า retry-on-failure เป็นคุณสมบัติครอบคลุมทุก client เพียงเพราะ library ที่เปิดใช้งานได้ (\`axios-retry\`) เป็น dependency ที่ใช้ร่วมกัน -- มันต้องตั้งค่าแยกต่อ client และเห็นชัดว่าไม่ได้ตั้งเหมือนกันทุกที่
-
-### client ที่ไม่เข้ากับโมเดล "เรียก API เฉยๆ"
-
-\`SpgVulnerabilityApi\` ลงลายเซ็น HMAC ทุก request แทนที่จะส่ง credential แบบคงที่ -- เป็นรูปแบบการเชื่อมต่อที่ต่างจากตารางที่เหลือชัดเจน (Bearer token หรือ API key แบบคงที่ถูกส่งไปตรงๆ ทุก request; ลายเซ็น HMAC ต้องคำนวณใหม่ทุกครั้ง โดยทั่วไปคือรวม request body, timestamp, และ shared secret เข้าด้วยกัน) ควรเน้นเป็นพิเศษเพราะเป็น client เดียวในนี้ที่ "ก็อปปี้วิธี authenticate ของ client อื่นมาใช้" จะได้ client ที่ใช้งานจริงไม่ได้
-
-## สรุป
-
-External client เก้าตัว รากฐาน \`axios\`/\`axios-retry\` เดียวกัน แต่ไม่มีข้อสมมุติไหนที่ใช้ได้กับทุกตัว: auth scheme, พฤติกรรม retry, และการลงลายเซ็น request ต่างกันไปตาม client แต่ละตัวตามที่บริการภายนอกนั้นต้องการ -- เช็ค client เฉพาะตัวก่อนสมมุติว่ามันทำงานเหมือนตัวข้างเคียงในตาราง`,
-      },
-      {
-        slug: "upstream-error-normalizing-failures",
-        titleEn: "UpstreamError — Normalizing Failures From Services We Don't Own",
-        titleTh: "UpstreamError — ทำให้ความล้มเหลวจากบริการที่ไม่ได้เป็นเจ้าของเป็นมาตรฐานเดียวกัน",
-        order: 3,
-        contentEn: `Nine external clients with six different auth schemes still need to fail in one predictable, handleable way from the rest of this codebase's point of view. That's what the \`UpstreamError\` interceptor in \`axiosInstance.ts\` (\`:175-187\`, documented in the context of the MISP connection but applying to the shared axios setup) is for: an error coming back from any of these third-party services is converted into an \`UpstreamError\`, preserving the original service's HTTP status rather than always producing a generic one.
-
-### Why status preservation matters
-
-An \`UpstreamError\` that keeps MISP's or \`CisaKevApi\`'s actual status code -- a 404, a 429, a 503 -- lets the rest of the application (and its own error-handling middleware) tell the difference between "this external service is down" and "this external service says the resource doesn't exist," without every caller having to know the specifics of nine different APIs' error formats. It's the same instinct as the \`AppError\` hierarchy for this codebase's own errors (see the layer-tracing course's error-propagation lesson): one predictable shape, wrapping many different underlying causes.
-
-### Where this connects to what's missing
-
-The exact conditions under which \`UpstreamError\` is thrown versus when \`axios-retry\` gets a chance to retry first isn't spelled out in the source material -- a retry presumably happens before the interceptor gives up and normalizes the failure, but the ordering and interaction between "retry 3x" (noted for four of the nine clients) and this interceptor isn't confirmed. That's a legitimate thing to verify directly in \`axiosInstance.ts\` rather than assume from this lesson.
-
-### The MISP write path is the one exception worth remembering
-
-Every external client in the previous lesson is called for reads or one-way notifications. MISP is the only one of the nine-plus integrations in this codebase where writes also happen through this same client infrastructure (\`mispAdminApi\`, per the MISP integration lesson) -- meaning a failed MISP write surfaces as the same kind of \`UpstreamError\` as a failed read from any other service, even though creating or deleting an event is a materially riskier operation than fetching a CVE score. Whether callers of \`mispAdminApi\` do anything special to handle a write-specific \`UpstreamError\` differently from a read-specific one isn't part of the record this course is built from.
-
-## Conclusion
-
-Whatever the specific service, whatever its auth scheme or retry configuration, a failure from any of them lands in this codebase as the same \`UpstreamError\` shape with the original status preserved -- the point of the interceptor is that nothing above \`axiosInstance.ts\` needs to know which of the nine services it's actually talking to in order to handle a failure sensibly.`,
-        contentTh: `External client เก้าตัวที่มีหก auth scheme ต่างกัน ก็ยังต้องล้มเหลวในแบบที่คาดเดาได้และจัดการได้แบบเดียวจากมุมมองของโค้ดที่เหลือทั้งหมด นั่นคือหน้าที่ของ interceptor \`UpstreamError\` ใน \`axiosInstance.ts\` (\`:175-187\` เอกสารไว้ในบริบทการเชื่อมต่อ MISP แต่ใช้กับ axios setup ที่แชร์กันทั้งหมด): error ที่ตอบกลับมาจากบริการภายนอกตัวไหนก็ตามในเก้าตัวนี้ จะถูกแปลงเป็น \`UpstreamError\` โดยคง HTTP status ของบริการต้นทางไว้ ไม่ใช่ตอบ status กลางๆ เสมอ
-
-### ทำไมการคง status ถึงสำคัญ
-
-\`UpstreamError\` ที่คง status จริงของ MISP หรือ \`CisaKevApi\` ไว้ -- 404, 429, 503 -- ทำให้ส่วนที่เหลือของแอป (และ error-handling middleware ของมันเอง) แยกความแตกต่างระหว่าง "บริการภายนอกนี้ล่ม" กับ "บริการภายนอกนี้บอกว่าไม่มี resource นี้" ได้ โดยไม่ต้องให้ผู้เรียกทุกคนรู้รายละเอียดรูปแบบ error ของ API เก้าตัวที่ต่างกัน เป็นสัญชาตญาณเดียวกับ hierarchy ของ \`AppError\` สำหรับ error ของ codebase นี้เอง (ดูบทเรียนเรื่อง error propagation ในคอร์สไล่โค้ดทีละ layer) รูปร่างเดียวที่คาดเดาได้ ห่อหุ้มสาเหตุที่แท้จริงหลายแบบ
-
-### จุดที่เชื่อมกับสิ่งที่ยังขาด
-
-เงื่อนไขที่แท้จริงว่า \`UpstreamError\` ถูกโยนเมื่อไหร่ เทียบกับตอนที่ \`axios-retry\` มีโอกาส retry ก่อน ไม่ได้ระบุไว้ชัดในเอกสารต้นทาง -- คาดว่า retry น่าจะเกิดก่อนที่ interceptor จะยอมแพ้แล้วทำให้ error เป็นมาตรฐาน แต่ลำดับและปฏิสัมพันธ์ระหว่าง "retry 3 ครั้ง" (ระบุไว้สำหรับสี่ในเก้า client) กับ interceptor ตัวนี้ยังไม่ยืนยัน เป็นเรื่องที่ควรไปเช็กใน \`axiosInstance.ts\` โดยตรง ไม่ใช่สมมุติเอาจากบทเรียนนี้
-
-### เส้นทางเขียนของ MISP คือข้อยกเว้นที่ควรจำ
-
-external client ทุกตัวในบทเรียนก่อนหน้าถูกเรียกเพื่ออ่านหรือแจ้งเตือนทางเดียว MISP เป็นตัวเดียวในบรรดา integration ทั้งเก้ากว่าตัวของ codebase นี้ที่การเขียนก็เกิดผ่านโครงสร้าง client เดียวกันนี้ด้วย (\`mispAdminApi\` ตามบทเรียน MISP integration) -- แปลว่าการเขียน MISP ที่ล้มเหลว จะปรากฏเป็น \`UpstreamError\` แบบเดียวกับการอ่านที่ล้มเหลวจากบริการอื่น แม้ว่าการสร้างหรือลบ event จะเป็น operation ที่เสี่ยงกว่าการดึงคะแนน CVE มาก ว่าผู้เรียก \`mispAdminApi\` จะจัดการ \`UpstreamError\` เฉพาะการเขียนต่างจากการอ่านเป็นพิเศษหรือไม่ ไม่ได้อยู่ในบันทึกที่คอร์สนี้สร้างขึ้นมา
-
-## สรุป
-
-ไม่ว่าจะเป็นบริการไหน auth scheme หรือการตั้งค่า retry แบบใด ความล้มเหลวจากบริการไหนก็ตามในเก้าตัวนี้จะลงเอยในโค้ดนี้เป็น \`UpstreamError\` รูปร่างเดียวกัน โดยคง status เดิมไว้ -- จุดประสงค์ของ interceptor คือไม่ต้องมีอะไรเหนือ \`axiosInstance.ts\` ที่ต้องรู้ว่ากำลังคุยกับบริการไหนในเก้าตัวนี้ เพื่อจะจัดการความล้มเหลวได้อย่างสมเหตุสมผล`,
       },
     ],
   },
