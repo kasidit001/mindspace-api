@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { getDashboard as getDashboardUseCase } from "../usecases/dashboard/getDashboard.usecase";
+import { getDashboard as getDashboardUseCase } from "../usecases/dashboard/GetDashboardUseCase";
 
 export async function getDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

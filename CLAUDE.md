@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 docker compose up -d        # start Postgres+pgvector (localhost:5434) — required before anything below
 bun install                 # install deps
 bun run dev                 # start API with hot reload (bun --watch index.ts), http://localhost:8080
-bun run seed                 # seed courses/lessons from src/scripts/seedContent.ts, and embed them
+bun run seed                 # seed courses/lessons from src/mindspace/seeders/*.ts, and embed them
                               # (embedding step needs OPENAI_API_KEY; skipped with a warning if unset)
 bun run migrate               # apply pending migrations (src/mindspace/migrations, via
                                 # src/mindspace/migrate.ts — not sequelize-cli, see
@@ -37,9 +37,10 @@ Model → Database`, strictly in that order — a layer only calls the one direc
   exactly one usecase, and shapes the response (`res.json`/status codes/SSE plumbing for
   chat). Business-rule validation (does this resource exist, is this email taken) does NOT
   belong here — that's the usecase's job.
-- `src/usecases/<domain>/*.usecase.ts` — orchestration and business rules (e.g. "USER role
-  must exist", "email must be unique", "lesson must exist before completing it"). Calls one
-  or more services, never a repository or model directly.
+- `src/usecases/<domain>/*UseCase.ts` (e.g. `AuthenticationUseCase.ts`, `SignUpUseCase.ts`,
+  `AskQuestionUseCase.ts`) — orchestration and business rules (e.g. "USER role must exist",
+  "email must be unique", "lesson must exist before completing it"). Calls one or more
+  services, never a repository or model directly.
 - `src/services/*.service.ts` — domain logic and external integrations: `auth.service.ts`
   (password hashing, session tokens — pure crypto, no DB), `embedding.service.ts` (chunking +
   OpenAI embeddings), `chat.service.ts` (retrieval-augmented completion), plus one thin
@@ -86,9 +87,9 @@ Model → Database`, strictly in that order — a layer only calls the one direc
 Tag.ts`/`CourseTag.ts`) give courses real, curated, queryable labels — distinct from
 `~/utils/courseTech.ts`'s frontend-only title-regex tech guess, which exists purely for
 display/filtering heuristics and isn't backed by any table. `src/services/tag.service.ts`'s
-`findOrCreateByName` is idempotent (safe to call every seed run); `seedContent.ts` doesn't
-carry tags itself — they're assigned per course slug in `src/scripts/seed.ts`'s
-`COURSE_TAGS` map, so adding a new course means adding its tags there too.
+`findOrCreateByName` is idempotent (safe to call every seed run); the per-course seeders in
+`src/mindspace/seeders/*.ts` don't carry tags themselves — they're assigned per course slug in
+`src/mindspace/seed.ts`'s `COURSE_TAGS` map, so adding a new course means adding its tags there too.
 `findAllWithLessons()` includes `tags` on every course in `GET /api/courses` automatically
 (no controller/interface changes needed — same pass-through as every other included
 association).
@@ -99,9 +100,10 @@ all — `findAllWithLessons()`/`findFeaturedWithLessonCounts()` only return publ
 under a draft course 404s exactly like a lesson that doesn't exist (no separate 403 path, same
 enumeration-avoidance spirit as login), and the full-text search and pgvector similarity
 queries (`SearchRepository.ts`, `LessonEmbeddingRepository.ts`) both filter on it too, so a
-draft never surfaces via Cmd+K or gets cited by the chat tutor. `seed.ts` always seeds its
-courses as `published: true` — everything in `seedContent.ts` is finished catalog content, not
-draft material. There's no admin UI yet to toggle this on a course created outside the seed
+draft never surfaces via Cmd+K or gets cited by the chat tutor. `seed.ts` defaults each
+seeder's course to `published: true` — everything under `src/mindspace/seeders/*.ts` is
+finished catalog content, not draft material, unless a seeder opts into `published: false`.
+There's no admin UI yet to toggle this on a course created outside the seed
 script; it's a data-model/gating layer only, ready for whenever that exists.
 
 **RAG chat flow** (the core feature): `src/services/embedding.service.ts` chunks lesson
@@ -124,7 +126,7 @@ startup; the process throws immediately if it's unset, rather than signing with 
 default. `src/middlewares/auth.middleware.ts`'s `requireAuth`/`optionalAuth` populate
 `req.user` (`{ id, name, email, role }`); routes needing an account
 (`/api/lessons/:id/complete`, `/api/progress`, `/api/notes`) use `requireAuth` and scope
-their queries by `req.user!.id`. `src/usecases/auth/{signup,login}.usecase.ts` hold the
+their queries by `req.user!.id`. `src/usecases/auth/{SignUpUseCase,AuthenticationUseCase}.ts` hold the
 signup/login business rules (always assigns the `USER` role on signup — `SYSTEM_ADMIN` is
 granted out of band, directly in the DB, never through this public endpoint; same error for
 "no such user" and "wrong password" on login, to avoid an account-enumeration oracle).

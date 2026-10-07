@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { getFeaturedCourses as getFeaturedCoursesUseCase } from "../usecases/courses/getFeaturedCourses.usecase";
-import { listCourses as listCoursesUseCase } from "../usecases/courses/listCourses.usecase";
-import { getLessonById as getLessonByIdUseCase } from "../usecases/courses/getLessonById.usecase";
+import { getFeaturedCourses as getFeaturedCoursesUseCase } from "../usecases/courses/GetFeaturedCoursesUseCase";
+import { listCourses as listCoursesUseCase } from "../usecases/courses/ListCoursesUseCase";
+import { getLessonById as getLessonByIdUseCase } from "../usecases/courses/GetLessonByIdUseCase";
 
 export async function getFeaturedCourses(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { createNote as createNoteUseCase } from "../usecases/notes/createNote.usecase";
-import { listNotes as listNotesUseCase } from "../usecases/notes/listNotes.usecase";
+import { createNote as createNoteUseCase } from "../usecases/notes/CreateNoteUseCase";
+import { listNotes as listNotesUseCase } from "../usecases/notes/ListNotesUseCase";
 import { BadRequestError } from "../utils/errors";
 
 export async function createNote(req: Request, res: Response, next: NextFunction): Promise<void> {

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { askQuestion as askQuestionUseCase } from "../usecases/chat/askQuestion.usecase";
-import { streamAnswer as streamAnswerUseCase } from "../usecases/chat/streamAnswer.usecase";
+import { askQuestion as askQuestionUseCase } from "../usecases/chat/AskQuestionUseCase";
+import { streamAnswer as streamAnswerUseCase } from "../usecases/chat/StreamAnswerUseCase";
 import { BadGatewayError, BadRequestError } from "../utils/errors";
 
 export async function ask(req: Request, res: Response, next: NextFunction): Promise<void> {

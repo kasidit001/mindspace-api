@@ -1,4 +1,6 @@
-# Migrations
+# Migrations & Seeders
+
+## Migrations
 
 Schema changes going forward should be captured as migrations here, instead
 of relying only on `sequelize.sync()` (`src/models/index.ts`). `sync()` is
@@ -47,3 +49,14 @@ created by `sync()` before migrations were introduced and have no migration
 files. Leave them to `sync()`; only `roles` (and anything added after
 2026-09-14) is migration-tracked. Backfill migrations for the older tables
 only if you need to run a real schema change against them.
+
+## Seeders
+
+`bun run seed` (`src/mindspace/seed.ts`) loads catalog content from
+`./seeders/`: one file per course (`./seeders/<slug>.ts`), each a plain
+`export default` of a `SeedCourse` object (shape defined in
+`./seeders/types.ts`). Adding a new course means creating a new file here,
+not appending to a shared array — `seed.ts` just reads the directory
+(skipping `types.ts`) and seeds whatever it finds, alphabetically. Tags per
+course are assigned separately, in `seed.ts`'s own `COURSE_TAGS` map, keyed
+by slug.
