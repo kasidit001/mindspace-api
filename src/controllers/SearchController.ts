@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { searchLessons as searchLessonsUseCase } from "../usecases/search/searchLessons.usecase";
+import { searchLessons as searchLessonsUseCase } from "../usecases/search/SearchLessonsUseCase";
 import { BadRequestError } from "../utils/errors";
 
 export async function search(req: Request, res: Response, next: NextFunction): Promise<void> {

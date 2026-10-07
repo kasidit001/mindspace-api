@@ -7,7 +7,7 @@ import { CourseTag } from "./CourseTag";
  * A real, curated label attachable to courses (many-to-many, via the
  * `course_tags` join table — see the association declared at the bottom of
  * this file). Distinct from the title-regex tech-detection heuristic in
- * getDashboard.usecase.ts's getCourseTech(): that's a display-only guess for
+ * GetDashboardUseCase.ts's getCourseTech(): that's a display-only guess for
  * dashboard recommendation diversity, this is real, explicit, queryable data.
  */
 export class Tag extends Model<InferAttributes<Tag>, InferCreationAttributes<Tag>> {

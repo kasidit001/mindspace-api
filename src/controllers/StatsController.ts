@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { getStats as getStatsUseCase } from "../usecases/stats/getStats.usecase";
+import { getStats as getStatsUseCase } from "../usecases/stats/GetStatsUseCase";
 
 export async function getStats(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

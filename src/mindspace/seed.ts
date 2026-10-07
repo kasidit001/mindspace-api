@@ -1,12 +1,35 @@
+import fs from "node:fs";
+import path from "node:path";
 import { connectDB } from "../config/database";
 import { syncModels, Course, Lesson } from "../models";
 import { embedAndStoreLesson } from "../services/embedding.service";
 import * as tagService from "../services/tag.service";
-import { seedCourses } from "./seedContent";
 import sequelize from "../config/database";
+import type { SeedCourse } from "./seeders/types";
+
+// Each course is its own file under ./seeders/ (one `export default SeedCourse`
+// per file, named after the course slug) -- adding a course means creating a
+// new seeder file there, not appending to a shared one. This mirrors how
+// ./migrations/ works: this loader just reads the directory, same as
+// migrate.ts does for migrations.
+const SEEDERS_DIR = path.join(import.meta.dir, "seeders");
+
+async function loadSeedCourses(): Promise<SeedCourse[]> {
+  const files = fs
+    .readdirSync(SEEDERS_DIR)
+    .filter((f) => f.endsWith(".ts") && f !== "types.ts")
+    .sort();
+
+  const courses: SeedCourse[] = [];
+  for (const file of files) {
+    const mod = await import(path.join(SEEDERS_DIR, file));
+    courses.push(mod.default as SeedCourse);
+  }
+  return courses;
+}
 
 // Curated, not guessed — real tags per course, by slug. Distinct from the
-// title-regex tech-detection heuristic in getDashboard.usecase.ts's
+// title-regex tech-detection heuristic in GetDashboardUseCase.ts's
 // getCourseTech(), which exists only for that endpoint's display purposes;
 // this is the actual queryable Tag data (see src/models/Tag.ts).
 const COURSE_TAGS: Record<string, string[]> = {
@@ -32,10 +55,12 @@ async function main() {
     );
   }
 
+  const seedCourses = await loadSeedCourses();
+
   for (const courseSeed of seedCourses) {
-    // Most courses in seedContent.ts are finished catalog content and default
-    // published; a course can opt into staying a draft via `published: false`
-    // (e.g. an admin's own private reference material).
+    // Most seeders are finished catalog content and default published; a
+    // course can opt into staying a draft via `published: false` (e.g. an
+    // admin's own private reference material).
     const published = courseSeed.published ?? true;
     const [course] = await Course.findOrCreate({
       where: { slug: courseSeed.slug },
