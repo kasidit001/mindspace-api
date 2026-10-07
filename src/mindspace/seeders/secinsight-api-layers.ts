@@ -1995,6 +1995,24 @@ One codebase, one MySQL server, two databases, two very different ownership mode
 ## สรุป
 
 codebase เดียว MySQL server เดียว สองฐานข้อมูล สองรูปแบบความเป็นเจ้าของที่ต่างกันมาก: \`secinsight\` มี migration ติดตามเพราะแอปนี้เป็นเจ้าของ schema เอง \`misp\` ไม่มีเลยเพราะไม่ใช่ ความไม่สมมาตรนี้ -- ไม่ใช่แค่ "มีสอง connection" -- คือข้อเท็จจริงที่ควรจำต่อไปในบทเรียนถัดไป ซึ่งพูดถึงว่า model ฝั่ง \`misp\` เขียนยังไงเพื่อรับมือกับการไม่ได้เป็นเจ้าของ schema ตัวเอง`,
+        labs: [
+          {
+            id: "which-side-gets-a-migration",
+            title: "Which Side Gets a Migration?",
+            instructions: "Complete \`hasMigrations\` so that given a \`SequelizeConnection.getClient(...)\` call string (as it appears in \`src/models/index.ts\`), it returns \`true\` only for the \`secinsight\` connection — matching this lesson's rule that \`secinsight\` is migration-tracked and \`misp\` is not.",
+            starterCode: `function hasMigrations(getClientCall: string): boolean {
+  // TODO: getClientCall looks like
+  // "SequelizeConnection.getClient('secinsightConnection')" or
+  // "SequelizeConnection.getClient('mispConnection')". Return true only
+  // for the secinsight connection.
+  return false;
+}`,
+            testCode: `check(hasMigrations("SequelizeConnection.getClient('secinsightConnection')"), true, "secinsight connection has migrations");
+check(hasMigrations("SequelizeConnection.getClient('mispConnection')"), false, "misp connection has no migrations");
+check(hasMigrations('SequelizeConnection.getClient("secinsightConnection")'), true, "works with double-quoted argument too");`,
+            hint: "The two connection names differ only in whether they contain \"secinsight\" — \`getClientCall.includes('secinsightConnection')\` is enough.",
+          },
+        ],
       },
       {
         slug: "modeling-across-two-databases",
